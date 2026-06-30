@@ -1,0 +1,26 @@
+# Dependencies
+**/node_modules/
+
+# Environment
+**/.env
+**/.env.*
+
+# Logs
+*.log
+logs/
+
+# Build
+**/dist/
+**/build/
+
+# Cache
+.parcel-cache/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
