@@ -1,8 +1,9 @@
 import githubApp from "../config/github.js";
 
-const getGitHubApp = async () => {
-    return githubApp;
+export const getGitHubApp = async () => {
+    console.log(githubApp);
+
+    return {
+        success: true
+    };
 };
-
-
-export default getGitHubApp
