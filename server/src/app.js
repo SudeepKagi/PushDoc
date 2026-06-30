@@ -1,11 +1,15 @@
-const express = require("express");
-const morgan = require("morgan");
-const indexRouter = require("./routes");
+import express from "express";
+import morgan from "morgan";
+
+import indexRouter from "./routes/index.js";
+import githubRouter from "./routes/github.js";
+
 const app = express();
 
 app.use(express.json());
 app.use(morgan("dev"));
 
 app.use("/", indexRouter);
+app.use("/github", githubRouter);
 
-module.exports = app;
+export default app;
