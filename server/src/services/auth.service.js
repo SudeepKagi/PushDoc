@@ -1,3 +1,4 @@
+import User from "../models/user.model.js";
 export const githubLogin = () => {
 
     const githubAuthURL = new URL(
@@ -54,5 +55,25 @@ export const githubCallback = async (code) => {
 
     const user = await userResponse.json();
 
-    return user;
+    const savedUser = await User.findOneAndUpdate(
+        {
+            githubId: user.id,
+        },
+        {
+            githubId: user.id,
+            username: user.login,
+            displayName: user.name,
+            email: user.email,
+            avatarUrl: user.avatar_url,
+            githubAccessToken: tokenData.access_token,
+            provider: "github",
+        },
+        {
+            upsert: true,
+            new: true,
+            runValidators: true,
+        }
+    );
+
+    return savedUser;
 };
