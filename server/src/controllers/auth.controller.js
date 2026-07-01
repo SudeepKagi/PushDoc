@@ -19,11 +19,12 @@ export const githubCallback = async (req, res) => {
 
         const { code } = req.query;
 
-        const user = await authService.githubCallback(code);
+        const result = await authService.githubCallback(code);
 
         return res.status(200).json({
             success: true,
-            user,
+            user: result.user,
+            token: result.token,
         });
 
     } catch (error) {

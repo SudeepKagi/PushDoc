@@ -1,4 +1,7 @@
 import User from "../models/user.model.js";
+import * as userService from "./user.service.js";
+import * as jwtService from "./jwt.service.js";
+
 export const githubLogin = () => {
 
     const githubAuthURL = new URL(
@@ -53,27 +56,27 @@ export const githubCallback = async (code) => {
         }
     );
 
-    const user = await userResponse.json();
+    const githubUser = await userResponse.json();
 
-    const savedUser = await User.findOneAndUpdate(
-        {
-            githubId: user.id,
-        },
-        {
-            githubId: user.id,
-            username: user.login,
-            displayName: user.name,
-            email: user.email,
-            avatarUrl: user.avatar_url,
-            githubAccessToken: tokenData.access_token,
-            provider: "github",
-        },
-        {
-            upsert: true,
-            new: true,
-            runValidators: true,
-        }
+    const savedUser = await userService.createOrUpdateUser(
+        githubUser,
+        tokenData.access_token
     );
 
-    return savedUser;
+    const token = jwtService.generateToken(savedUser);
+
+    const userRes = {
+        id: savedUser._id,
+        githubId: savedUser.githubId,
+        username: savedUser.username,
+        displayName: savedUser.displayName,
+        email: savedUser.email,
+        avatarUrl: savedUser.avatarUrl,
+        provider: savedUser.provider,
+    };
+
+    return {
+        user: userRes,
+        token,
+    };
 };
