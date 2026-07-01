@@ -1,23 +1,34 @@
-export const githubLogin = () => {
+export const githubCallback = async (code) => {
 
-    const githAuthURL = new URL(
-        "https://github.com/login/oauth/authorize"
+    const tokenResponse = await fetch(
+        "https://github.com/login/oauth/access_token",
+        {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                client_id: process.env.GITHUB_CLIENT_ID,
+                client_secret: process.env.GITHUB_CLIENT_SECRET,
+                code,
+            }),
+        }
     );
 
-    githAuthURL.searchParams.append(
-        "client_id",
-        process.env.GITHUB_CLIENT_ID
-    )
+    const tokenData = await tokenResponse.json();
 
-    githAuthURL.searchParams.append(
-        "redirect_uri",
-        "http://localhost:3000/auth/github/callback"
-    )
+    const userResponse = await fetch(
+        "https://api.github.com/user",
+        {
+            headers: {
+                Authorization: `Bearer ${tokenData.access_token}`,
+                Accept: "application/json",
+            },
+        }
+    );
 
-    githAuthURL.searchParams.append(
-        "state",
-        "pushdoc123"
-    )
+    const user = await userResponse.json();
 
-    return githAuthURL.toString();
+    return user;
 };
