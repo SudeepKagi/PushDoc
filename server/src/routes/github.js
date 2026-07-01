@@ -1,9 +1,24 @@
-
 import express from "express";
 import * as githubController from "../controllers/github.controller.js";
+import authMiddleware from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-router.get("/app", githubController.getGitHubApp);
+router.get(
+    "/app",
+    authMiddleware,
+    githubController.getGitHubApp
+);
+
+router.get(
+    "/install",
+    authMiddleware,
+    githubController.installApp
+);
+
+router.get(
+    "/install/callback"
+    , githubController.installCallback
+);
 
 export default router;
