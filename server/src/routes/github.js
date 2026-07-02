@@ -20,5 +20,10 @@ router.get(
     "/install/callback"
     , githubController.installCallback
 );
+router.get(
+    "/repositories/sync",
+    authMiddleware,
+    githubController.syncRepositories
+);
 
 export default router;

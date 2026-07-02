@@ -1,6 +1,7 @@
 import * as githubService from "../services/github.service.js";
 import * as installationStateService from "../services/installationState.service.js";
 import * as installationService from "../services/installation.service.js";
+import * as repositoryService from "../services/repository.service.js";
 
 export const getGitHubApp = async (req, res) => {
     try {
@@ -25,7 +26,7 @@ export const githubCallback = async (req, res) => {
 
     try {
         const { code } = req.query;
-        const user = authServic.githubCallback(code);
+        const user = await authServic.githubCallback(code);
         return res.status(200).json({
             success: true,
             user,
@@ -49,7 +50,12 @@ export const installApp = async (req, res) => {
             req.user.userId
         );
 
+        console.log("Creating state...");
+        console.log("State:", state);
+
         const url = githubService.getInstallUrl(state);
+
+        console.log("Redirect URL:", url);
 
         return res.redirect(url);
 
@@ -65,10 +71,19 @@ export const installApp = async (req, res) => {
 };
 
 export const installCallback = async (req, res) => {
+    console.log("INSTALL CALLBACK HIT");
+    console.log(req.query);
 
     try {
 
         const { installation_id, state } = req.query;
+
+        if (!installation_id || !state) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing installation_id or state",
+            });
+        }
 
         const savedState =
             await installationStateService.getState(state);
@@ -77,6 +92,16 @@ export const installCallback = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "Invalid or expired state",
+            });
+        }
+
+        if (savedState.expiresAt < new Date()) {
+
+            await installationStateService.deleteState(state);
+
+            return res.status(400).json({
+                success: false,
+                message: "State expired",
             });
         }
 
@@ -96,6 +121,56 @@ export const installCallback = async (req, res) => {
         return res.status(200).json({
             success: true,
             installation,
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+
+    }
+
+};
+export const syncRepositories = async (req, res) => {
+
+    try {
+
+        const installation =
+            await installationService.getInstallationByUser(
+                req.user.userId
+            );
+
+        if (!installation) {
+            return res.status(404).json({
+                success: false,
+                message: "Installation not found",
+            });
+        }
+
+        const repositories =
+            await githubService.getInstallationRepositories(
+                installation.installationId
+            );
+
+        const syncedRepositories = [];
+
+        for (const repo of repositories) {
+
+            const savedRepository =
+                await repositoryService.createOrUpdateRepository(
+                    repo,
+                    installation._id
+                );
+
+            syncedRepositories.push(savedRepository);
+        }
+
+        return res.status(200).json({
+            success: true,
+            count: syncedRepositories.length,
+            repositories: syncedRepositories,
         });
 
     } catch (error) {

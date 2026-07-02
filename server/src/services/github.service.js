@@ -21,9 +21,27 @@ export const getInstallUrl = (state) => {
 
 export const getInstallation = async (installationId) => {
 
-    const installation = await githubApp.octokit.rest.apps.getInstallation({
-        installation_id: Number(installationId),
-    });
+    const response = await githubApp.octokit.request(
+        "GET /app/installations/{installation_id}",
+        {
+            installation_id: Number(installationId),
+        }
+    );
 
-    return installation.data;
+    return response.data;
+};
+
+export const getInstallationRepositories = async (installationId) => {
+
+    const installationOctokit =
+        await githubApp.getInstallationOctokit(
+            installationId
+        );
+
+    const response = await installationOctokit.request(
+        "GET /installation/repositories"
+    );
+
+    return response.data.repositories;
+
 };

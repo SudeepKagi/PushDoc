@@ -1,4 +1,5 @@
 import Installation from "../models/installation.model.js";
+import * as repositoryService from "../services/repository.service.js";
 
 export const createOrUpdateInstallation = async (
     installationData,
@@ -24,3 +25,12 @@ export const createOrUpdateInstallation = async (
 
     return installation;
 };
+
+export const getInstallationByUser = async (userId) => {
+
+    return await Installation.findOne({
+        user: userId,
+    });
+
+};
+

@@ -1,11 +1,11 @@
-import User from "../models/user.model.js";
 import * as userService from "./user.service.js";
 import * as jwtService from "./jwt.service.js";
+import { GITHUB_URLS } from "../constants/github.constants.js";
 
 export const githubLogin = () => {
 
     const githubAuthURL = new URL(
-        "https://github.com/login/oauth/authorize"
+        GITHUB_URLS.OAUTH_AUTHORIZE
     );
 
     githubAuthURL.searchParams.append(
@@ -15,8 +15,9 @@ export const githubLogin = () => {
 
     githubAuthURL.searchParams.append(
         "redirect_uri",
-        "http://localhost:3000/auth/github/callback"
+        process.env.GITHUB_REDIRECT_URI
     );
+    console.log(process.env.GITHUB_REDIRECT_URI)
 
     githubAuthURL.searchParams.append(
         "state",
@@ -29,7 +30,7 @@ export const githubLogin = () => {
 export const githubCallback = async (code) => {
 
     const tokenResponse = await fetch(
-        "https://github.com/login/oauth/access_token",
+        GITHUB_URLS.OAUTH_ACCESS_TOKEN,
         {
             method: "POST",
             headers: {
@@ -47,7 +48,7 @@ export const githubCallback = async (code) => {
     const tokenData = await tokenResponse.json();
 
     const userResponse = await fetch(
-        "https://api.github.com/user",
+        GITHUB_URLS.USER_API,
         {
             headers: {
                 Authorization: `Bearer ${tokenData.access_token}`,

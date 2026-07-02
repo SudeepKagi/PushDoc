@@ -1,11 +1,16 @@
 import crypto from "crypto";
 import InstallationState from "../models/installationState.model.js";
+import {
+    INSTALLATION_STATE_EXPIRY_MS,
+} from "../constants/app.constants.js";
 
 export const createState = async (userId) => {
 
     const state = crypto.randomUUID();
 
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    const expiresAt = new Date(
+        Date.now() + INSTALLATION_STATE_EXPIRY_MS
+    );
 
     await InstallationState.create({
         state,
