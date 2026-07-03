@@ -6,6 +6,7 @@ import * as gitService from "../services/git.service.js";
 import * as projectService from "../services/project.service.js";
 import * as contextService from "../services/context.service.js";
 import * as promptService from "../services/prompt.service.js";
+import * as aiService from "../services/ai.service.js";
 
 const readmeWorker = new Worker(
     "readme-generation",
@@ -79,10 +80,14 @@ const readmeWorker = new Worker(
                 promptService.buildReadmePrompt(
                     context
                 );
+            const readme =
+                await aiService.generateReadme(
+                    prompt
+                );
 
             console.log("================================");
-            console.log("🧠 PROMPT");
-            console.log(prompt);
+            console.log("🤖 GENERATED README");
+            console.log(readme);
             console.log("================================");
 
         } catch (error) {
