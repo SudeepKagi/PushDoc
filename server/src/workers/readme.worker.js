@@ -8,6 +8,7 @@ import * as contextService from "../services/context.service.js";
 import * as promptService from "../services/prompt.service.js";
 import * as aiService from "../services/ai.service.js";
 import * as readmePipeline from "../pipelines/readme.pipeline.js";
+import * as readmeService from "../services/readme.service.js";
 
 const readmeWorker = new Worker(
     "readme-generation",
@@ -71,9 +72,15 @@ const readmeWorker = new Worker(
                     repositoryPath
                 );
 
+            const readmePath =
+                await readmeService.writeReadme(
+                    repositoryPath,
+                    readme
+                );
+
             console.log("================================");
-            console.log("🤖 GENERATED README");
-            console.log(readme);
+            console.log("📄 README created");
+            console.log(readmePath);
             console.log("================================");
         } catch (error) {
 
