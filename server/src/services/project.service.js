@@ -6,6 +6,7 @@ import { detectLanguage } from "../analyzers/language.analyzer.js";
 import { detectPackageManager } from "../analyzers/packageManager.analyzer.js";
 import { detectCapabilities } from "../analyzers/capability.analyzer.js";
 import { detectProjectStructure } from "../analyzers/structure.analyzer.js";
+import { detectFileStructure } from "../analyzers/fileStructure.analyzer.js";
 
 const readPackageJson = (repositoryPath) => {
 
@@ -75,6 +76,10 @@ export const analyzeProject = async (
                 repositoryPath,
                 packageJson
             ),
+        fileStructure:
+            detectFileStructure(
+                repositoryPath
+            ),
 
         scripts:
             packageJson.scripts || {},
@@ -84,6 +89,7 @@ export const analyzeProject = async (
 
         devDependencies:
             packageJson.devDependencies || {},
+
 
     };
 
