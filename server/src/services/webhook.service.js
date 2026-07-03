@@ -1,8 +1,7 @@
 import crypto from "crypto";
 import readmeQueue from "../queue/queue.js";
 
-const signature =
-    req.headers["x-hub-signature-256"];
+const signature = req.headers["x-hub-signature-256"];
 
 if (
     !webhookService.verifySignature(
