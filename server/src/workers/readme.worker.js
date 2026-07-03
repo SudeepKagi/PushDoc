@@ -3,8 +3,9 @@ import connection from "../queue/connection.js";
 import * as repositoryService from "../services/repository.service.js";
 import * as githubService from "../services/github.service.js"
 import * as gitService from "../services/git.service.js";
-import * as projectService
-    from "../services/project.service.js";
+import * as projectService from "../services/project.service.js";
+import * as contextService from "../services/context.service.js";
+import * as promptService from "../services/prompt.service.js";
 
 const readmeWorker = new Worker(
     "readme-generation",
@@ -13,7 +14,7 @@ const readmeWorker = new Worker(
 
         try {
 
-            console.log("================================");
+
             console.log("📦 Processing Job");
 
             const {
@@ -69,8 +70,19 @@ const readmeWorker = new Worker(
                     repositoryPath
                 );
 
-            console.log(project);
+            const context =
+                contextService.buildProjectContext(
+                    project
+                );
 
+            const prompt =
+                promptService.buildReadmePrompt(
+                    context
+                );
+
+            console.log("================================");
+            console.log("🧠 PROMPT");
+            console.log(prompt);
             console.log("================================");
 
         } catch (error) {
