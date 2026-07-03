@@ -15,21 +15,13 @@ if (
     });
 }
 export const handleWebhook = async (event, payload) => {
-
     console.log("Processing Event:", event);
-
     switch (event) {
-
         case "push":
-
             return handlePushEvent(payload);
-
         default:
-
             console.log(`Ignoring ${event} event`);
-
             return;
-
     }
 
 };
