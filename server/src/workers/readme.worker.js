@@ -7,6 +7,7 @@ import * as projectService from "../services/project.service.js";
 import * as contextService from "../services/context.service.js";
 import * as promptService from "../services/prompt.service.js";
 import * as aiService from "../services/ai.service.js";
+import * as readmePipeline from "../pipelines/readme.pipeline.js";
 
 const readmeWorker = new Worker(
     "readme-generation",
@@ -65,31 +66,15 @@ const readmeWorker = new Worker(
                 "Repository cloned to:",
                 repositoryPath
             );
-
-            const project =
-                await projectService.analyzeProject(
-                    repositoryPath
-                );
-
-            const context =
-                contextService.buildProjectContext(
-                    project
-                );
-
-            const prompt =
-                promptService.buildReadmePrompt(
-                    context
-                );
             const readme =
-                await aiService.generateReadme(
-                    prompt
+                await readmePipeline.generateReadme(
+                    repositoryPath
                 );
 
             console.log("================================");
             console.log("🤖 GENERATED README");
             console.log(readme);
             console.log("================================");
-
         } catch (error) {
 
             console.error("❌ Worker Error:");
