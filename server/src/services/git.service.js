@@ -4,6 +4,7 @@ import path from "path";
 
 const repositoriesPath = path.join(
     process.cwd(),
+    "..",
     "temp",
     "repositories"
 );
@@ -33,10 +34,14 @@ export const cloneRepository = async (
 
     const git = simpleGit();
 
+    console.log("📥 Cloning repository...");
+
     await git.clone(
         cloneUrl,
         repositoryPath
     );
+
+    console.log("✅ Clone completed");
 
     return repositoryPath;
 
@@ -51,23 +56,5 @@ export const createAuthenticatedCloneUrl = (
         "https://",
         `https://x-access-token:${token}@`
     );
-
-};
-
-export const getInstallationAccessToken = async (
-    installationId
-) => {
-
-    const installationOctokit =
-        await githubApp.getInstallationOctokit(
-            installationId
-        );
-
-    const authentication =
-        await installationOctokit.auth({
-            type: "installation",
-        });
-
-    return authentication.token;
 
 };
