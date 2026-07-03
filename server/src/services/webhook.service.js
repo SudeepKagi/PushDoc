@@ -10,11 +10,9 @@ export const handleWebhook = async (event, payload) => {
             console.log(`Ignoring ${event} event`);
             return;
     }
-
 };
 
 const handlePushEvent = async (payload) => {
-
     await readmeQueue.add(
         "generate-readme",
         {
@@ -23,7 +21,6 @@ const handlePushEvent = async (payload) => {
             commits: payload.commits.length,
         }
     );
-
     console.log("✅ Job added to queue");
 
 };
@@ -32,7 +29,6 @@ export const verifySignature = (
     signature,
     rawBody
 ) => {
-
     const expectedSignature =
         "sha256=" +
         crypto.createHmac(
@@ -41,10 +37,8 @@ export const verifySignature = (
         )
             .update(rawBody)
             .digest("hex");
-
     return crypto.timingSafeEqual(
         Buffer.from(signature),
         Buffer.from(expectedSignature)
     );
-
 };
