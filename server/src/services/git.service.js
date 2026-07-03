@@ -24,6 +24,13 @@ export const cloneRepository = async (
         repositoryName
     );
 
+    if (fs.existsSync(repositoryPath)) {
+        fs.rmSync(repositoryPath, {
+            recursive: true,
+            force: true,
+        });
+    }
+
     const git = simpleGit();
 
     await git.clone(
@@ -44,5 +51,23 @@ export const createAuthenticatedCloneUrl = (
         "https://",
         `https://x-access-token:${token}@`
     );
+
+};
+
+export const getInstallationAccessToken = async (
+    installationId
+) => {
+
+    const installationOctokit =
+        await githubApp.getInstallationOctokit(
+            installationId
+        );
+
+    const authentication =
+        await installationOctokit.auth({
+            type: "installation",
+        });
+
+    return authentication.token;
 
 };

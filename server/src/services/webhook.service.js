@@ -13,14 +13,19 @@ export const handleWebhook = async (event, payload) => {
 };
 
 const handlePushEvent = async (payload) => {
+    if (payload.repository.full_name === "SudeepKagi/PushDoc") {
+        console.log("⚠️ Ignoring PushDoc repository");
+        return;
+    }
     await readmeQueue.add(
         "generate-readme",
         {
-            repository: payload.repository.full_name,
+            repositoryId: payload.repository.id,
             branch: payload.ref,
-            commits: payload.commits.length,
+            commitSha: payload.after,
         }
     );
+
     console.log("✅ Job added to queue");
 
 };

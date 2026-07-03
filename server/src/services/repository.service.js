@@ -16,6 +16,7 @@ export const createOrUpdateRepository = async (
             fullName: githubRepo.full_name,
             owner: githubRepo.owner.login,
             private: githubRepo.private,
+            cloneUrl: githubRepo.clone_url,
         },
         {
             upsert: true,
@@ -25,4 +26,14 @@ export const createOrUpdateRepository = async (
     );
 
     return repository;
+};
+
+export const getRepositoryByGithubId = async (
+    githubRepositoryId
+) => {
+
+    return await Repository.findOne({
+        githubId: githubRepositoryId,
+    }).populate("installation");
+
 };
