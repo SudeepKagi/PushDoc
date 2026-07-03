@@ -45,3 +45,19 @@ export const getInstallationRepositories = async (installationId) => {
     return response.data.repositories;
 
 };
+
+export const getInstallationAccessToken = async (
+    installationId
+) => {
+
+    const installationOctokit =
+        await githubApp.getInstallationOctokit(
+            installationId
+        );
+
+    const authentication =
+        await installationOctokit.auth();
+
+    return authentication.token;
+
+};
