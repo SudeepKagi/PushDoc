@@ -4,15 +4,32 @@ export const githubWebhook = async (req, res) => {
 
     try {
 
-        console.log("Webhook Received");
+        const signature =
+            req.headers["x-hub-signature-256"];
 
-        console.log("Event:", req.headers["x-github-event"]);
+        if (
+            !webhookService.verifySignature(
+                signature,
+                req.rawBody
+            )
+        ) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid webhook signature",
+            });
+        }
 
-        console.log("Payload:", req.body);
+        const event =
+            req.headers["x-github-event"];
+
+        await webhookService.handleWebhook(
+            event,
+            req.body
+        );
 
         return res.status(200).json({
             success: true,
-            message: "Webhook received",
+            message: "Webhook processed",
         });
 
     } catch (error) {

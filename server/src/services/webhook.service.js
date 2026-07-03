@@ -1,19 +1,6 @@
 import crypto from "crypto";
 import readmeQueue from "../queue/queue.js";
 
-const signature = req.headers["x-hub-signature-256"];
-
-if (
-    !webhookService.verifySignature(
-        signature,
-        req.rawBody
-    )
-) {
-    return res.status(401).json({
-        success: false,
-        message: "Invalid webhook signature",
-    });
-}
 export const handleWebhook = async (event, payload) => {
     console.log("Processing Event:", event);
     switch (event) {
