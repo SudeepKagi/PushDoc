@@ -5,7 +5,6 @@ export const createOrUpdateInstallation = async (
     installationData,
     userId
 ) => {
-
     const installation = await Installation.findOneAndUpdate(
         {
             installationId: installationData.id,
@@ -22,15 +21,12 @@ export const createOrUpdateInstallation = async (
             runValidators: true,
         }
     );
-
     return installation;
 };
 
 export const getInstallationByUser = async (userId) => {
-
     return await Installation.findOne({
         user: userId,
     });
-
 };
 
