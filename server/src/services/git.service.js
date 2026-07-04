@@ -58,3 +58,53 @@ export const createAuthenticatedCloneUrl = (
     );
 
 };
+
+export const commitChanges = async (
+    repositoryPath
+) => {
+
+    const git = simpleGit(repositoryPath);
+
+    await git.add("README.md");
+
+    const status =
+        await git.status();
+
+    if (status.files.length === 0) {
+
+        console.log(
+            "ℹ️ No README changes detected."
+        );
+
+        return false;
+
+    }
+
+    await git.commit(
+        "docs: update README using PushDoc 🤖"
+    );
+
+    return true;
+
+};
+
+export const pushChanges = async (
+    repositoryPath,
+    branch
+) => {
+
+    const git =
+        simpleGit(repositoryPath);
+
+    const branchName =
+        branch.replace(
+            "refs/heads/",
+            ""
+        );
+
+    await git.push(
+        "origin",
+        branchName
+    );
+
+};

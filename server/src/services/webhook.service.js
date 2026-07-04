@@ -17,6 +17,19 @@ const handlePushEvent = async (payload) => {
         console.log("⚠️ Ignoring PushDoc repository");
         return;
     }
+
+    const latestCommit = payload.head_commit;
+    if (
+        latestCommit.message.startsWith(
+            "docs: update README"
+        )
+    ) {
+        console.log(
+            "🤖 Skipping generated README commit"
+        );
+        return;
+    }
+
     await readmeQueue.add(
         "generate-readme",
         {

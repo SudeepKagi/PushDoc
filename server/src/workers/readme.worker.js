@@ -1,24 +1,22 @@
 import { Worker } from "bullmq";
+
 import connection from "../queue/connection.js";
+
 import * as repositoryService from "../services/repository.service.js";
-import * as githubService from "../services/github.service.js"
+import * as githubService from "../services/github.service.js";
 import * as gitService from "../services/git.service.js";
-import * as projectService from "../services/project.service.js";
-import * as contextService from "../services/context.service.js";
-import * as promptService from "../services/prompt.service.js";
-import * as aiService from "../services/ai.service.js";
 import * as readmePipeline from "../pipelines/readme.pipeline.js";
 import * as readmeService from "../services/readme.service.js";
+import * as logger from "../services/logger.service.js";
 
 const readmeWorker = new Worker(
     "readme-generation",
 
     async (job) => {
 
+        const jobId = job.id;
+
         try {
-
-
-            console.log("📦 Processing Job");
 
             const {
                 repositoryId,
@@ -26,9 +24,22 @@ const readmeWorker = new Worker(
                 commitSha,
             } = job.data;
 
-            console.log("Repository ID:", repositoryId);
-            console.log("Branch:", branch);
-            console.log("Commit:", commitSha);
+            logger.divider();
+
+            logger.info(
+                jobId,
+                `Repository ID: ${repositoryId}`
+            );
+
+            logger.info(
+                jobId,
+                `Branch: ${branch}`
+            );
+
+            logger.info(
+                jobId,
+                `Commit: ${commitSha}`
+            );
 
             const repository =
                 await repositoryService.getRepositoryByGithubId(
@@ -36,15 +47,15 @@ const readmeWorker = new Worker(
                 );
 
             if (!repository) {
-                throw new Error("Repository not found");
+                throw new Error(
+                    "Repository not found"
+                );
             }
 
-            console.log({
-                githubId: repository.githubId,
-                fullName: repository.fullName,
-                cloneUrl: repository.cloneUrl,
-                installationId: repository.installation.installationId,
-            });
+            logger.info(
+                jobId,
+                `Repository: ${repository.fullName}`
+            );
 
             const token =
                 await githubService.getInstallationAccessToken(
@@ -63,31 +74,72 @@ const readmeWorker = new Worker(
                     repository.name
                 );
 
-            console.log(
-                "Repository cloned to:",
-                repositoryPath
+            logger.success(
+                jobId,
+                "Repository cloned"
             );
+
             const readme =
                 await readmePipeline.generateReadme(
                     repositoryPath
                 );
 
-            const readmePath =
-                await readmeService.writeReadme(
-                    repositoryPath,
-                    readme
+            logger.success(
+                jobId,
+                "README generated"
+            );
+
+            await readmeService.writeReadme(
+                repositoryPath,
+                readme
+            );
+
+            logger.success(
+                jobId,
+                "README written"
+            );
+
+            const committed =
+                await gitService.commitChanges(
+                    repositoryPath
                 );
 
-            console.log("================================");
-            console.log("📄 README created");
-            console.log(readmePath);
-            console.log("================================");
-        } catch (error) {
+            if (committed) {
 
-            console.error("❌ Worker Error:");
-            console.error(error);
+                logger.success(
+                    jobId,
+                    "README committed"
+                );
 
-            throw error;
+                await gitService.pushChanges(
+                    repositoryPath,
+                    branch
+                );
+
+                logger.success(
+                    jobId,
+                    "README pushed"
+                );
+
+            } else {
+
+                logger.info(
+                    jobId,
+                    "No changes to commit"
+                );
+
+            }
+
+            logger.divider();
+
+        } catch (err) {
+
+            logger.error(
+                jobId,
+                err.message
+            );
+
+            throw err;
 
         }
 
