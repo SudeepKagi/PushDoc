@@ -37,7 +37,7 @@ const repositorySchema = new mongoose.Schema(
         cloneUrl: {
             type: String,
             required: true,
-        },
+        },  
     },
     {
         timestamps: true,

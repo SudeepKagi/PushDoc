@@ -17,7 +17,6 @@ export const githubLogin = () => {
         "redirect_uri",
         process.env.GITHUB_REDIRECT_URI
     );
-    console.log(process.env.GITHUB_REDIRECT_URI)
 
     githubAuthURL.searchParams.append(
         "state",
