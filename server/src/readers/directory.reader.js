@@ -7,31 +7,25 @@ import {
     isImportantFile,
 } from "./ignore.rules.js";
 
-/**
- * Recursively walks a repository and
- * returns every important file path.
- */
-export const readDirectory = (
-    directoryPath
-) => {
+export const readDirectory = (repositoryPath) => {
 
     const files = [];
 
-    walk(directoryPath, files);
+    walk(repositoryPath, repositoryPath, files);
 
     return files;
 
 };
 
-function walk(
+const walk = (
+    rootPath,
     currentPath,
     files
-) {
+) => {
 
-    const entries =
-        fs.readdirSync(currentPath, {
-            withFileTypes: true,
-        });
+    const entries = fs.readdirSync(currentPath, {
+        withFileTypes: true,
+    });
 
     for (const entry of entries) {
 
@@ -43,14 +37,13 @@ function walk(
         if (entry.isDirectory()) {
 
             if (
-                shouldIgnoreDirectory(
-                    entry.name
-                )
+                shouldIgnoreDirectory(entry.name)
             ) {
                 continue;
             }
 
             walk(
+                rootPath,
                 fullPath,
                 files
             );
@@ -64,10 +57,15 @@ function walk(
             isSupportedExtension(fullPath)
         ) {
 
-            files.push(fullPath);
+            files.push(
+                path.relative(
+                    rootPath,
+                    fullPath
+                )
+            );
 
         }
 
     }
 
-}
+};

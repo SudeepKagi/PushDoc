@@ -1,31 +1,41 @@
-import * as projectService from "../services/project.service.js";
-import * as contextService from "../services/context.service.js";
-import * as promptService from "../services/prompt.service.js";
+import * as repositoryReader from "../readers/repository.reader.js";
+import * as repositoryContextBuilder from "../builders/repositoryContext.builder.js";
+import * as promptBuilder from "../builders/prompt.builder.js";
 import * as aiService from "../services/ai.service.js";
 
 export const generateReadme = async (
     repositoryPath
 ) => {
 
-    const analysis =
-        await projectService.analyzeProject(
+    console.log("📂 Reading repository...");
+
+    const repository =
+        repositoryReader.readRepository(
             repositoryPath
         );
 
-    const context =
-        contextService.buildProjectContext(
-            analysis
+    console.log("🧠 Building repository context...");
+
+    const repositoryContext =
+        repositoryContextBuilder.buildRepositoryContext(
+            repository
         );
 
+    console.log("📝 Building prompt...");
+
     const prompt =
-        promptService.buildReadmePrompt(
-            context
+        promptBuilder.buildPrompt(
+            repositoryContext
         );
+
+    console.log("🤖 Generating README...");
 
     const readme =
         await aiService.generateReadme(
             prompt
         );
+
+    console.log("✅ README generated");
 
     return readme;
 
