@@ -8,6 +8,7 @@ import * as gitService from "../services/git.service.js";
 import * as readmePipeline from "../pipelines/readme.pipeline.js";
 import * as readmeService from "../services/readme.service.js";
 import * as logger from "../services/logger.service.js";
+import * as workspaceService from "../services/workspace.service.js";
 
 const readmeWorker = new Worker(
     "readme-generation",
@@ -17,6 +18,8 @@ const readmeWorker = new Worker(
         const jobId = job.id.toString();
 
         let trackingJob;
+        let workspacePath;
+        let repositoryPath;
 
         try {
 
@@ -83,11 +86,25 @@ const readmeWorker = new Worker(
                     token
                 );
 
-            const repositoryPath =
-                await gitService.cloneRepository(
-                    authenticatedCloneUrl,
+            workspacePath =
+                workspaceService.createWorkspace(
+                    jobId
+                );
+            logger.info(
+                jobId,
+                `Workspace: ${workspacePath}`
+            );
+
+            repositoryPath =
+                workspaceService.getRepositoryPath(
+                    jobId,
                     repository.name
                 );
+
+            await gitService.cloneRepository(
+                authenticatedCloneUrl,
+                repositoryPath
+            );
 
             logger.success(
                 jobId,
