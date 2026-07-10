@@ -1,7 +1,7 @@
 import { Worker } from "bullmq";
-
 import connection from "../queue/connection.js";
 
+import * as jobService from "../services/job.service.js";
 import * as repositoryService from "../services/repository.service.js";
 import * as githubService from "../services/github.service.js";
 import * as gitService from "../services/git.service.js";
@@ -14,7 +14,9 @@ const readmeWorker = new Worker(
 
     async (job) => {
 
-        const jobId = job.id;
+        const jobId = job.id.toString();
+
+        let trackingJob;
 
         try {
 
@@ -57,6 +59,19 @@ const readmeWorker = new Worker(
                 `Repository: ${repository.fullName}`
             );
 
+            trackingJob =
+                await jobService.createJob({
+                    repository: repository._id,
+                    bullJobId: jobId,
+                    commitSha,
+                    branch,
+                });
+
+            await jobService.updateStatus(
+                trackingJob._id,
+                "CLONING"
+            );
+
             const token =
                 await githubService.getInstallationAccessToken(
                     repository.installation.installationId
@@ -79,14 +94,25 @@ const readmeWorker = new Worker(
                 "Repository cloned"
             );
 
+            await jobService.updateStatus(
+                trackingJob._id,
+                "READING"
+            );
+
             const readme =
                 await readmePipeline.generateReadme(
-                    repositoryPath
+                    repositoryPath,
+                    jobId
                 );
 
             logger.success(
                 jobId,
                 "README generated"
+            );
+
+            await jobService.updateStatus(
+                trackingJob._id,
+                "WRITING"
             );
 
             await readmeService.writeReadme(
@@ -99,6 +125,11 @@ const readmeWorker = new Worker(
                 "README written"
             );
 
+            await jobService.updateStatus(
+                trackingJob._id,
+                "COMMITTING"
+            );
+
             const committed =
                 await gitService.commitChanges(
                     repositoryPath
@@ -109,6 +140,11 @@ const readmeWorker = new Worker(
                 logger.success(
                     jobId,
                     "README committed"
+                );
+
+                await jobService.updateStatus(
+                    trackingJob._id,
+                    "PUSHING"
                 );
 
                 await gitService.pushChanges(
@@ -130,9 +166,27 @@ const readmeWorker = new Worker(
 
             }
 
+            await jobService.completeJob(
+                trackingJob._id
+            );
+
+            logger.success(
+                jobId,
+                "Job completed"
+            );
+
             logger.divider();
 
         } catch (err) {
+
+            if (trackingJob) {
+
+                await jobService.failJob(
+                    trackingJob._id,
+                    err.message
+                );
+
+            }
 
             logger.error(
                 jobId,

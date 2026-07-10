@@ -2,40 +2,57 @@ import * as repositoryReader from "../readers/repository.reader.js";
 import * as repositoryContextBuilder from "../builders/repositoryContext.builder.js";
 import * as promptBuilder from "../builders/prompt.builder.js";
 import * as aiService from "../services/ai.service.js";
+import * as logger from "../services/logger.service.js";
 
 export const generateReadme = async (
-    repositoryPath
+    repositoryPath,
+    jobId
 ) => {
 
-    console.log("📂 Reading repository...");
+    logger.info(
+        jobId,
+        "Reading repository..."
+    );
 
     const repository =
         repositoryReader.readRepository(
             repositoryPath
         );
 
-    console.log("🧠 Building repository context...");
+    logger.info(
+        jobId,
+        "Building repository context..."
+    );
 
     const repositoryContext =
         repositoryContextBuilder.buildRepositoryContext(
             repository
         );
 
-    console.log("📝 Building prompt...");
+    logger.info(
+        jobId,
+        "Building prompt..."
+    );
 
     const prompt =
         promptBuilder.buildPrompt(
             repositoryContext
         );
 
-    console.log("🤖 Generating README...");
+    logger.info(
+        jobId,
+        "Calling Gemini..."
+    );
 
     const readme =
         await aiService.generateReadme(
             prompt
         );
 
-    console.log("✅ README generated");
+    logger.success(
+        jobId,
+        "README content generated"
+    );
 
     return readme;
 

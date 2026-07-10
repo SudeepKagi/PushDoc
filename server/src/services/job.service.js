@@ -18,14 +18,12 @@ export const createJob = async ({
 };
 
 export const updateStatus = async (
-    bullJobId,
+    jobId,
     status
 ) => {
 
-    return await Job.findOneAndUpdate(
-        {
-            bullJobId,
-        },
+    return await Job.findByIdAndUpdate(
+        jobId,
         {
             status,
         },
@@ -37,13 +35,11 @@ export const updateStatus = async (
 };
 
 export const completeJob = async (
-    bullJobId
+    jobId
 ) => {
 
     const job =
-        await Job.findOne({
-            bullJobId,
-        });
+        await Job.findById(jobId);
 
     if (!job) return null;
 
@@ -61,14 +57,12 @@ export const completeJob = async (
 };
 
 export const failJob = async (
-    bullJobId,
+    jobId,
     error
 ) => {
 
     const job =
-        await Job.findOne({
-            bullJobId,
-        });
+        await Job.findById(jobId);
 
     if (!job) return null;
 
