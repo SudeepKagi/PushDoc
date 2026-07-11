@@ -28,7 +28,7 @@ export const updateStatus = async (
             status,
         },
         {
-            new: true,
+            returnDocument: "after"
         }
     );
 

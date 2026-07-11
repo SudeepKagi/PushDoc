@@ -9,7 +9,7 @@ import * as readmePipeline from "../pipelines/readme.pipeline.js";
 import * as readmeService from "../services/readme.service.js";
 import * as logger from "../services/logger.service.js";
 import * as workspaceService from "../services/workspace.service.js";
-
+console.log(workspaceService);
 const readmeWorker = new Worker(
     "readme-generation",
 
