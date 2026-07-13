@@ -1,17 +1,3 @@
-/**
- * Structured Custom Error Classes for PushDoc
- *
- * WHY THIS EXISTS
- * ───────────────
- * In production, catching generic `Error` instances makes it extremely difficult
- * to distinguish between different failure modes. For example, a git clone timeout
- * should be handled differently (e.g. retryable) than a validation failure (which
- * is non-retryable and indicates bad data).
- *
- * By using specific Error subclasses, our queue worker and webhook handlers can
- * inspect the error type and make smart decisions about retries, alerts, and statuses.
- */
-
 export class AppError extends Error {
     constructor(message, status = 500) {
         super(message);

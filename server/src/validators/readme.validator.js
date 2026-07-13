@@ -1,38 +1,3 @@
-/**
- * README Validator V1
- *
- * WHY DETERMINISTIC VALIDATION IS IMPORTANT
- * ─────────────────────────────────────────
- * Allowing the LLM to write a README without automated checks introduces quality drift.
- * Large Language Models can hallucinate, omit key endpoints, forget database schemas, or
- * introduce markdown formatting bugs (e.g., unclosed code blocks or broken tables).
- *
- * A deterministic validator runs locally, costing zero tokens and zero latency, ensuring
- * that the generated README adheres to structure, lists all inferred database models,
- * covers all router endpoints, and uses valid Markdown syntax.
- *
- * HOW IT SCALES
- * ──────────────
- * - The validator is designed as a standalone, deterministic test engine.
- * - If we want to add quality profiles (e.g., "minimalist" vs "exhaustive"), we can pass a
- *   `profile` parameter to `validateReadme()` and scale the scoring rules accordingly.
- * - For other formats (e.g., validating API docs or developer onboarding guides), we can inherit
- *   the same core MD parser functions.
- *
- * HOW IT ENABLES AUTO-REPAIR
- * ──────────────────────────
- * By returning structured arrays of `missingSections` and specific syntax `warnings`, the output
- * of this validator can be fed directly back into a second-pass "auto-repair" LLM prompt.
- * Instead of asking the AI to "regenerate the README", we can prompt:
- *   "Your README draft scored 75/100. Please fix the following missing sections: [API Overview]
- *    and close the open code block on line 24."
- * This makes self-healing pipelines extremely cheap and targeted.
- */
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────────────────────
-
 const MIN_WORD_COUNT = 150;
 
 const REQUIRED_SECTIONS = [
@@ -49,17 +14,6 @@ const PLACEHOLDER_PATTERNS = [
     /lorem\s+ipsum/i,
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Public API
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Deterministically validates the generated README content.
- *
- * @param {string} readmeMarkdown
- * @param {object} knowledge        Repository knowledge (package, routes, models, etc.)
- * @returns {object} Validation result { valid, score, warnings, missingSections, statistics }
- */
 export const validateReadme = (readmeMarkdown, knowledge = {}) => {
     const warnings        = [];
     const missingSections = [];
@@ -70,56 +24,47 @@ export const validateReadme = (readmeMarkdown, knowledge = {}) => {
     const models      = knowledge.models || [];
     const features    = knowledge.features || { features: [], capabilities: [] };
 
-    // 1. Structural Markdown Parsing
     const headings = parseHeadings(readmeMarkdown);
     const codeBlocksCount = (readmeMarkdown.match(/```/g) || []).length;
     const wordCount = readmeMarkdown.trim().split(/\s+/).filter(Boolean).length;
     const tablesCount = countTables(readmeMarkdown);
 
-    // 2. Validate Basic Syntax
-    // Check balanced code blocks
     if (codeBlocksCount % 2 !== 0) {
         warnings.push("Unbalanced code blocks: triple backticks (```) are not closed.");
         score -= 15;
     }
 
-    // Check table row formats
     const tableWarnings = checkTables(readmeMarkdown);
     for (const tw of tableWarnings) {
         warnings.push(tw);
         score -= 5;
     }
 
-    // Check heading hierarchy
     const hierarchyWarnings = checkHeadingHierarchy(headings);
     for (const hw of hierarchyWarnings) {
         warnings.push(hw);
         score -= 5;
     }
 
-    // Check duplicate headings
     const duplicateWarnings = checkDuplicateHeadings(headings);
     for (const dw of duplicateWarnings) {
         warnings.push(dw);
         score -= 5;
     }
 
-    // Check placeholders
     for (const pattern of PLACEHOLDER_PATTERNS) {
         if (pattern.test(readmeMarkdown)) {
             warnings.push("README contains placeholder text or TODOs.");
             score -= 10;
-            break; // Subtract once
+            break;
         }
     }
 
-    // Check word count
     if (wordCount < MIN_WORD_COUNT) {
         warnings.push(`README word count is too short (${wordCount} words, minimum is ${MIN_WORD_COUNT}).`);
         score -= 15;
     }
 
-    // 3. Verify Project Name
     const firstH1 = headings.find((h) => h.level === 1);
     const expectedProjName = packageInfo.project?.name;
     if (firstH1 && expectedProjName) {
@@ -131,7 +76,6 @@ export const validateReadme = (readmeMarkdown, knowledge = {}) => {
         }
     }
 
-    // 4. Verify Required Sections
     for (const section of REQUIRED_SECTIONS) {
         const found = headings.some((h) =>
             section.patterns.some((regex) => regex.test(h.text))
@@ -142,7 +86,6 @@ export const validateReadme = (readmeMarkdown, knowledge = {}) => {
         }
     }
 
-    // API Overview (required only if routes exist)
     if (routes.length > 0) {
         const hasApiSection = headings.some((h) =>
             /(api|endpoint|route)/i.test(h.text)
@@ -153,7 +96,6 @@ export const validateReadme = (readmeMarkdown, knowledge = {}) => {
         }
     }
 
-    // Database Models (required only if models exist)
     if (models.length > 0) {
         const hasModelsSection = headings.some((h) =>
             /(model|schema|database)/i.test(h.text)
@@ -164,8 +106,6 @@ export const validateReadme = (readmeMarkdown, knowledge = {}) => {
         }
     }
 
-    // 5. Semantic / Coverage Checks
-    // Inferred Features Coverage
     let featureHits = 0;
     const inferredFeatures = features.features || [];
     for (const feat of inferredFeatures) {
@@ -179,7 +119,6 @@ export const validateReadme = (readmeMarkdown, knowledge = {}) => {
     }
     const featureCoverage = inferredFeatures.length > 0 ? featureHits / inferredFeatures.length : 1.0;
 
-    // Database Models Coverage
     let modelHits = 0;
     for (const model of models) {
         const regex = new RegExp(`\\b${escapeRegex(model.name)}\\b`, "i");
@@ -192,17 +131,14 @@ export const validateReadme = (readmeMarkdown, knowledge = {}) => {
     }
     const modelCoverage = models.length > 0 ? modelHits / models.length : 1.0;
 
-    // API Route Paths Coverage
     let routeHits = 0;
     const uniquePaths = Array.from(new Set(routes.map((r) => r.path)));
     for (const path of uniquePaths) {
-        // Match paths robustly (e.g. /listings/:id or /listings)
         const escaped = escapeRegex(path).replace(/\\:\w+/g, "[^\\s\\n`'\"]+");
         const regex   = new RegExp(escaped, "i");
         if (regex.test(readmeMarkdown)) {
             routeHits++;
         } else {
-            // Subtract points but limit warning verbosity for very large routers
             if (uniquePaths.indexOf(path) < 5) {
                 warnings.push(`API endpoint path "${path}" is not documented in the README.`);
             }
@@ -211,7 +147,6 @@ export const validateReadme = (readmeMarkdown, knowledge = {}) => {
     }
     const apiCoverage = uniquePaths.length > 0 ? routeHits / uniquePaths.length : 1.0;
 
-    // Ensure score bounds
     score = Math.max(0, Math.min(100, score));
 
     return {
@@ -231,10 +166,6 @@ export const validateReadme = (readmeMarkdown, knowledge = {}) => {
     };
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Markdown Structural Parsers
-// ─────────────────────────────────────────────────────────────────────────────
-
 function parseHeadings(markdown) {
     const headings = [];
     const lines = markdown.split("\n");
@@ -253,7 +184,6 @@ function parseHeadings(markdown) {
 }
 
 function countTables(markdown) {
-    // A standard MD table has a row matching: |---| or similar
     const delimiterRegex = /\|?\s*:?-+:?\s*\|/g;
     return (markdown.match(delimiterRegex) || []).length;
 }
@@ -274,7 +204,6 @@ function checkTables(markdown) {
                 colCount = cols;
             } else {
                 if (cols !== colCount) {
-                    // Check if it is a delimiter row (often has dashes only)
                     const isDelimiter = /^[|:\-\s]+$/.test(line);
                     if (!isDelimiter) {
                         warnings.push(`Table row at line ${i + 1} has mismatched column count (expected ${colCount}, got ${cols}).`);
@@ -317,10 +246,6 @@ function checkDuplicateHeadings(headings) {
 
     return warnings;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// String Utilities
-// ─────────────────────────────────────────────────────────────────────────────
 
 function escapeRegex(str) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

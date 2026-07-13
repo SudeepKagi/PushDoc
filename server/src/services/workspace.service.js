@@ -15,10 +15,6 @@ if (!fs.existsSync(WORKSPACE_ROOT)) {
     }
 }
 
-/**
- * Validates a job ID to ensure it is alphanumeric or simple UUID structure,
- * preventing any directory traversal attempts (e.g. "../").
- */
 const validateJobId = (jobId) => {
     if (!jobId) {
         throw new ValidationError("Job ID is required for workspace operations");
@@ -30,14 +26,10 @@ const validateJobId = (jobId) => {
     return cleanId;
 };
 
-/**
- * Validates a repository name to prevent path traversal.
- */
 const validateRepositoryName = (repositoryName) => {
     if (!repositoryName) {
         throw new ValidationError("Repository name is required for workspace operations");
     }
-    // Block dots, slashes, or backslashes
     if (repositoryName.includes("..") || repositoryName.includes("/") || repositoryName.includes("\\") || repositoryName.includes("\0")) {
         throw new ValidationError(`Invalid repository name format for path security: ${repositoryName}`);
     }

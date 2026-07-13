@@ -1,6 +1,5 @@
 import { config } from "../config/app.config.js";
 
-// Log Levels Map
 const LEVELS = {
     DEBUG:   0,
     INFO:    1,
@@ -9,18 +8,13 @@ const LEVELS = {
     ERROR:   4,
 };
 
-// Set active level depending on environment
 const CURRENT_LEVEL = config.env === "production" ? LEVELS.INFO : LEVELS.DEBUG;
 
-/**
- * Formats a log line consistently.
- */
 const formatLog = (levelIcon, levelName, jobIdOrMsg, msg) => {
     const timestamp = new Date().toISOString();
     let jobId = "";
     let message = jobIdOrMsg;
 
-    // Overload support: logger.info("General message") vs logger.info("job-123", "Job message")
     if (msg !== undefined) {
         jobId = ` [Job ${jobIdOrMsg}]`;
         message = msg;

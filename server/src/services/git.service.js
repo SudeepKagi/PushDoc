@@ -1,26 +1,18 @@
 import simpleGit from "simple-git";
 import { GitError, ValidationError } from "../utils/errors.js";
 
-/**
- * Sanitizes and validates local repository paths to prevent path traversal.
- */
 const validateRepoPath = (repositoryPath) => {
     if (!repositoryPath) {
         throw new ValidationError("Repository path is required");
     }
-    // Simple path traversal check
     if (repositoryPath.includes("..") || repositoryPath.includes("\0")) {
         throw new ValidationError(`Malicious path traversal detected: ${repositoryPath}`);
     }
 };
 
-/**
- * Redacts sensitive credentials (e.g. GitHub access tokens) from git error messages.
- */
 const handleGitError = (error, token) => {
     let msg = error.message || "Unknown Git error";
     if (token) {
-        // Redact the token from the clone URL pattern
         const tokenRegex = new RegExp(token, "g");
         msg = msg.replace(tokenRegex, "REDACTED_TOKEN");
         msg = msg.replace(/x-access-token:[^@]+@/g, "x-access-token:REDACTED@");
@@ -69,7 +61,6 @@ export const commitChanges = async (
     try {
         const git = simpleGit(repositoryPath);
 
-        // Configure git identity for environments without a global git config
         await git.addConfig("user.name", "PushDoc");
         await git.addConfig("user.email", "bot@pushdoc.app");
 
@@ -100,12 +91,10 @@ export const pushChanges = async (
         throw new ValidationError("Branch name is required for pushing changes");
     }
 
-    // Sanitize branch name to prevent execution injection
     const branchName = branch
         .replace("refs/heads/", "")
         .trim();
 
-    // Verify it doesn't contain forbidden characters for git branch names
     if (/[\s;`"'$&<>|]/g.test(branchName)) {
         throw new ValidationError(`Invalid branch name format: ${branchName}`);
     }

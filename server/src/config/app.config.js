@@ -47,10 +47,6 @@ export const config = {
     },
 };
 
-/**
- * Validates the loaded configuration against production requirements.
- * Throws an descriptive error if any required variables are missing.
- */
 export const validateConfig = () => {
     const requiredEnv = {
         "MONGODB_URI": config.mongodb.uri,
@@ -75,7 +71,6 @@ export const validateConfig = () => {
         );
     }
 
-    // Verify AI keys
     if (config.ai.geminiKeys.length === 0 && config.ai.groqKeys.length === 0) {
         throw new Error(
             `[ConfigError] No AI API keys loaded. Please provide at least one key for Gemini or Groq.`
