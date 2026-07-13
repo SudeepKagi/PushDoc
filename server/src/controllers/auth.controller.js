@@ -1,4 +1,5 @@
 import * as authService from "../services/auth.service.js";
+import { ValidationError } from "../utils/errors.js";
 
 export const githubLogin = async (req, res) => {
     try {
@@ -6,18 +7,23 @@ export const githubLogin = async (req, res) => {
         return res.redirect(githubAuthURL);
     }
     catch (error) {
-        return res.status(500).json({
+        const statusCode = error.status || 500;
+        return res.status(statusCode).json({
             success: false,
             message: error.message,
-        })
+        });
     }
-}
+};
 
 export const githubCallback = async (req, res) => {
 
     try {
 
         const { code } = req.query;
+
+        if (!code) {
+            throw new ValidationError("GitHub OAuth authorization code is missing from callback query parameters");
+        }
 
         const result = await authService.githubCallback(code);
 
@@ -29,7 +35,8 @@ export const githubCallback = async (req, res) => {
 
     } catch (error) {
 
-        return res.status(500).json({
+        const statusCode = error.status || 500;
+        return res.status(statusCode).json({
             success: false,
             message: error.message,
         });

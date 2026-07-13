@@ -1,5 +1,7 @@
 import { AI_PROVIDERS } from "../config/ai.config.js";
 import { shouldRetry } from "../utils/ai.utils.js";
+import * as logger from "../services/logger.service.js";
+import { AIProviderError } from "../utils/errors.js";
 
 export const generateReadme = async (
     prompt
@@ -19,12 +21,8 @@ export const generateReadme = async (
 
     for (const provider of providers) {
 
-        console.log("");
-        console.log(
-            `🤖 Provider : ${provider.name}`
-        );
-        console.log(
-            `📦 Model    : ${provider.model}`
+        logger.info(
+            `🤖 Trying AI Provider: ${provider.name} (Model: ${provider.model})`
         );
 
         let keyNumber = 1;
@@ -33,8 +31,8 @@ export const generateReadme = async (
 
             try {
 
-                console.log(
-                    `🔑 Key      : ${keyNumber}/${provider.apiKeys.length}`
+                logger.debug(
+                    `🔑 Using API Key: ${keyNumber}/${provider.apiKeys.length}`
                 );
 
                 const response =
@@ -43,8 +41,8 @@ export const generateReadme = async (
                         apiKey
                     );
 
-                console.log(
-                    `✅ ${provider.name} Success`
+                logger.success(
+                    `✅ AI Provider ${provider.name} generated README successfully`
                 );
 
                 return response;
@@ -53,16 +51,15 @@ export const generateReadme = async (
 
             catch (error) {
 
-                console.log(
-                    `❌ Key ${keyNumber} Failed`
+                logger.warn(
+                    `❌ AI Provider key ${keyNumber} failed: ${error.message}`
                 );
 
                 lastError = error;
 
                 if (!shouldRetry(error)) {
-
-                    throw error;
-
+                    logger.error(`Non-retryable AI error encountered: ${error.message}`);
+                    throw new AIProviderError(`AI Generation failed on provider ${provider.name} (non-retryable): ${error.message}`);
                 }
 
                 keyNumber++;
@@ -71,12 +68,14 @@ export const generateReadme = async (
 
         }
 
-        console.log(
-            `⚠ All ${provider.name} keys exhausted`
+        logger.warn(
+            `⚠️ All ${provider.name} keys exhausted. Attempting next provider...`
         );
 
     }
 
-    throw lastError;
+    throw new AIProviderError(
+        `All AI providers failed. Last error: ${lastError?.message || "unknown"}`
+    );
 
 };

@@ -1,33 +1,49 @@
 import crypto from "crypto";
 import readmeQueue from "../queue/queue.js";
+import * as logger from "./logger.service.js";
+import { ValidationError } from "../utils/errors.js";
 
 export const handleWebhook = async (event, payload) => {
-    console.log("Processing Event:", event);
+    logger.info(`Processing Webhook Event: ${event}`);
     switch (event) {
         case "push":
             return handlePushEvent(payload);
         default:
-            console.log(`Ignoring ${event} event`);
+            logger.info(`Ignoring unsupported ${event} event`);
             return;
     }
 };
 
 const handlePushEvent = async (payload) => {
+    // Validate payload shape
+    if (!payload?.repository) {
+        throw new ValidationError("Invalid push webhook payload: repository field is missing");
+    }
+    
     if (payload.repository.full_name === "SudeepKagi/PushDoc") {
-        console.log("⚠️ Ignoring PushDoc repository");
+        logger.warn("Ignoring PushDoc repository self-push event");
         return;
     }
 
     const latestCommit = payload.head_commit;
+    if (!latestCommit) {
+        logger.info("Ignoring push event: head_commit is missing (e.g., branch delete event)");
+        return;
+    }
+
     if (
         latestCommit.message.startsWith(
             "docs: update README"
         )
     ) {
-        console.log(
-            "🤖 Skipping generated README commit"
+        logger.info(
+            "Skipping bot-generated README commit to avoid infinite generation loops"
         );
         return;
+    }
+
+    if (!payload.repository.id || !payload.ref || !payload.after) {
+        throw new ValidationError("Missing required repository ID, branch ref, or commit SHA in webhook payload");
     }
 
     await readmeQueue.add(
@@ -39,24 +55,40 @@ const handlePushEvent = async (payload) => {
         }
     );
 
-    console.log("✅ Job added to queue");
-
+    logger.success("README generation job added to queue");
 };
 
 export const verifySignature = (
     signature,
     rawBody
 ) => {
+    if (!signature || !rawBody) {
+        return false;
+    }
+
+    const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+        logger.error("GITHUB_WEBHOOK_SECRET is not configured");
+        return false;
+    }
+
     const expectedSignature =
         "sha256=" +
         crypto.createHmac(
             "sha256",
-            process.env.GITHUB_WEBHOOK_SECRET
+            webhookSecret
         )
             .update(rawBody)
             .digest("hex");
-    return crypto.timingSafeEqual(
-        Buffer.from(signature),
-        Buffer.from(expectedSignature)
-    );
+
+    const sigBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expectedSignature);
+
+    // timingSafeEqual throws a fatal error if buffers have different lengths
+    if (sigBuffer.length !== expectedBuffer.length) {
+        logger.warn("Webhook signature length mismatch");
+        return false;
+    }
+
+    return crypto.timingSafeEqual(sigBuffer, expectedBuffer);
 };

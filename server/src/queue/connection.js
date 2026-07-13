@@ -1,17 +1,19 @@
 import IORedis from "ioredis";
+import { config } from "../config/app.config.js";
+import * as logger from "../services/logger.service.js";
 
 const connection = new IORedis({
-    host: "127.0.0.1",
-    port: 6379,
+    host: config.redis.host,
+    port: config.redis.port,
     maxRetriesPerRequest: null,
 });
 
 connection.on("connect", () => {
-    console.log("✅ Redis Connected");
+    logger.success("Redis Connected");
 });
 
 connection.on("error", (error) => {
-    console.error("❌ Redis Error:", error.message);
+    logger.error(`Redis Error: ${error.message}`);
 });
 
 export default connection;

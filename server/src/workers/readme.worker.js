@@ -10,6 +10,7 @@ import * as readmeService from "../services/readme.service.js";
 import * as logger from "../services/logger.service.js";
 import * as workspaceService from "../services/workspace.service.js";
 import * as readmeValidator from "../validators/readme.validator.js";
+import { ValidationError } from "../utils/errors.js";
 
 const readmeWorker = new Worker(
     "readme-generation",
@@ -32,6 +33,12 @@ const readmeWorker = new Worker(
 
             logger.divider();
 
+            if (!repositoryId || !branch || !commitSha) {
+                throw new ValidationError(
+                    "Corrupted job payload: repositoryId, branch, and commitSha are required"
+                );
+            }
+
             logger.info(
                 jobId,
                 `Repository ID: ${repositoryId}`
@@ -53,8 +60,8 @@ const readmeWorker = new Worker(
                 );
 
             if (!repository) {
-                throw new Error(
-                    "Repository not found"
+                throw new ValidationError(
+                    `Repository not found in local database for GitHub ID: ${repositoryId}`
                 );
             }
 
@@ -104,7 +111,8 @@ const readmeWorker = new Worker(
 
             await gitService.cloneRepository(
                 authenticatedCloneUrl,
-                repositoryPath
+                repositoryPath,
+                token
             );
 
             logger.success(
@@ -239,7 +247,11 @@ const readmeWorker = new Worker(
         } finally {
 
             // Always clean up the temp workspace regardless of success or failure
-            workspaceService.cleanupWorkspace(jobId);
+            try {
+                workspaceService.cleanupWorkspace(jobId);
+            } catch (cleanupErr) {
+                logger.warn(jobId, `Workspace cleanup failed: ${cleanupErr.message}`);
+            }
 
             logger.divider();
 

@@ -34,7 +34,8 @@ export const githubWebhook = async (req, res) => {
 
     } catch (error) {
 
-        return res.status(500).json({
+        const statusCode = error.status || 500;
+        return res.status(statusCode).json({
             success: false,
             message: error.message,
         });

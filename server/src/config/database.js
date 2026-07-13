@@ -1,14 +1,19 @@
 import mongoose from "mongoose";
+import { config } from "./app.config.js";
+import * as logger from "../services/logger.service.js";
+import { DatabaseError } from "../utils/errors.js";
 
 const connectDB = async () => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
-        console.log("MongoDB connected");
+        if (!config.mongodb.uri) {
+            throw new DatabaseError("MongoDB URI is not configured");
+        }
+        await mongoose.connect(config.mongodb.uri);
+        logger.success("MongoDB connected successfully");
     }
     catch (error) {
-        console.log("MongoDB connection failed");
-        console.log(error.message);
-        process.exit(1);
+        logger.error(`MongoDB connection failed: ${error.message}`);
+        throw new DatabaseError(`Database connection error: ${error.message}`);
     }
 }
 

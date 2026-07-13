@@ -1,7 +1,9 @@
 import * as githubService from "../services/github.service.js";
+import * as authService from "../services/auth.service.js";
 import * as installationStateService from "../services/installationState.service.js";
 import * as installationService from "../services/installation.service.js";
 import * as repositoryService from "../services/repository.service.js";
+import * as logger from "../services/logger.service.js";
 
 export const getGitHubApp = async (req, res) => {
     try {
@@ -14,7 +16,8 @@ export const getGitHubApp = async (req, res) => {
 
     } catch (error) {
 
-        res.status(500).json({
+        const statusCode = error.status || 500;
+        res.status(statusCode).json({
             success: false,
             message: error.message,
         });
@@ -26,14 +29,15 @@ export const githubCallback = async (req, res) => {
 
     try {
         const { code } = req.query;
-        const user = await authServic.githubCallback(code);
+        const user = await authService.githubCallback(code);
         return res.status(200).json({
             success: true,
             user,
-        })
+        });
     } catch (error) {
 
-        return res.status(500).json({
+        const statusCode = error.status || 500;
+        return res.status(statusCode).json({
             success: false,
             message: error.message
         });
@@ -50,18 +54,18 @@ export const installApp = async (req, res) => {
             req.user.userId
         );
 
-        console.log("Creating state...");
-        console.log("State:", state);
+        logger.info(`Creating GitHub app installation state for user ${req.user.userId}: ${state}`);
 
         const url = githubService.getInstallUrl(state);
 
-        console.log("Redirect URL:", url);
+        logger.info(`Redirecting user to GitHub installation URL`);
 
         return res.redirect(url);
 
     } catch (error) {
 
-        return res.status(500).json({
+        const statusCode = error.status || 500;
+        return res.status(statusCode).json({
             success: false,
             message: error.message,
         });
@@ -71,8 +75,7 @@ export const installApp = async (req, res) => {
 };
 
 export const installCallback = async (req, res) => {
-    console.log("INSTALL CALLBACK HIT");
-    console.log(req.query);
+    logger.info("GitHub App installation callback endpoint invoked");
 
     try {
 
@@ -125,7 +128,8 @@ export const installCallback = async (req, res) => {
 
     } catch (error) {
 
-        return res.status(500).json({
+        const statusCode = error.status || 500;
+        return res.status(statusCode).json({
             success: false,
             message: error.message,
         });
@@ -175,7 +179,8 @@ export const syncRepositories = async (req, res) => {
 
     } catch (error) {
 
-        return res.status(500).json({
+        const statusCode = error.status || 500;
+        return res.status(statusCode).json({
             success: false,
             message: error.message,
         });
