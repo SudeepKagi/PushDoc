@@ -1,6 +1,7 @@
 import * as packageAnalyzer from "./package.analyzer.js";
-import * as routeAnalyzer from "./route.analyzer.js";
-import * as modelAnalyzer from "./model.analyzer.js";
+import * as routeAnalyzer   from "./route.analyzer.js";
+import * as modelAnalyzer   from "./model.analyzer.js";
+import * as controllerAnalyzer from "./controller.analyzer.js";
 
 export const analyzeRepository = (
     repository
@@ -23,7 +24,10 @@ export const analyzeRepository = (
                 repository
             ),
 
-        controllers: null,
+        controllers:
+            controllerAnalyzer.analyzeControllers(
+                repository
+            ),
 
         features: null,
 
@@ -33,4 +37,4 @@ export const analyzeRepository = (
 
     };
 
-};
+};
