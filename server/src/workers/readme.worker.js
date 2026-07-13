@@ -9,7 +9,8 @@ import * as readmePipeline from "../pipelines/readme.pipeline.js";
 import * as readmeService from "../services/readme.service.js";
 import * as logger from "../services/logger.service.js";
 import * as workspaceService from "../services/workspace.service.js";
-console.log(workspaceService);
+import * as readmeValidator from "../validators/readme.validator.js";
+
 const readmeWorker = new Worker(
     "readme-generation",
 
@@ -116,7 +117,7 @@ const readmeWorker = new Worker(
                 "READING"
             );
 
-            const readme =
+            const { readme, knowledge } =
                 await readmePipeline.generateReadme(
                     repositoryPath,
                     jobId
@@ -126,6 +127,31 @@ const readmeWorker = new Worker(
                 jobId,
                 "README generated"
             );
+
+            // Run structural and semantic validation
+            const validation =
+                readmeValidator.validateReadme(
+                    readme,
+                    knowledge
+                );
+
+            logger.info(
+                jobId,
+                `README Validation Score: ${validation.score}/100 (Valid: ${validation.valid})`
+            );
+
+            if (!validation.valid) {
+                logger.warn(
+                    jobId,
+                    "README validation did not reach score 90. Warnings:"
+                );
+                for (const w of validation.warnings) {
+                    logger.warn(
+                        jobId,
+                        `  - ${w}`
+                    );
+                }
+            }
 
             await jobService.updateStatus(
                 trackingJob._id,
@@ -192,8 +218,6 @@ const readmeWorker = new Worker(
                 "Job completed"
             );
 
-            logger.divider();
-
         } catch (err) {
 
             if (trackingJob) {
@@ -211,6 +235,13 @@ const readmeWorker = new Worker(
             );
 
             throw err;
+
+        } finally {
+
+            // Always clean up the temp workspace regardless of success or failure
+            workspaceService.cleanupWorkspace(jobId);
+
+            logger.divider();
 
         }
 

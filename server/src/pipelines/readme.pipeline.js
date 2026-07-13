@@ -1,9 +1,11 @@
 import * as repositoryReader from "../readers/repository.reader.js";
+import * as repositoryAnalyzer from "../analyzers/repository.analyzer.js";
 import * as repositoryContextBuilder from "../builders/repositoryContext.builder.js";
 import * as promptBuilder from "../builders/prompt.builder.js";
 import * as aiService from "../services/ai.service.js";
 import * as logger from "../services/logger.service.js";
 import fs from "fs";
+
 
 export const generateReadme = async (
     repositoryPath,
@@ -22,12 +24,23 @@ export const generateReadme = async (
 
     logger.info(
         jobId,
+        "Analyzing repository..."
+    );
+
+    const knowledge =
+        repositoryAnalyzer.analyzeRepository(
+            repository
+        );
+
+    logger.info(
+        jobId,
         "Building repository context..."
     );
 
     const repositoryContext =
         repositoryContextBuilder.buildRepositoryContext(
-            repository
+            repository,
+            knowledge
         );
 
     logger.info(
@@ -39,6 +52,7 @@ export const generateReadme = async (
         promptBuilder.buildPrompt(
             repositoryContext
         );
+
 
     logger.info(
         jobId,
@@ -62,6 +76,9 @@ export const generateReadme = async (
         "README content generated"
     );
 
-    return readme;
+    return {
+        readme,
+        knowledge,
+    };
 
-};
+};

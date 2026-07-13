@@ -47,11 +47,11 @@ const INTEGRATION_OPS_MAP = {
  * This guarantees the LLM understands 95% of the codebase architecture and features
  * before seeing any code.
  */
-export const buildRepositoryContext = (repository) => {
+export const buildRepositoryContext = (repository, precalculatedKnowledge) => {
     let context = "";
 
     // 1. Run all repository intelligence analyzers
-    const knowledge = repositoryAnalyzer.analyzeRepository(repository);
+    const knowledge = precalculatedKnowledge || repositoryAnalyzer.analyzeRepository(repository);
 
     // 2. Format PROJECT section
     const packageInfo = knowledge.package;
