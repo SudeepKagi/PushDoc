@@ -1,4 +1,5 @@
-import * as packageAnalyzer from "../analyzers/package.analyzer.js";
+
+import * as repositoryAnalyzer from "../analyzers/repository.analyzer.js";
 
 const CATEGORY_ORDER = [
     "root",
@@ -19,10 +20,13 @@ export const buildRepositoryContext = (
 
     let context = "";
 
-    const packageInfo =
-        packageAnalyzer.analyzePackage(
+    const knowledge =
+        repositoryAnalyzer.analyzeRepository(
             repository
         );
+
+    const packageInfo =
+        knowledge.package;
 
     if (packageInfo) {
 
@@ -35,6 +39,18 @@ export const buildRepositoryContext = (
     context += buildMetadata(
         repository
     );
+
+    // If the route analyzer found structured routes, emit a compact
+    // API Overview section BEFORE the raw file dump.
+    // This gives the AI an explicit endpoint table so it does not need
+    // to re-parse route files itself — saving tokens and improving accuracy.
+    if (knowledge.routes && knowledge.routes.length > 0) {
+
+        context += buildRoutesSection(
+            knowledge.routes
+        );
+
+    }
 
     const groupedFiles =
         groupFiles(
@@ -152,6 +168,63 @@ ${repository.metadata.scannedAt}
 --------------------------------
 
 `;
+
+}
+
+/**
+ * Builds the API Overview section from the structured route data produced
+ * by Route Analyzer V2.
+ *
+ * Format (per route):
+ *   METHOD  /path
+ *   Middlewares: mw1, mw2
+ *   Controller:  controllerName
+ *
+ * Routes are grouped by source file. This keeps the section readable and
+ * lets the AI understand which routes belong to which router file.
+ */
+function buildRoutesSection(routes) {
+
+    // Group by file
+    const byFile = {};
+
+    for (const route of routes) {
+
+        const key = route.file || "unknown";
+
+        if (!byFile[key]) {
+            byFile[key] = [];
+        }
+
+        byFile[key].push(route);
+
+    }
+
+    let section = `# API Overview\n\n`;
+
+    for (const [file, fileRoutes] of Object.entries(byFile)) {
+
+        section += `## ${file}\n\n`;
+
+        for (const route of fileRoutes) {
+
+            const mwLine =
+                route.middlewares.length > 0
+                    ? `  Middlewares: ${route.middlewares.join(", ")}\n`
+                    : "";
+
+            section +=
+                `${route.method.padEnd(7)} ${route.path}\n` +
+                mwLine +
+                `  Controller: ${route.controller}\n\n`;
+
+        }
+
+    }
+
+    section += `--------------------------------\n\n`;
+
+    return section;
 
 }
 

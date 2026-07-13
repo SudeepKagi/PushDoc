@@ -68,7 +68,7 @@ README FORMAT
 
 ## Environment Variables (only if provided)
 
-## API Overview (only if routes exist)
+## API Overview (use the "API Overview" section from the context if present; do not invent endpoints)
 
 ## Database Models (only if models exist)
 
@@ -78,7 +78,7 @@ README FORMAT
 REPOSITORY CONTEXT
 ========================
 
-${JSON.stringify(repositoryContext, null, 2)}
+${repositoryContext}
 
 `;
 };
