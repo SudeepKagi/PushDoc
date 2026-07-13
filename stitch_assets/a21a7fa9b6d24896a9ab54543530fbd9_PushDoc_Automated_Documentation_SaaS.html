@@ -1,0 +1,502 @@
+<!DOCTYPE html><html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>PushDoc | Automated Developer Documentation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "error-container": "#ffdad6",
+                        "surface": "#faf8ff",
+                        "on-error-container": "#93000a",
+                        "surface-container-highest": "#e1e2ed",
+                        "primary-fixed": "#dbe1ff",
+                        "primary": "#004ac6",
+                        "on-secondary-container": "#00714d",
+                        "surface-container": "#ededf9",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "primary-container": "#2563eb",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "tertiary-container": "#bc4800",
+                        "surface-bright": "#faf8ff",
+                        "on-background": "#191b23",
+                        "inverse-surface": "#2e3039",
+                        "secondary": "#006c49",
+                        "on-surface-variant": "#434655",
+                        "tertiary": "#943700",
+                        "on-primary-container": "#eeefff",
+                        "secondary-container": "#6cf8bb",
+                        "surface-container-high": "#e7e7f3",
+                        "inverse-primary": "#b4c5ff",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f0f0fb",
+                        "surface-tint": "#0053db",
+                        "secondary-fixed-dim": "#4edea3",
+                        "on-tertiary-container": "#ffede6",
+                        "outline-variant": "#c3c6d7",
+                        "on-primary-fixed": "#00174b",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-secondary-fixed": "#002113",
+                        "background": "#faf8ff",
+                        "surface-dim": "#d9d9e5",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "surface-container-low": "#f3f3fe",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "surface-variant": "#e1e2ed",
+                        "outline": "#737686",
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-surface": "#191b23",
+                        "tertiary-fixed": "#ffdbcd",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1.5rem",
+                        "3xl": "2rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "stack-xl": "48px",
+                        "margin-mobile": "20px",
+                        "margin-desktop": "64px",
+                        "stack-md": "16px",
+                        "container-max": "1280px",
+                        "stack-lg": "24px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Outfit"],
+                        "display-lg": ["Outfit"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Outfit"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Outfit"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-lg": ["64px", {"lineHeight": "72px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "label-md": ["14px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .ambient-glow {
+            filter: blur(80px);
+            opacity: 0.4;
+            z-index: -1;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #faf8ff;
+            font-family: 'Inter', sans-serif;
+        }
+        h1, h2, h3, .font-headline {
+            font-family: 'Outfit', sans-serif;
+        }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- Top Navigation Bar -->
+<nav class="fixed top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-7xl rounded-full border border-outline-variant/20 backdrop-blur-xl bg-surface/80 shadow-xl flex justify-between items-center px-8 py-3 z-50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-headline-sm">description</span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">PushDoc</span>
+</div>
+<div class="hidden md:flex gap-8">
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200 font-label-md text-label-md" href="#features">Features</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200 font-label-md text-label-md" href="#how-it-works">How It Works</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200 font-label-md text-label-md" href="#pricing">Pricing</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200 font-label-md text-label-md" href="#faqs">FAQs</a>
+</div>
+<button class="bg-on-background text-surface px-6 py-2.5 rounded-full font-label-md text-label-md font-bold hover:scale-105 active:scale-95 transition-all">
+            Connect GitHub
+        </button>
+</nav>
+<!-- Hero Section -->
+<section class="relative pt-40 pb-24 overflow-hidden px-margin-mobile md:px-margin-desktop"><div class="absolute inset-0 pointer-events-none opacity-20" style="background-image: radial-gradient(rgb(0, 74, 198) 0.5px, transparent 0.5px); background-size: 24px 24px;"></div><div class="absolute inset-0 pointer-events-none" style="background-image: linear-gradient(to right, #e1e2ed 1px, transparent 1px), linear-gradient(to bottom, #e1e2ed 1px, transparent 1px); background-size: 60px 60px;"></div><div class="absolute top-40 left-[10%] animate-bounce opacity-60"><img src="https://cdn.simpleicons.org/javascript/#F7DF1E" class="w-10 h-10 -rotate-12" alt="JS"></div><div class="absolute top-60 right-[15%] animate-pulse opacity-60"><img src="https://cdn.simpleicons.org/typescript/#3178C6" class="w-12 h-12 rotate-12" alt="TS"></div><div class="absolute bottom-40 left-[15%] animate-pulse opacity-60"><img src="https://cdn.simpleicons.org/react/#61DAFB" class="w-12 h-12" alt="React"></div><div class="absolute bottom-60 right-[10%] animate-bounce opacity-60"><img src="https://cdn.simpleicons.org/go/#00ADD8" class="w-14 h-14 -rotate-6" alt="Go"></div>
+<!-- Ambient Backgrounds -->
+<div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary-container rounded-full ambient-glow"></div>
+<div class="absolute top-40 right-1/4 w-[400px] h-[400px] bg-secondary-container rounded-full ambient-glow"></div>
+<div class="max-w-4xl mx-auto text-center relative z-10">
+<div class="inline-flex items-center gap-2 bg-primary-fixed/30 text-on-primary-fixed-variant px-4 py-1.5 rounded-full mb-8">
+<span class="material-symbols-outlined text-base">auto_fix_high</span>
+<span class="text-label-sm font-bold">Build For Your Modern Stack</span>
+</div>
+<h1 class="font-display-lg text-display-lg mb-6 leading-tight">Turn your <span class="text-primary-container">Raw Codebase</span> into <span class="relative inline-block px-4 py-1 mx-1"><span class="absolute inset-0 border-2 border-primary/30 rounded-[1.5rem] -rotate-1"></span>Premium Documentation</span></h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-10 max-w-2xl mx-auto">
+                PushDoc scans package models, Express routes, Mongoose schemas, and controllers to automatically write and validate your README on every push.
+            </p>
+<div class="flex flex-col md:flex-row items-center justify-center gap-6 mt-10"><button class="bg-primary text-white px-10 py-4 rounded-full font-bold text-lg flex items-center gap-3 shadow-xl hover:brightness-110 transition-all active:scale-95">Try Now <span class="material-symbols-outlined bg-white/20 rounded-full p-1">arrow_forward</span></button><button class="text-on-surface-variant font-bold flex items-center gap-2 hover:text-primary transition-colors">View Capabilities <span class="material-symbols-outlined text-sm">arrow_forward</span></button></div>
+</div>
+<!-- Hero Graphic -->
+
+</section>
+<!-- Feature Grid -->
+<section class="py-stack-xl px-margin-mobile md:px-margin-desktop bg-surface-container-lowest" id="features">
+<div class="max-w-container-max mx-auto">
+<div class="text-center mb-16">
+<p class="text-primary font-bold mb-4">Features</p>
+<h2 class="font-headline-lg text-headline-lg mb-4">Transform Your Codebase into a Documentation Powerhouse</h2>
+<p class="text-on-surface-variant font-body-md max-w-xl mx-auto">Everything you need to build and scale your API documentation — all in one platform.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Card A -->
+<div class="bg-surface-container-low p-8 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+<div class="mb-6">
+<span class="material-symbols-outlined text-primary text-4xl">schema</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm mb-4">Automatic Schema &amp; Model Detection</h3>
+<div class="space-y-3 bg-white p-4 rounded-2xl border border-outline-variant/20">
+<div class="flex justify-between items-center p-2 hover:bg-surface transition-colors rounded-lg">
+<span class="font-label-md">User.model.ts</span>
+<span class="flex items-center gap-1 text-secondary text-xs font-bold bg-secondary-container/20 px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-sm">check_circle</span> Verified
+                            </span>
+</div>
+<div class="flex justify-between items-center p-2 hover:bg-surface transition-colors rounded-lg">
+<span class="font-label-md">Product.schema.js</span>
+<span class="flex items-center gap-1 text-secondary text-xs font-bold bg-secondary-container/20 px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-sm">check_circle</span> Verified
+                            </span>
+</div>
+<div class="flex justify-between items-center p-2 hover:bg-surface transition-colors rounded-lg opacity-50">
+<span class="font-label-md">Cart.controller.ts</span>
+<span class="text-xs">Scanning...</span>
+</div>
+</div>
+</div>
+<!-- Card B -->
+<div class="bg-surface-container-low p-8 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+<div class="mb-6">
+<span class="material-symbols-outlined text-primary text-4xl">alt_route</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm mb-4">API &amp; Router Intelligence</h3>
+<div class="bg-on-background rounded-2xl p-4 font-mono text-xs text-primary-fixed space-y-2 overflow-hidden">
+<p class="text-outline-variant opacity-50">// src/routes/user.js</p>
+<p class=""><span class="text-tertiary-fixed-dim">router</span>.get(<span class="text-secondary-fixed">"/profile"</span>, auth)</p>
+<p class="flex items-center gap-2"><span class="bg-primary text-surface px-1.5 py-0.5 rounded">GET</span> <span class="text-white">Returns current user</span></p>
+<p class=""><span class="text-tertiary-fixed-dim">router</span>.post(<span class="text-secondary-fixed">"/update"</span>, validate)</p>
+<p class="flex items-center gap-2"><span class="bg-secondary text-surface px-1.5 py-0.5 rounded">POST</span> <span class="text-white">Updates user info</span></p>
+</div>
+</div>
+<!-- Card C -->
+<div class="bg-surface-container-low p-8 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+<div class="mb-6">
+<span class="material-symbols-outlined text-primary text-4xl">analytics</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm mb-4">Route Coverage Analytics</h3>
+<div class="h-40 flex items-end gap-2 px-2 border-b border-outline-variant/30">
+<div class="bg-primary-container w-full rounded-t-lg transition-all hover:opacity-80" style="height: 30%"></div>
+<div class="bg-primary-container w-full rounded-t-lg transition-all hover:opacity-80" style="height: 45%"></div>
+<div class="bg-primary-container w-full rounded-t-lg transition-all hover:opacity-80" style="height: 40%"></div>
+<div class="bg-primary-container w-full rounded-t-lg transition-all hover:opacity-80" style="height: 65%"></div>
+<div class="bg-primary-container w-full rounded-t-lg transition-all hover:opacity-80" style="height: 85%"></div>
+<div class="bg-primary-container w-full rounded-t-lg transition-all hover:opacity-80" style="height: 95%"></div>
+</div>
+<div class="mt-4 flex justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span class="">Commit #102</span>
+<span class="text-primary font-bold">95.4% Coverage</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Core Benefits 6-Card Grid -->
+<section class="py-stack-xl px-margin-mobile md:px-margin-desktop">
+<div class="max-w-container-max mx-auto">
+<div class="text-center mb-16">
+<p class="text-primary font-bold mb-4">Benefits</p>
+<h2 class="font-headline-lg text-headline-lg">Built to Help You Grow</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Benefit 1 -->
+<div class="bg-surface p-8 rounded-3xl border border-outline-variant/10 shadow-sm">
+<span class="material-symbols-outlined text-primary mb-4">fact_check</span>
+<h4 class="font-headline-sm text-headline-sm mb-3">Deterministic Validation</h4>
+<p class="text-on-surface-variant font-body-sm">Every generated doc undergoes structural verification against live code logic.</p>
+</div>
+<!-- Benefit 2 -->
+<div class="bg-surface p-8 rounded-3xl border border-outline-variant/10 shadow-sm">
+<span class="material-symbols-outlined text-primary mb-4">key_off</span>
+<h4 class="font-headline-sm text-headline-sm mb-3">Zero-Key Setup</h4>
+<p class="text-on-surface-variant font-body-sm">Connect your GitHub and we do the rest. No credit card or configuration keys required.</p>
+</div>
+<!-- Benefit 3 -->
+<div class="bg-surface p-8 rounded-3xl border border-outline-variant/10 shadow-sm">
+<span class="material-symbols-outlined text-primary mb-4">security</span>
+<h4 class="font-headline-sm text-headline-sm mb-3">Failover Guarantee</h4>
+<p class="text-on-surface-variant font-body-sm">Redundant API monitoring ensures your doc pipeline never breaks during critical releases.</p>
+</div>
+<!-- Benefit 4 -->
+<div class="bg-surface p-8 rounded-3xl border border-outline-variant/10 shadow-sm">
+<span class="material-symbols-outlined text-primary mb-4">sync_alt</span>
+<h4 class="font-headline-sm text-headline-sm mb-3">Automatic Git Pushes</h4>
+<p class="text-on-surface-variant font-body-sm">Documentation is committed directly to your repository in a PR or main branch.</p>
+</div>
+<!-- Benefit 5 -->
+<div class="bg-surface p-8 rounded-3xl border border-outline-variant/10 shadow-sm">
+<span class="material-symbols-outlined text-primary mb-4">hub</span>
+<h4 class="font-headline-sm text-headline-sm mb-3">Multi-Repo Support</h4>
+<p class="text-on-surface-variant font-body-sm">Manage entire microservice ecosystems from a single documentation dashboard.</p>
+</div>
+<!-- Benefit 6 -->
+<div class="bg-surface p-8 rounded-3xl border border-outline-variant/10 shadow-sm">
+<span class="material-symbols-outlined text-primary mb-4">bolt</span>
+<h4 class="font-headline-sm text-headline-sm mb-3">Instant Indexing</h4>
+<p class="text-on-surface-variant font-body-sm">Changes reflect in your searchable knowledge base in under 3 seconds.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Comparison Table -->
+<section class="py-stack-xl px-margin-mobile md:px-margin-desktop bg-surface-container">
+<div class="max-w-4xl mx-auto">
+<h2 class="font-headline-lg text-headline-lg text-center mb-12">Why PushDoc Beats Manual Writing</h2>
+<div class="bg-white rounded-[2rem] shadow-xl overflow-hidden">
+<table class="w-full text-left">
+<thead>
+<tr class="border-b border-outline-variant/30">
+<th class="p-8 font-headline-sm text-headline-sm">Features</th>
+<th class="p-8 font-headline-sm text-headline-sm text-center">Others</th>
+<th class="p-8 font-headline-sm text-headline-sm text-center bg-primary-container/5">PushDoc</th>
+</tr>
+</thead>
+<tbody class="font-label-md text-label-md">
+<tr class="border-b border-outline-variant/10">
+<td class="p-8">Auto-Updates on Push</td>
+<td class="p-8 text-center text-outline"><span class="material-symbols-outlined">close</span></td>
+<td class="p-8 text-center bg-primary-container/5"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+</tr>
+<tr class="border-b border-outline-variant/10">
+<td class="p-8">Structural Validation</td>
+<td class="p-8 text-center text-outline"><span class="material-symbols-outlined">close</span></td>
+<td class="p-8 text-center bg-primary-container/5"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+</tr>
+<tr class="border-b border-outline-variant/10">
+<td class="p-8">Model Inferences</td>
+<td class="p-8 text-center text-outline"><span class="material-symbols-outlined">close</span></td>
+<td class="p-8 text-center bg-primary-container/5"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+</tr>
+<tr>
+<td class="p-8">Route Verification</td>
+<td class="p-8 text-center text-outline"><span class="material-symbols-outlined">close</span></td>
+<td class="p-8 text-center bg-primary-container/5"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<!-- ROI Calculator -->
+<section class="py-stack-xl px-margin-mobile md:px-margin-desktop" id="how-it-works">
+<div class="max-w-4xl mx-auto glass-card p-12 rounded-[3rem] shadow-2xl relative overflow-hidden">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary-container/10 ambient-glow"></div>
+<div class="relative z-10">
+<h2 class="font-headline-lg text-headline-lg mb-4">Calculate How Much Time PushDoc Saves You</h2>
+<p class="text-on-surface-variant mb-12">Enter your repository metrics to see the documentation debt we eliminate.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+<div class="space-y-8">
+<div>
+<label class="block font-label-md text-label-md mb-4 text-on-surface">Number of Repositories</label>
+<input class="w-full h-2 bg-outline-variant rounded-lg appearance-none cursor-pointer accent-primary" max="50" min="1" oninput="calculateROI()" type="range" value="5">
+<div class="flex justify-between mt-2 text-label-sm"><span class="">1</span><span class="font-bold text-primary" id="repo-val">5</span><span class="">50</span></div>
+</div>
+<div>
+<label class="block font-label-md text-label-md mb-4 text-on-surface">Monthly Commits per Repo</label>
+<input class="w-full h-2 bg-outline-variant rounded-lg appearance-none cursor-pointer accent-primary" max="200" min="10" oninput="calculateROI()" type="range" value="40">
+<div class="flex justify-between mt-2 text-label-sm"><span class="">10</span><span class="font-bold text-primary" id="commit-val">40</span><span class="">200</span></div>
+</div>
+</div>
+<div class="bg-on-background text-surface p-8 rounded-3xl text-center">
+<p class="font-label-md text-label-md uppercase tracking-widest text-primary-fixed mb-4">Estimated Hours Saved / Month</p>
+<div class="font-display-lg text-6xl font-bold mb-4" id="roi-result">42.5</div>
+<p class="text-surface-variant font-body-sm">Equivalent to <span class="text-white font-bold">$2,800</span> in developer overhead</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Pricing Section -->
+<section class="py-stack-xl px-margin-mobile md:px-margin-desktop" id="pricing">
+<div class="max-w-container-max mx-auto text-center mb-16">
+<h2 class="font-headline-lg text-headline-lg mb-4">Fair Pricing — No Surprises</h2>
+<div class="flex items-center justify-center gap-4 mt-8">
+<span class="font-label-md">Monthly</span>
+<button class="w-12 h-6 bg-primary-container rounded-full relative">
+<div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+</button>
+<span class="font-label-md text-on-surface-variant">Yearly <span class="text-secondary font-bold">(Save 20%)</span></span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter max-w-4xl mx-auto">
+<!-- Free Tier -->
+<div class="bg-surface p-10 rounded-[2.5rem] border border-outline-variant/30 flex flex-col">
+<h3 class="font-headline-sm text-headline-sm mb-2">Free Tier</h3>
+<p class="text-on-surface-variant font-body-sm mb-6">Perfect for open-source projects.</p>
+<div class="mb-8">
+<span class="font-display-lg text-5xl">$0</span>
+<span class="text-on-surface-variant">/mo</span>
+</div>
+<ul class="space-y-4 mb-10 flex-grow">
+<li class="flex items-center gap-3 font-body-md"><span class="material-symbols-outlined text-primary">check</span> 1 Public Repository</li>
+<li class="flex items-center gap-3 font-body-md"><span class="material-symbols-outlined text-primary">check</span> Weekly Doc Sync</li>
+<li class="flex items-center gap-3 font-body-md"><span class="material-symbols-outlined text-primary">check</span> Basic Markdown Export</li>
+</ul>
+<button class="w-full py-4 rounded-full border-2 border-on-background font-bold hover:bg-on-background hover:text-surface transition-colors">Start Free</button>
+</div>
+<!-- Premium Plan -->
+<div class="bg-on-background text-surface p-10 rounded-[2.5rem] shadow-2xl flex flex-col relative overflow-hidden">
+<div class="absolute top-0 right-0 bg-primary-container px-6 py-2 rounded-bl-3xl font-bold text-xs uppercase tracking-widest">Popular</div>
+<h3 class="font-headline-sm text-headline-sm mb-2">Premium Developer</h3>
+<p class="text-surface-variant font-body-sm mb-6">Built for professional teams.</p>
+<div class="mb-8">
+<span class="font-display-lg text-5xl">$29</span>
+<span class="text-surface-variant">/mo</span>
+</div>
+<ul class="space-y-4 mb-10 flex-grow">
+<li class="flex items-center gap-3 font-body-md"><span class="material-symbols-outlined text-primary-fixed">check</span> Unlimited Repositories</li>
+<li class="flex items-center gap-3 font-body-md"><span class="material-symbols-outlined text-primary-fixed">check</span> Real-time Push Analysis</li>
+<li class="flex items-center gap-3 font-body-md"><span class="material-symbols-outlined text-primary-fixed">check</span> Automated Git PRs</li>
+<li class="flex items-center gap-3 font-body-md"><span class="material-symbols-outlined text-primary-fixed">check</span> Advanced Schema Mapping</li>
+</ul>
+<button class="w-full py-4 rounded-full bg-primary-container font-bold shadow-lg hover:brightness-110 transition-all">Go Premium</button>
+</div>
+</div>
+</section>
+<!-- FAQ Section -->
+<section class="py-stack-xl px-margin-mobile md:px-margin-desktop bg-surface-container-low" id="faqs">
+<div class="max-w-3xl mx-auto">
+<h2 class="font-headline-lg text-headline-lg text-center mb-16">Curated Questions</h2>
+<div class="space-y-4">
+<details class="group bg-surface p-6 rounded-2xl border border-outline-variant/20 cursor-pointer" open="">
+<summary class="flex justify-between items-center font-headline-sm text-headline-sm list-none">
+                        How do we handle webhooks?
+                        <span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<p class="mt-4 text-on-surface-variant font-body-md leading-relaxed">
+                        PushDoc integrates directly with GitHub Webhooks. When you push code, GitHub notifies our analyzer which immediately pulls the diff, parses your AST, and generates updated documentation.
+                    </p>
+</details>
+<details class="group bg-surface p-6 rounded-2xl border border-outline-variant/20 cursor-pointer">
+<summary class="flex justify-between items-center font-headline-sm text-headline-sm list-none">
+                        What about code privacy?
+                        <span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<p class="mt-4 text-on-surface-variant font-body-md">
+                        We never store your source code. Our analyzer works on an ephemeral instance, extracts documentation metadata, and immediately purges the local copy.
+                    </p>
+</details>
+<details class="group bg-surface p-6 rounded-2xl border border-outline-variant/20 cursor-pointer">
+<summary class="flex justify-between items-center font-headline-sm text-headline-sm list-none">
+                        Can I customize the templates?
+                        <span class="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<p class="mt-4 text-on-surface-variant font-body-md">
+                        Yes! Premium users can upload their own liquid-based documentation templates to match their brand guidelines exactly.
+                    </p>
+</details>
+</div>
+</div>
+</section>
+<!-- Footer CTA -->
+<footer class="bg-on-background dark:bg-surface-container-lowest w-full rounded-t-[3rem] mt-stack-xl text-surface">
+<div class="flex flex-col items-center px-margin-desktop py-stack-xl max-w-container-max mx-auto text-center">
+<div class="mb-12">
+<div class="flex items-center justify-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary text-[48px]">description</span>
+<span class="font-headline-md text-headline-md font-black">PushDoc AI</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg mb-8 max-w-2xl">Unlock the Power of Automated READMEs</h2>
+<button class="bg-primary text-surface px-10 py-4 rounded-full font-bold hover:scale-105 transition-transform flex items-center gap-2 mx-auto">
+                    Connect GitHub
+                    <span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-12 text-left w-full mb-16 border-t border-surface/10 pt-16">
+<div>
+<h5 class="font-label-md text-label-md mb-6 text-primary">Features</h5>
+<ul class="space-y-4 text-surface-variant font-label-sm">
+<li class=""><a class="hover:text-primary transition-colors" href="#">Schema Analysis</a></li>
+<li class=""><a class="hover:text-primary transition-colors" href="#">API Mapping</a></li>
+<li class=""><a class="hover:text-primary transition-colors" href="#">PR Generation</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-label-md text-label-md mb-6 text-primary">Docs</h5>
+<ul class="space-y-4 text-surface-variant font-label-sm">
+<li class=""><a class="hover:text-primary transition-colors" href="#">Quickstart</a></li>
+<li class=""><a class="hover:text-primary transition-colors" href="#">Webhooks</a></li>
+<li class=""><a class="hover:text-primary transition-colors" href="#">API Reference</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-label-md text-label-md mb-6 text-primary">Company</h5>
+<ul class="space-y-4 text-surface-variant font-label-sm">
+<li class=""><a class="hover:text-primary transition-colors" href="#">About Us</a></li>
+<li class=""><a class="hover:text-primary transition-colors" href="#">Security</a></li>
+<li class=""><a class="hover:text-primary transition-colors" href="#">Privacy</a></li>
+</ul>
+</div>
+<div class="flex flex-col items-start md:items-end">
+<h5 class="font-label-md text-label-md mb-6 text-primary">Social</h5>
+<div class="flex gap-4">
+<a class="w-10 h-10 bg-surface/10 rounded-full flex items-center justify-center hover:bg-primary transition-colors" href="#"><span class="material-symbols-outlined text-sm">share</span></a>
+<a class="w-10 h-10 bg-surface/10 rounded-full flex items-center justify-center hover:bg-primary transition-colors" href="#"><span class="material-symbols-outlined text-sm">code</span></a>
+</div>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-surface-variant">© 2024 PushDoc AI. Automated developer documentation for modern teams.</p>
+</div>
+</footer>
+<script>
+        function calculateROI() {
+            const inputs = document.querySelectorAll('input[type="range"]');
+            const repoVal = inputs[0].value;
+            const commitVal = inputs[1].value;
+            
+            document.getElementById('repo-val').innerText = repoVal;
+            document.getElementById('commit-val').innerText = commitVal;
+            
+            // Logic: each commit saves 10 mins (0.16h), each repo has base overhead
+            const result = (repoVal * 2.5) + (repoVal * commitVal * 0.15);
+            document.getElementById('roi-result').innerText = result.toFixed(1);
+        }
+        
+        // Initial call
+        calculateROI();
+    </script>
+
+
+</body></html>
