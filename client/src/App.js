@@ -2,80 +2,11 @@ import React, { useState, useEffect } from "react";
 
 const BACKEND_URL = "http://localhost:3000";
 
-const MOCK_REPOS = [
-    {
-        _id: "repo-1",
-        githubId: 101,
-        name: "e-commerce-backend",
-        fullName: "SudeepKagi/e-commerce-backend",
-        private: true,
-        cloneUrl: "https://github.com/SudeepKagi/e-commerce-backend.git",
-        score: 95,
-        status: "COMPLETED",
-        branch: "main",
-        headCommit: "feat: add secure Stripe payment processing controller",
-        warnings: [],
-        missingSections: [],
-        coverage: {
-            features: 90,
-            models: 100,
-            routes: 92
-        },
-        duration: 3200,
-        lastRun: "2 hours ago"
-    },
-    {
-        _id: "repo-2",
-        githubId: 102,
-        name: "auth-service",
-        fullName: "SudeepKagi/auth-service",
-        private: false,
-        cloneUrl: "https://github.com/SudeepKagi/auth-service.git",
-        score: 72,
-        status: "FAILED",
-        branch: "master",
-        headCommit: "refactor: upgrade authentication token signing algorithm",
-        warnings: [
-            "Table row at line 34 has mismatched column count (expected 3, got 4).",
-            "API endpoint path \"/auth/verify\" is not documented in the README."
-        ],
-        missingSections: ["API Overview", "Database Models"],
-        coverage: {
-            features: 75,
-            models: 50,
-            routes: 60
-        },
-        duration: 4800,
-        lastRun: "Yesterday"
-    },
-    {
-        _id: "repo-3",
-        githubId: 103,
-        name: "dashboard-widget",
-        fullName: "SudeepKagi/dashboard-widget",
-        private: false,
-        cloneUrl: "https://github.com/SudeepKagi/dashboard-widget.git",
-        score: 88,
-        status: "COMPLETED",
-        branch: "dev",
-        headCommit: "chore: update dependencies and build configurations",
-        warnings: [
-            "Heading level skipped: H1 directly followed by H3 (\"Technical Specifications\")."
-        ],
-        missingSections: ["Usage"],
-        coverage: {
-            features: 100,
-            models: 0, // No models
-            routes: 80
-        },
-        duration: 2100,
-        lastRun: "3 days ago"
-    }
-];
+
 
 export default function App() {
     const [page, setPage] = useState("landing");
-    const [repos, setRepos] = useState(MOCK_REPOS);
+    const [repos, setRepos] = useState([]);
     const [selectedRepo, setSelectedRepo] = useState(null);
     const [syncing, setSyncing] = useState(false);
     const [authCode, setAuthCode] = useState(null);
@@ -96,7 +27,7 @@ export default function App() {
         setPage("dashboard");
         setSyncing(true);
         try {
-            const res = await fetch(`${BACKEND_URL}/github/callback?code=${code}`);
+            const res = await fetch(`${BACKEND_URL}/auth/github/callback?code=${code}`);
             const data = await res.json();
             if (data.success) {
                 setUser(data.user);
@@ -116,25 +47,24 @@ export default function App() {
     const triggerSync = async (authToken) => {
         setSyncing(true);
         try {
-            const res = await fetch(`${BACKEND_URL}/github/sync`, {
+            const res = await fetch(`${BACKEND_URL}/github/repositories/sync`, {
                 headers: {
                     Authorization: `Bearer ${authToken || token}`
                 }
             });
             const data = await res.json();
             if (data.success && data.repositories) {
-                // Merge synced repositories, assigning mock scores/details if needed
-                const enriched = data.repositories.map((repo, idx) => ({
+                const enriched = data.repositories.map((repo) => ({
                     ...repo,
-                    score: 90 - (idx * 5),
-                    status: "COMPLETED",
-                    branch: "main",
-                    headCommit: "initial push",
-                    warnings: [],
-                    missingSections: [],
-                    coverage: { features: 100, models: 100, routes: 100 },
-                    duration: 2500,
-                    lastRun: "Just now"
+                    score: repo.score || 100,
+                    status: repo.status || "COMPLETED",
+                    branch: repo.branch || "main",
+                    headCommit: repo.headCommit || "Initial setup sync",
+                    warnings: repo.warnings || [],
+                    missingSections: repo.missingSections || [],
+                    coverage: repo.coverage || { features: 100, models: 100, routes: 100 },
+                    duration: repo.duration || 1200,
+                    lastRun: repo.lastRun || "Just now"
                 }));
                 setRepos(enriched);
             }
@@ -146,7 +76,7 @@ export default function App() {
     };
 
     const handleLoginRedirect = () => {
-        window.location.href = `${BACKEND_URL}/auth/github`;
+        window.location.href = `${BACKEND_URL}/auth/github/login`;
     };
 
     const openDetails = (repo) => {
