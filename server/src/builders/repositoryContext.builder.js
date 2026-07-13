@@ -1,3 +1,5 @@
+import * as packageAnalyzer from "../analyzers/package.analyzer.js";
+
 const CATEGORY_ORDER = [
     "root",
     "controllers",
@@ -11,17 +13,39 @@ const CATEGORY_ORDER = [
     "public",
 ];
 
-export const buildRepositoryContext = (repository) => {
+export const buildRepositoryContext = (
+    repository
+) => {
 
     let context = "";
 
-    context += buildMetadata(repository);
+    const packageInfo =
+        packageAnalyzer.analyzePackage(
+            repository
+        );
 
-    const groupedFiles = groupFiles(repository.files);
+    if (packageInfo) {
+
+        context += buildProjectSection(
+            packageInfo
+        );
+
+    }
+
+    context += buildMetadata(
+        repository
+    );
+
+    const groupedFiles =
+        groupFiles(
+            repository.files
+        );
 
     for (const category of CATEGORY_ORDER) {
 
-        if (!groupedFiles[category]?.length) {
+        if (
+            !groupedFiles[category]?.length
+        ) {
             continue;
         }
 
@@ -36,16 +60,73 @@ export const buildRepositoryContext = (repository) => {
 
 };
 
-function buildMetadata(repository) {
+function buildProjectSection(
+    packageInfo
+) {
 
-    return `
-# Repository
+    const auth =
+        packageInfo.technology.authentication
+            .length
+            ? packageInfo.technology.authentication.join(", ")
+            : "None";
 
-Name: ${repository.metadata.name}
+    const database =
+        packageInfo.technology.database
+            .length
+            ? packageInfo.technology.database.join(", ")
+            : "None";
 
-Total Files: ${repository.metadata.totalFiles}
+    const storage =
+        packageInfo.technology.storage
+            .length
+            ? packageInfo.technology.storage.join(", ")
+            : "None";
 
-Generated: ${repository.metadata.scannedAt}
+    const scripts =
+        Object.entries(
+            packageInfo.scripts
+        )
+            .map(
+                ([name, command]) =>
+                    `- ${name}: ${command}`
+            )
+            .join("\n");
+
+    return `# Project Information
+
+Project Name:
+${packageInfo.project.name}
+
+Version:
+${packageInfo.project.version}
+
+Description:
+${packageInfo.project.description || "Not specified"}
+
+Language:
+${packageInfo.technology.language}
+
+Runtime:
+${packageInfo.technology.runtime}
+
+Framework:
+${packageInfo.technology.framework}
+
+Database:
+${database}
+
+Authentication:
+${auth}
+
+Storage:
+${storage}
+
+Package Manager:
+${packageInfo.technology.packageManager}
+
+Scripts:
+
+${scripts}
 
 --------------------------------
 
@@ -53,17 +134,44 @@ Generated: ${repository.metadata.scannedAt}
 
 }
 
-function groupFiles(files) {
+function buildMetadata(
+    repository
+) {
+
+    return `# Repository
+
+Name:
+${repository.metadata.name}
+
+Total Files:
+${repository.metadata.totalFiles}
+
+Generated:
+${repository.metadata.scannedAt}
+
+--------------------------------
+
+`;
+
+}
+
+function groupFiles(
+    files
+) {
 
     const groups = {};
 
     for (const file of files) {
 
         if (!groups[file.category]) {
+
             groups[file.category] = [];
+
         }
 
-        groups[file.category].push(file);
+        groups[file.category].push(
+            file
+        );
 
     }
 
@@ -77,14 +185,11 @@ function buildCategory(
 ) {
 
     let section =
-        `# ${capitalize(category)}
-
-`;
+        `# ${capitalize(category)}\n\n`;
 
     for (const file of files) {
 
         section +=
-
             `## ${file.path}
 
 \`\`\`${getLanguage(file.extension)}
@@ -102,14 +207,20 @@ ${file.content}
 
 }
 
-function capitalize(text) {
+function capitalize(
+    text
+) {
 
-    return text.charAt(0).toUpperCase() +
-        text.slice(1);
+    return (
+        text.charAt(0).toUpperCase() +
+        text.slice(1)
+    );
 
 }
 
-function getLanguage(extension) {
+function getLanguage(
+    extension
+) {
 
     const map = {
 
@@ -121,6 +232,7 @@ function getLanguage(extension) {
         ".md": "markdown",
         ".html": "html",
         ".css": "css",
+        ".scss": "scss",
         ".yml": "yaml",
         ".yaml": "yaml",
 

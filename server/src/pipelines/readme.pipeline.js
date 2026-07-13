@@ -3,6 +3,7 @@ import * as repositoryContextBuilder from "../builders/repositoryContext.builder
 import * as promptBuilder from "../builders/prompt.builder.js";
 import * as aiService from "../services/ai.service.js";
 import * as logger from "../services/logger.service.js";
+import fs from "fs";
 
 export const generateReadme = async (
     repositoryPath,
@@ -42,6 +43,13 @@ export const generateReadme = async (
     logger.info(
         jobId,
         "Calling Gemini..."
+    );
+
+
+    fs.writeFileSync(
+        "prompt.txt",
+        prompt,
+        "utf8"
     );
 
     const readme =

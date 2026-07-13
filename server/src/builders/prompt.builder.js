@@ -78,7 +78,7 @@ README FORMAT
 REPOSITORY CONTEXT
 ========================
 
-${repositoryContext}
+${JSON.stringify(repositoryContext, null, 2)}
 
 `;
 };
