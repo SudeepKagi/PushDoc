@@ -51,3 +51,11 @@ export const deleteRepositoryByGithubId = async (
 export const getRepositoryById = async (id) => {
     return await Repository.findById(id).populate("installation");
 };
+
+export const toggleRepositoryActive = async (id) => {
+    const repository = await Repository.findById(id);
+    if (!repository) return null;
+    repository.isActive = !repository.isActive;
+    await repository.save();
+    return repository;
+};

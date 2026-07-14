@@ -56,8 +56,19 @@ const handlePushEvent = async (payload) => {
         logger.info(
             `Ignoring push to non-default branch "${pushedBranch}" (default: "${defaultBranch}")`
         );
+    }
+
+    const repository = await repositoryService.getRepositoryByGithubId(payload.repository.id);
+    if (!repository) {
+        logger.info(`Ignoring push event: repository ${payload.repository.full_name} is not registered in PushDoc`);
         return;
     }
+
+    if (!repository.isActive) {
+        logger.info(`Ignoring push event: AI updates are disabled for repository ${repository.fullName}`);
+        return;
+    }
+
 
     await readmeQueue.add(
         "generate-readme",

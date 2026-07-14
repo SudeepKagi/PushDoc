@@ -121,3 +121,7 @@ export const getJobById = async (jobId) => {
     return await Job.findById(jobId).populate("repository");
 
 };
+
+export const getJobCountForRepository = async (repoId) => {
+    return await Job.countDocuments({ repository: repoId });
+};
