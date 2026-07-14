@@ -2,8 +2,12 @@ import fs from "fs";
 import path from "path";
 import { config } from "../config/app.config.js";
 import { WorkspaceError, ValidationError } from "../utils/errors.js";
+import * as logger from "./logger.service.js";
 
 const WORKSPACE_ROOT = config.workspace.root;
+
+// Maximum age of a stale workspace before it gets force-cleaned (30 minutes)
+const STALE_WORKSPACE_MAX_AGE_MS = 30 * 60 * 1000;
 
 if (!fs.existsSync(WORKSPACE_ROOT)) {
     try {
@@ -36,7 +40,7 @@ const validateRepositoryName = (repositoryName) => {
     return repositoryName;
 };
 
-function createWorkspace(jobId) {
+export function createWorkspace(jobId) {
     const cleanId = validateJobId(jobId);
     const workspacePath = path.join(
         WORKSPACE_ROOT,
@@ -53,7 +57,7 @@ function createWorkspace(jobId) {
     }
 }
 
-function getRepositoryPath(
+export function getRepositoryPath(
     jobId,
     repositoryName
 ) {
@@ -67,7 +71,7 @@ function getRepositoryPath(
     );
 }
 
-function cleanupWorkspace(jobId) {
+export function cleanupWorkspace(jobId) {
     const cleanId = validateJobId(jobId);
     const workspacePath = path.join(
         WORKSPACE_ROOT,
@@ -86,8 +90,41 @@ function cleanupWorkspace(jobId) {
     }
 }
 
-export {
-    createWorkspace,
-    getRepositoryPath,
-    cleanupWorkspace,
-};
+/**
+ * Scans the workspace root and deletes any directories older than
+ * STALE_WORKSPACE_MAX_AGE_MS. Called at server startup to recover
+ * from previous unclean shutdowns.
+ */
+export function purgeStaleWorkspaces() {
+    if (!fs.existsSync(WORKSPACE_ROOT)) return;
+
+    let purged = 0;
+    try {
+        const entries = fs.readdirSync(WORKSPACE_ROOT, { withFileTypes: true });
+        const now = Date.now();
+
+        for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
+
+            const fullPath = path.join(WORKSPACE_ROOT, entry.name);
+            try {
+                const stat = fs.statSync(fullPath);
+                const ageMs = now - stat.mtimeMs;
+
+                if (ageMs > STALE_WORKSPACE_MAX_AGE_MS) {
+                    fs.rmSync(fullPath, { recursive: true, force: true });
+                    purged++;
+                    logger.info(`Purged stale workspace: ${entry.name} (age: ${Math.round(ageMs / 60000)}m)`);
+                }
+            } catch (err) {
+                logger.warn(`Could not stat workspace entry ${entry.name}: ${err.message}`);
+            }
+        }
+
+        if (purged > 0) {
+            logger.success(`Workspace purge complete — removed ${purged} stale workspace(s)`);
+        }
+    } catch (err) {
+        logger.warn(`Stale workspace purge failed: ${err.message}`);
+    }
+}
