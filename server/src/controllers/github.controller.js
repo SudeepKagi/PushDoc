@@ -320,3 +320,84 @@ export const triggerManualBuild = async (req, res) => {
         });
     }
 };
+
+export const toggleRepository = async (req, res) => {
+    try {
+        const { repoId } = req.params;
+        const installation = await installationService.getInstallationByUser(req.user.userId);
+        if (!installation) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized: No GitHub App installation found for your user account"
+            });
+        }
+
+        const repository = await repositoryService.getRepositoryById(repoId);
+        if (!repository) {
+            return res.status(404).json({
+                success: false,
+                message: "Repository not found"
+            });
+        }
+
+        if (repository.installation._id.toString() !== installation._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized: You do not have permission to toggle this repository"
+            });
+        }
+
+        const wasActive = repository.isActive;
+        const updatedRepo = await repositoryService.toggleRepositoryActive(repoId);
+        
+        let jobQueued = false;
+        let jobId = null;
+
+        // If toggling ON for the first time (i.e. zero previous jobs)
+        if (!wasActive && updatedRepo.isActive) {
+            const jobCount = await jobService.getJobCountForRepository(repository._id);
+            if (jobCount === 0) {
+                try {
+                    const { branch, commitSha } = await githubService.getRepositoryDefaultBranchAndCommit(
+                        installation.installationId,
+                        repository.owner,
+                        repository.name
+                    );
+
+                    const job = await readmeQueue.add(
+                        "generate-readme",
+                        {
+                            repositoryId: repository.githubId,
+                            branch,
+                            commitSha,
+                        },
+                        {
+                            attempts: 3,
+                            backoff: {
+                                type: "exponential",
+                                delay: 5000,
+                            },
+                        }
+                    );
+                    jobQueued = true;
+                    jobId = job.id;
+                    logger.success(`First-time toggle auto-queued README generation job for ${repository.fullName} (Job ID: ${job.id})`);
+                } catch (queueErr) {
+                    logger.warn(`Failed to auto-queue first-time job for ${repository.fullName}: ${queueErr.message}`);
+                }
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            repository: updatedRepo,
+            jobQueued,
+            jobId,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};

@@ -44,4 +44,10 @@ router.post(
     githubController.triggerManualBuild
 );
 
+router.patch(
+    "/repositories/:repoId/toggle",
+    authMiddleware,
+    githubController.toggleRepository
+);
+
 export default router;
