@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import readmeQueue from "../queue/queue.js";
+import * as repositoryService from "./repository.service.js";
 import * as logger from "./logger.service.js";
 import { ValidationError } from "../utils/errors.js";
 
@@ -8,6 +9,8 @@ export const handleWebhook = async (event, payload) => {
     switch (event) {
         case "push":
             return handlePushEvent(payload);
+        case "installation_repositories":
+            return handleInstallationRepositoriesEvent(payload);
         default:
             logger.info(`Ignoring unsupported ${event} event`);
             return;
@@ -19,7 +22,7 @@ const handlePushEvent = async (payload) => {
     if (!payload?.repository) {
         throw new ValidationError("Invalid push webhook payload: repository field is missing");
     }
-    
+
     if (payload.repository.full_name === "SudeepKagi/PushDoc") {
         logger.warn("Ignoring PushDoc repository self-push event");
         return;
@@ -46,16 +49,71 @@ const handlePushEvent = async (payload) => {
         throw new ValidationError("Missing required repository ID, branch ref, or commit SHA in webhook payload");
     }
 
+    // Only process pushes to the repository's default branch
+    const pushedBranch = payload.ref.replace("refs/heads/", "");
+    const defaultBranch = payload.repository.default_branch || "main";
+    if (pushedBranch !== defaultBranch) {
+        logger.info(
+            `Ignoring push to non-default branch "${pushedBranch}" (default: "${defaultBranch}")`
+        );
+        return;
+    }
+
     await readmeQueue.add(
         "generate-readme",
         {
             repositoryId: payload.repository.id,
             branch: payload.ref,
             commitSha: payload.after,
+        },
+        {
+            // Retry up to 3 times with exponential backoff on transient errors
+            attempts: 3,
+            backoff: {
+                type: "exponential",
+                delay: 5000,
+            },
         }
     );
 
     logger.success("README generation job added to queue");
+};
+
+const handleInstallationRepositoriesEvent = async (payload) => {
+    const action = payload.action; // "added" or "removed"
+    const installationId = payload.installation?.id;
+
+    if (!installationId) {
+        logger.warn("installation_repositories event missing installation ID");
+        return;
+    }
+
+    if (action === "added" && Array.isArray(payload.repositories_added)) {
+        logger.info(
+            `Installation ${installationId}: ${payload.repositories_added.length} repo(s) added — sync required`
+        );
+        // Log each added repo; actual DB upsert happens on the next manual/auto sync.
+        // This ensures the user's next dashboard refresh picks up the new repos.
+        for (const repo of payload.repositories_added) {
+            logger.info(`  + ${repo.full_name}`);
+        }
+    }
+
+    if (action === "removed" && Array.isArray(payload.repositories_removed)) {
+        logger.info(
+            `Installation ${installationId}: ${payload.repositories_removed.length} repo(s) removed`
+        );
+        for (const repo of payload.repositories_removed) {
+            logger.info(`  - ${repo.full_name} (id: ${repo.id})`);
+            try {
+                // Remove the repository from our DB when it is uninstalled
+                await repositoryService.deleteRepositoryByGithubId(repo.id);
+                logger.success(`  Deleted repository ${repo.full_name} from DB`);
+            } catch (err) {
+                logger.warn(`  Failed to delete ${repo.full_name}: ${err.message}`);
+            }
+        }
+    }
 };
 
 export const verifySignature = (
