@@ -2,6 +2,8 @@ import React, { useState } from "react";
 
 import useGitHub from "./hooks/useGitHub";
 import useLiveLogs from "./hooks/useLiveLogs";
+import { triggerManualBuild as apiTriggerManualBuild } from "./utils/api";
+
 
 import Navbar from "./components/layout/Navbar";
 import Sidebar from "./components/layout/Sidebar";
@@ -87,9 +89,21 @@ export default function App() {
         setPage("detail");
     };
 
-    const triggerManualBuild = (repoId) => {
-        alert("Verification trigger pushed! Webhook job has been successfully queued.");
+    const triggerManualBuild = async (repoId) => {
+        try {
+            if (!token) return;
+            const data = await apiTriggerManualBuild(repoId, token);
+            if (data.success) {
+                // Instantly navigate to the logs console so they can watch it run live
+                setPage("logs");
+            } else {
+                alert("Failed to queue job: " + (data.message || "Unknown error"));
+            }
+        } catch (err) {
+            alert("Error triggering build: " + err.message);
+        }
     };
+
 
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);
