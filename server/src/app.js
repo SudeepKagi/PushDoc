@@ -1,6 +1,7 @@
 import express from "express";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
+import cors from "cors";
 import { config } from "./config/app.config.js";
 
 import indexRouter from "./routes/index.js";
@@ -11,17 +12,12 @@ import webhookRouter from "./routes/webhook.js";
 
 const app = express();
 
-// Custom CORS middleware to support local frontend development
-app.use((req, res, next) => {
-    res.setHeader("Access-Control-Allow-Origin", config.cors.origin);
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    if (req.method === "OPTIONS") {
-        return res.sendStatus(200);
-    }
-    next();
-});
+app.use(cors({
+    origin: config.cors.origin,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+}));
 
 app.use(
     express.json({
