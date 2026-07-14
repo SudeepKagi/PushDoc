@@ -31,18 +31,17 @@ export default function RepoCard({ repo, isActive, onToggleActive }) {
                         <p className="text-xs text-on-surface-variant font-medium mt-1 line-clamp-1">{repo.fullName}</p>
                     </div>
                 </div>
-                <label 
+                <div 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleActive(repo._id);
+                    }}
                     className="relative inline-flex items-center cursor-pointer"
-                    onClick={(e) => e.stopPropagation()}
                 >
-                    <input
-                        type="checkbox"
-                        checked={isActive}
-                        onChange={() => onToggleActive(repo._id)}
-                        className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                </label>
+                    <div className={`w-11 h-6 rounded-full transition-colors duration-200 relative ${isActive ? 'bg-primary' : 'bg-slate-200'}`}>
+                        <div className={`absolute top-[2px] left-[2px] bg-white border border-slate-300 rounded-full h-5 w-5 transition-transform duration-205 ${isActive ? 'translate-x-5' : ''}`}></div>
+                    </div>
+                </div>
             </div>
             
             <div className="space-y-4 mt-auto">
