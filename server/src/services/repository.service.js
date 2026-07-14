@@ -37,3 +37,13 @@ export const getRepositoryByGithubId = async (
     }).populate("installation");
 
 };
+
+export const deleteRepositoryByGithubId = async (
+    githubRepositoryId
+) => {
+
+    return await Repository.deleteOne({
+        githubId: githubRepositoryId,
+    });
+
+};
