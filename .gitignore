@@ -1,32 +1,51 @@
-# Dependencies
+# ── Dependencies ────────────────────────────────────────────
 **/node_modules/
 
-# Environment
+# ── Environment & Secrets ────────────────────────────────────
 **/.env
 **/.env.*
+!**/.env.example
 
-# Logs
-*.log
-logs/
-
-# Build
-**/dist/
-**/build/
-
-# Cache
-.parcel-cache/
-.vite/
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# GitHub App Keys
+# ── GitHub App Private Keys ──────────────────────────────────
 server/keys/
 *.pem
 
+# ── Temp / Workspaces (cloned repos & logs) ──────────────────
 temp/
+server/temp/
+server/prompt.txt
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Build Output ─────────────────────────────────────────────
+**/dist/
+**/build/
+
+# ── Parcel Cache ─────────────────────────────────────────────
+.parcel-cache/
+client/.parcel-cache/
+
+# ── Vite Cache ───────────────────────────────────────────────
+.vite/
+
+# ── OS Files ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE / Editor ─────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Scratch / Untitled Files ──────────────────────────────────
+**/Untitled-*.txt
+**/Untitled-*.js
+**/*.scratch.*
+
+# ── Stitch Assets (design tool output, not source) ───────────
+stitch_assets/
