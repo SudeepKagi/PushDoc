@@ -2,12 +2,19 @@ import * as userService from "./user.service.js";
 import * as jwtService from "./jwt.service.js";
 import { GITHUB_URLS } from "../constants/github.constants.js";
 import { config } from "../config/app.config.js";
-import { GitHubError } from "../utils/errors.js";
+import { GitHubError, ValidationError } from "../utils/errors.js";
+import crypto from "crypto";
+import connection from "../queue/connection.js";
 
-export const githubLogin = () => {
+export const githubLogin = async () => {
     if (!config.github.clientId) {
         throw new GitHubError("GitHub Client ID is not configured");
     }
+
+    // Generate a cryptographically random CSRF nonce, store it in Redis for 10 min
+    const state = crypto.randomBytes(16).toString("hex");
+    const redis = connection;
+    await redis.set(`oauth_state:${state}`, "1", "EX", 600);
 
     const githubAuthURL = new URL(
         GITHUB_URLS.OAUTH_AUTHORIZE
@@ -23,19 +30,29 @@ export const githubLogin = () => {
         config.github.redirectUri
     );
 
-    // Using a configuration-backed state verification code
     githubAuthURL.searchParams.append(
         "state",
-        config.github.webhookSecret ? config.github.webhookSecret.substring(0, 16) : "pushdoc_sec_state"
+        state
     );
 
     return githubAuthURL.toString();
 };
 
-export const githubCallback = async (code) => {
+export const githubCallback = async (code, state) => {
     if (!config.github.clientId || !config.github.clientSecret) {
         throw new GitHubError("GitHub OAuth credentials are not configured");
     }
+
+    // Verify CSRF state nonce
+    if (!state) {
+        throw new ValidationError("Missing OAuth state parameter");
+    }
+    const redis = connection;
+    const stored = await redis.get(`oauth_state:${state}`);
+    if (!stored) {
+        throw new ValidationError("Invalid or expired OAuth state. Please try logging in again.");
+    }
+    await redis.del(`oauth_state:${state}`);
 
     let tokenData;
     try {
