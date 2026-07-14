@@ -1,4 +1,5 @@
 import Job from "../models/job.model.js";
+import Repository from "../models/repository.model.js";
 
 export const createJob = async ({
     repository,
@@ -78,5 +79,23 @@ export const failJob = async (
     await job.save();
 
     return job;
+
+};
+
+export const getJobsByInstallation = async (installationId) => {
+
+    const repos = await Repository.find({ installation: installationId }).select("_id");
+    const repoIds = repos.map(r => r._id);
+
+    return await Job.find({ repository: { $in: repoIds } })
+        .populate("repository")
+        .sort({ createdAt: -1 })
+        .limit(50);
+
+};
+
+export const getJobById = async (jobId) => {
+
+    return await Job.findById(jobId).populate("repository");
 
 };
