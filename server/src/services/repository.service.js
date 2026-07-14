@@ -47,3 +47,7 @@ export const deleteRepositoryByGithubId = async (
     });
 
 };
+
+export const getRepositoryById = async (id) => {
+    return await Repository.findById(id).populate("installation");
+};

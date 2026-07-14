@@ -38,4 +38,10 @@ router.get(
     githubController.getJobLogs
 );
 
+router.post(
+    "/repositories/:repoId/trigger",
+    authMiddleware,
+    githubController.triggerManualBuild
+);
+
 export default router;

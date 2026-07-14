@@ -67,3 +67,32 @@ export const getInstallationAccessToken = async (
         throw new GitHubError(`Failed to generate installation access token: ${error.message}`, error.status || 502);
     }
 };
+
+export const getRepositoryDefaultBranchAndCommit = async (installationId, owner, repo) => {
+    try {
+        const installationOctokit = await githubApp.getInstallationOctokit(installationId);
+        const repoResponse = await installationOctokit.request(
+            "GET /repos/{owner}/{repo}",
+            {
+                owner,
+                repo,
+            }
+        );
+        const defaultBranch = repoResponse.data.default_branch || "main";
+
+        const refResponse = await installationOctokit.request(
+            "GET /repos/{owner}/{repo}/git/ref/{ref}",
+            {
+                owner,
+                repo,
+                ref: `heads/${defaultBranch}`,
+            }
+        );
+        return {
+            branch: `refs/heads/${defaultBranch}`,
+            commitSha: refResponse.data.object.sha,
+        };
+    } catch (error) {
+        throw new GitHubError(`Failed to fetch repository details from GitHub: ${error.message}`, error.status || 502);
+    }
+};

@@ -5,6 +5,7 @@ import * as installationService from "../services/installation.service.js";
 import * as repositoryService from "../services/repository.service.js";
 import * as jobService from "../services/job.service.js";
 import * as logger from "../services/logger.service.js";
+import readmeQueue from "../queue/queue.js";
 import fs from "fs";
 import path from "path";
 
@@ -248,6 +249,69 @@ export const getJobLogs = async (req, res) => {
             success: true,
             hasLogs: logLines.length > 0,
             logs: logLines
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const triggerManualBuild = async (req, res) => {
+    try {
+        const { repoId } = req.params;
+        const installation = await installationService.getInstallationByUser(req.user.userId);
+        if (!installation) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized: No GitHub App installation found for your user account"
+            });
+        }
+
+        const repository = await repositoryService.getRepositoryById(repoId);
+        if (!repository) {
+            return res.status(404).json({
+                success: false,
+                message: "Repository not found"
+            });
+        }
+
+        if (repository.installation.toString() !== installation._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized: You do not have permission to trigger verification for this repository"
+            });
+        }
+
+        const { branch, commitSha } = await githubService.getRepositoryDefaultBranchAndCommit(
+            installation.installationId,
+            repository.owner,
+            repository.name
+        );
+
+        const job = await readmeQueue.add(
+            "generate-readme",
+            {
+                repositoryId: repository.githubId,
+                branch,
+                commitSha,
+            },
+            {
+                attempts: 3,
+                backoff: {
+                    type: "exponential",
+                    delay: 5000,
+                },
+            }
+        );
+
+        logger.success(`Manual README generation job queued for ${repository.fullName} (Job ID: ${job.id})`);
+
+        return res.status(200).json({
+            success: true,
+            message: "Verification job successfully queued",
+            jobId: job.id,
         });
     } catch (error) {
         return res.status(500).json({
