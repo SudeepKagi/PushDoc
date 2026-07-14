@@ -10,6 +10,21 @@ const LEVELS = {
 
 const CURRENT_LEVEL = config.env === "production" ? LEVELS.INFO : LEVELS.DEBUG;
 
+import fs from "fs";
+import path from "path";
+
+const writeLogToFile = (jobId, logLine) => {
+    try {
+        const logDir = path.join("temp", "logs");
+        if (!fs.existsSync(logDir)) {
+            fs.mkdirSync(logDir, { recursive: true });
+        }
+        fs.appendFileSync(path.join(logDir, `${jobId}.log`), logLine + "\n");
+    } catch (err) {
+        console.error("Failed to write log to file:", err.message);
+    }
+};
+
 const formatLog = (levelIcon, levelName, jobIdOrMsg, msg) => {
     const timestamp = new Date().toISOString();
     let jobId = "";
@@ -18,6 +33,9 @@ const formatLog = (levelIcon, levelName, jobIdOrMsg, msg) => {
     if (msg !== undefined) {
         jobId = ` [Job ${jobIdOrMsg}]`;
         message = msg;
+        const line = `[${timestamp}]${jobId} ${levelIcon} ${levelName}: ${message}`;
+        writeLogToFile(jobIdOrMsg, line);
+        return line;
     }
 
     return `[${timestamp}]${jobId} ${levelIcon} ${levelName}: ${message}`;
