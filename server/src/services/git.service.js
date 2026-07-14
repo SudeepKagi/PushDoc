@@ -23,20 +23,30 @@ const handleGitError = (error, token) => {
 export const cloneRepository = async (
     cloneUrl,
     repositoryPath,
-    token
+    token,
+    branch
 ) => {
     validateRepoPath(repositoryPath);
     try {
         const git = simpleGit();
-        await git.clone(
-            cloneUrl,
-            repositoryPath
-        );
+        // Shallow clone: only fetch the tip commit of the target branch.
+        // This keeps disk usage minimal (5–20 MB vs hundreds of MB for full clones)
+        // which is critical on ephemeral cloud filesystems (Render, Railway, Fly).
+        const cloneArgs = [
+            "--depth", "1",
+            "--no-tags",
+            "--single-branch",
+        ];
+        if (branch) {
+            cloneArgs.push("--branch", branch.replace("refs/heads/", ""));
+        }
+        await git.clone(cloneUrl, repositoryPath, cloneArgs);
         return repositoryPath;
     } catch (error) {
         throw handleGitError(error, token);
     }
 };
+
 
 export const createAuthenticatedCloneUrl = (
     cloneUrl,
@@ -64,7 +74,7 @@ export const commitChanges = async (
         await git.addConfig("user.name", "PushDoc");
         await git.addConfig("user.email", "bot@pushdoc.app");
 
-        await git.add(".");
+        await git.add("README.md");
 
         const status = await git.status();
 

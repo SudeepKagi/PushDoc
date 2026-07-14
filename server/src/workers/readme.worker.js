@@ -112,7 +112,8 @@ const readmeWorker = new Worker(
             await gitService.cloneRepository(
                 authenticatedCloneUrl,
                 repositoryPath,
-                token
+                token,
+                branch
             );
 
             logger.success(
