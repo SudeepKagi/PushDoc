@@ -201,6 +201,14 @@ export default function App() {
                             setAppPage={setPage}
                         />
                     )}
+                    {page === "detail" && (
+                        <DetailPage
+                            selectedRepo={selectedRepo}
+                            setPage={setPage}
+                            triggerManualBuild={triggerManualBuild}
+                            jobs={jobs}
+                        />
+                    )}
                     {page === "logs" && (
                         <BuildLogsPage
                             jobs={jobs}
