@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import path from "path";
+import os from "os";
 
 dotenv.config();
 
@@ -34,8 +35,17 @@ export const config = {
         geminiModel: "gemini-2.5-flash",
         groqModel: "llama-3.3-70b-versatile",
     },
+    cors: {
+        origin: process.env.CORS_ORIGIN || "http://localhost:1234",
+    },
     workspace: {
-        root: process.env.WORKSPACE_ROOT_PATH || path.join("temp", "workspaces"),
+        // In production: set WORKSPACE_ROOT_PATH to an absolute path outside the app
+        // e.g. /var/pushdoc/workspaces or a mounted volume
+        // Falls back to OS temp dir in production, local temp/ in development
+        root: process.env.WORKSPACE_ROOT_PATH ||
+            (process.env.NODE_ENV === "production"
+                ? path.join(os.tmpdir(), "pushdoc-workspaces")
+                : path.join("temp", "workspaces")),
     },
     queue: {
         name: "readme-generation",
