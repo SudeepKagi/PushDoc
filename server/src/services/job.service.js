@@ -36,7 +36,13 @@ export const updateStatus = async (
 };
 
 export const completeJob = async (
-    jobId
+    jobId,
+    {
+        originalReadme,
+        generatedReadme,
+        validationScore,
+        validationWarnings,
+    } = {}
 ) => {
 
     const job =
@@ -51,6 +57,11 @@ export const completeJob = async (
     job.duration =
         job.completedAt - job.startedAt;
 
+    if (originalReadme !== undefined) job.originalReadme = originalReadme;
+    if (generatedReadme !== undefined) job.generatedReadme = generatedReadme;
+    if (validationScore !== undefined) job.validationScore = validationScore;
+    if (validationWarnings !== undefined) job.validationWarnings = validationWarnings;
+
     await job.save();
 
     return job;
@@ -59,7 +70,13 @@ export const completeJob = async (
 
 export const failJob = async (
     jobId,
-    error
+    error,
+    {
+        originalReadme,
+        generatedReadme,
+        validationScore,
+        validationWarnings,
+    } = {}
 ) => {
 
     const job =
@@ -75,6 +92,11 @@ export const failJob = async (
         job.completedAt - job.startedAt;
 
     job.error = error;
+
+    if (originalReadme !== undefined) job.originalReadme = originalReadme;
+    if (generatedReadme !== undefined) job.generatedReadme = generatedReadme;
+    if (validationScore !== undefined) job.validationScore = validationScore;
+    if (validationWarnings !== undefined) job.validationWarnings = validationWarnings;
 
     await job.save();
 

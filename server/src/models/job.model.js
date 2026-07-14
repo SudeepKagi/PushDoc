@@ -47,6 +47,14 @@ const jobSchema = new mongoose.Schema(
         duration: Number,
 
         error: String,
+
+        originalReadme: String,
+
+        generatedReadme: String,
+
+        validationScore: Number,
+
+        validationWarnings: [String],
     },
     {
         timestamps: true,

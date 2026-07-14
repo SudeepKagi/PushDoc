@@ -22,6 +22,9 @@ const readmeWorker = new Worker(
         let trackingJob;
         let workspacePath;
         let repositoryPath;
+        let originalReadme = "";
+        let generatedReadme = "";
+        let validation = { score: 0, warnings: [] };
 
         try {
 
@@ -132,13 +135,15 @@ const readmeWorker = new Worker(
                     jobId
                 );
 
+            generatedReadme = readme;
+
             logger.success(
                 jobId,
                 "README generated"
             );
 
             // Run structural and semantic validation
-            const validation =
+            validation =
                 readmeValidator.validateReadme(
                     readme,
                     knowledge
@@ -160,6 +165,16 @@ const readmeWorker = new Worker(
                         `  - ${w}`
                     );
                 }
+            }
+
+            // Capture original README text if it exists
+            try {
+                const origPath = path.join(repositoryPath, "README.md");
+                if (fs.existsSync(origPath)) {
+                    originalReadme = fs.readFileSync(origPath, "utf8");
+                }
+            } catch (err) {
+                logger.warn(jobId, `Failed to read original README: ${err.message}`);
             }
 
             await jobService.updateStatus(
@@ -219,7 +234,13 @@ const readmeWorker = new Worker(
             }
 
             await jobService.completeJob(
-                trackingJob._id
+                trackingJob._id,
+                {
+                    originalReadme,
+                    generatedReadme,
+                    validationScore: validation.score,
+                    validationWarnings: validation.warnings,
+                }
             );
 
             logger.success(
@@ -233,7 +254,13 @@ const readmeWorker = new Worker(
 
                 await jobService.failJob(
                     trackingJob._id,
-                    err.message
+                    err.message,
+                    {
+                        originalReadme,
+                        generatedReadme,
+                        validationScore: validation.score,
+                        validationWarnings: validation.warnings,
+                    }
                 );
 
             }
