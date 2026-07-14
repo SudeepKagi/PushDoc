@@ -2,34 +2,14 @@ import React, { useState } from "react";
 import StatsStrip from "../components/dashboard/StatsStrip";
 import RepoGrid from "../components/dashboard/RepoGrid";
 
-export default function DashboardPage({ repos, openDetails, triggerSync, token, syncing, setAppPage }) {
+export default function DashboardPage({ repos, openDetails, triggerSync, token, syncing, setAppPage, toggleRepository }) {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("all");
     const [page, setPage] = useState(1);
-    
-    // Active/Inactive state backed by localStorage
-    const [activeRepoIds, setActiveRepoIds] = useState(() => {
-        try {
-            const saved = localStorage.getItem("active_repo_ids");
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            return [];
-        }
-    });
 
-    const toggleRepoActive = (repoId) => {
-        setActiveRepoIds(prev => {
-            const updated = prev.includes(repoId)
-                ? prev.filter(id => id !== repoId)
-                : [...prev, repoId];
-            localStorage.setItem("active_repo_ids", JSON.stringify(updated));
-            return updated;
-        });
-    };
-
-    // Calculate Stats
+    // Calculate Stats from database-driven isActive field
     const totalRepos = repos.length;
-    const activeCount = repos.filter(r => activeRepoIds.includes(r._id)).length;
+    const activeCount = repos.filter(r => r.isActive).length;
     const inactiveCount = totalRepos - activeCount;
     const privateCount = repos.filter(r => r.private).length;
 
@@ -39,7 +19,7 @@ export default function DashboardPage({ repos, openDetails, triggerSync, token, 
             repo.name.toLowerCase().includes(search.toLowerCase()) ||
             repo.fullName.toLowerCase().includes(search.toLowerCase());
             
-        const isActive = activeRepoIds.includes(repo._id);
+        const isActive = repo.isActive;
         const matchesFilter = 
             filter === "all" ||
             (filter === "active" && isActive) ||
@@ -146,8 +126,7 @@ export default function DashboardPage({ repos, openDetails, triggerSync, token, 
                     onRepoClick={openDetails}
                     triggerSync={triggerSync}
                     token={token}
-                    activeRepoIds={activeRepoIds}
-                    onToggleActive={toggleRepoActive}
+                    onToggleActive={toggleRepository}
                 />
             </div>
 

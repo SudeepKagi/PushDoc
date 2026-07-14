@@ -51,3 +51,14 @@ export const triggerManualBuild = async (repoId, token) => {
     return data;
 };
 
+export const toggleRepositoryActive = async (repoId, token) => {
+    const res = await fetch(`${BACKEND_URL}/github/repositories/${repoId}/toggle`, {
+        method: "PATCH",
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+    const data = await res.json();
+    return data;
+};
+

@@ -3,7 +3,7 @@ import RepoCard from "./RepoCard";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
 
-export default function RepoGrid({ repos, onRepoClick, triggerSync, token, activeRepoIds, onToggleActive }) {
+export default function RepoGrid({ repos, onRepoClick, triggerSync, token, onToggleActive }) {
     if (repos.length === 0) {
         return (
             <Card className="p-12 text-center max-w-lg mx-auto rounded-[24px]">
@@ -22,12 +22,13 @@ export default function RepoGrid({ repos, onRepoClick, triggerSync, token, activ
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {repos.map((repo) => (
-                <RepoCard
-                    key={repo._id}
-                    repo={repo}
-                    isActive={activeRepoIds.includes(repo._id)}
-                    onToggleActive={onToggleActive}
-                />
+                <div key={repo._id} onClick={() => onRepoClick(repo)}>
+                    <RepoCard
+                        repo={repo}
+                        isActive={repo.isActive}
+                        onToggleActive={onToggleActive}
+                    />
+                </div>
             ))}
         </div>
     );

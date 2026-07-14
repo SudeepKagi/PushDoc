@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { exchangeOAuthCode as apiExchangeCode, syncRepositories as apiSyncRepos, getLoginUrl } from "../utils/api";
+import { exchangeOAuthCode as apiExchangeCode, syncRepositories as apiSyncRepos, getLoginUrl, toggleRepositoryActive as apiToggleRepoActive } from "../utils/api";
+
 
 export default function useGitHub() {
     const [repos, setRepos] = useState([]);
@@ -111,6 +112,26 @@ export default function useGitHub() {
         }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+    const toggleRepository = async (repoId) => {
+        if (!token) return;
+        setError(null);
+        try {
+            const data = await apiToggleRepoActive(repoId, token);
+            if (data.success && data.repository) {
+                setRepos(prev => prev.map(r => r._id === repoId ? data.repository : r));
+                setSelectedRepo(prev => prev && prev._id === repoId ? data.repository : prev);
+
+                if (data.jobQueued) {
+                    alert("AI updates enabled! First-time auto-verification has been queued.");
+                }
+            } else {
+                setError(data.message || "Failed to toggle repository active status.");
+            }
+        } catch (err) {
+            handleAuthError(err);
+        }
+    };
+
     return {
         repos,
         setRepos,
@@ -123,6 +144,7 @@ export default function useGitHub() {
         clearError,
         triggerSync,
         handleLoginRedirect,
-        logout
+        logout,
+        toggleRepository
     };
 }

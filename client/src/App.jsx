@@ -32,7 +32,8 @@ export default function App() {
         clearError,
         triggerSync,
         handleLoginRedirect,
-        logout
+        logout,
+        toggleRepository
     } = useGitHub();
 
     // Automatically route/redirect on authentication status change
@@ -199,6 +200,7 @@ export default function App() {
                             token={token}
                             syncing={syncing}
                             setAppPage={setPage}
+                            toggleRepository={toggleRepository}
                         />
                     )}
                     {page === "detail" && (
