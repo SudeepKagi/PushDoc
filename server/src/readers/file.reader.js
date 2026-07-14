@@ -36,7 +36,6 @@ export const readFile = (
             lines
                 .slice(0, MAX_LINES)
                 .join("\n");
-
         truncated = true;
 
     }
