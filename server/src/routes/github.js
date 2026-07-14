@@ -26,4 +26,16 @@ router.get(
     githubController.syncRepositories
 );
 
+router.get(
+    "/jobs",
+    authMiddleware,
+    githubController.getJobs
+);
+
+router.get(
+    "/jobs/:jobId/logs",
+    authMiddleware,
+    githubController.getJobLogs
+);
+
 export default router;

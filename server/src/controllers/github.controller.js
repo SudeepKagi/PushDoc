@@ -3,7 +3,10 @@ import * as authService from "../services/auth.service.js";
 import * as installationStateService from "../services/installationState.service.js";
 import * as installationService from "../services/installation.service.js";
 import * as repositoryService from "../services/repository.service.js";
+import * as jobService from "../services/job.service.js";
 import * as logger from "../services/logger.service.js";
+import fs from "fs";
+import path from "path";
 
 export const getGitHubApp = async (req, res) => {
     try {
@@ -187,4 +190,69 @@ export const syncRepositories = async (req, res) => {
 
     }
 
+};
+
+export const getJobs = async (req, res) => {
+    try {
+        const installation = await installationService.getInstallationByUser(req.user.userId);
+        if (!installation) {
+            return res.status(200).json({ success: true, jobs: [] });
+        }
+
+        const jobs = await jobService.getJobsByInstallation(installation._id);
+
+        return res.status(200).json({
+            success: true,
+            jobs
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const getJobLogs = async (req, res) => {
+    try {
+        const { jobId } = req.params;
+        const job = await jobService.getJobById(jobId);
+        if (!job) {
+            return res.status(404).json({ success: false, message: "Job not found" });
+        }
+
+        const logFilePath = path.join("temp", "logs", `${job.bullJobId}.log`);
+        let logLines = [];
+
+        if (fs.existsSync(logFilePath)) {
+            const rawContent = fs.readFileSync(logFilePath, "utf8");
+            const lines = rawContent.split("\n").filter(Boolean);
+            logLines = lines.map(line => {
+                const match = line.match(/^\[([^\]]+)\](?:\s+\[Job\s+[^\]]+\])?\s+([^\s]+)\s+([A-Z]+):\s+(.*)$/);
+                if (match) {
+                    return {
+                        time: match[1].substring(11, 19),
+                        type: match[3],
+                        text: match[4]
+                    };
+                }
+                return {
+                    time: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+                    type: "INFO",
+                    text: line
+                };
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            hasLogs: logLines.length > 0,
+            logs: logLines
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
 };
