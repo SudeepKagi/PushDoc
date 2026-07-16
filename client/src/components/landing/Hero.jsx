@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import LOGO_BASE64 from "../../logoBase64.js";
+import demoWebp from "../../demo.webp";
 
 // Floating tech language icons — aligned lower to match text block
 const FLOATING_ICONS = [
@@ -221,26 +222,12 @@ export default function Hero({ handleLoginRedirect, setPage }) {
                             </div>
                         </div>
                         {/* Video mockup */}
-                        <div style={{ position: "relative", background: "#0b0f19", minHeight: "380px", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "18px", color: "#94a3b8", textAlign: "center" }}>
-                                <button style={{
-                                    width: "72px", height: "72px", borderRadius: "50%",
-                                    background: "rgba(29,78,216,0.95)", border: "none",
-                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                    cursor: "pointer", color: "#fff", boxShadow: "0 10px 30px rgba(29,78,216,0.45)",
-                                    transition: "transform 0.2s, background 0.2s",
-                                }}
-                                    onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.08)"; }}
-                                    onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}>
-                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: "4px" }}>
-                                        <path d="M8 5v14l11-7z" />
-                                    </svg>
-                                </button>
-                                <div>
-                                    <p style={{ fontSize: "16px", fontWeight: 700, color: "#f8fafc", fontFamily: "'Space Grotesk', sans-serif", marginBottom: "4px" }}>Watch PushDoc in Action</p>
-                                    <p style={{ fontSize: "12px", color: "#64748b" }}>See how code commits instantly sync with documentation</p>
-                                </div>
-                            </div>
+                        <div style={{ position: "relative", background: "#0b0f19", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <img 
+                                src={demoWebp} 
+                                alt="PushDoc Walkthrough Demo" 
+                                style={{ width: "100%", height: "auto", display: "block" }} 
+                            />
                         </div>
                     </div>
                 </div>
