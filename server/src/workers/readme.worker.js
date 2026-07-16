@@ -1,5 +1,7 @@
 import { Worker } from "bullmq";
 import connection from "../queue/connection.js";
+import path from "path";
+import fs from "fs";
 
 import * as jobService from "../services/job.service.js";
 import * as repositoryService from "../services/repository.service.js";
@@ -24,7 +26,6 @@ const readmeWorker = new Worker(
         let repositoryPath;
         let originalReadme = "";
         let generatedReadme = "";
-        let validation = { score: 0, warnings: [] };
 
         try {
 
@@ -142,31 +143,6 @@ const readmeWorker = new Worker(
                 "README generated"
             );
 
-            // Run structural and semantic validation
-            validation =
-                readmeValidator.validateReadme(
-                    readme,
-                    knowledge
-                );
-
-            logger.info(
-                jobId,
-                `README Validation Score: ${validation.score}/100 (Valid: ${validation.valid})`
-            );
-
-            if (!validation.valid) {
-                logger.warn(
-                    jobId,
-                    "README validation did not reach score 90. Warnings:"
-                );
-                for (const w of validation.warnings) {
-                    logger.warn(
-                        jobId,
-                        `  - ${w}`
-                    );
-                }
-            }
-
             // Capture original README text if it exists
             try {
                 const origPath = path.join(repositoryPath, "README.md");
@@ -238,8 +214,6 @@ const readmeWorker = new Worker(
                 {
                     originalReadme,
                     generatedReadme,
-                    validationScore: validation.score,
-                    validationWarnings: validation.warnings,
                 }
             );
 
@@ -258,8 +232,6 @@ const readmeWorker = new Worker(
                     {
                         originalReadme,
                         generatedReadme,
-                        validationScore: validation.score,
-                        validationWarnings: validation.warnings,
                     }
                 );
 

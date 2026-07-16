@@ -28,19 +28,39 @@ export default function DashboardPage({ repos, openDetails, triggerSync, token, 
         return matchesSearch && matchesFilter;
     });
 
-    // Pagination (12 repos per page)
+    const activeRepos = filteredRepos.filter(r => r.isActive);
+    const inactiveRepos = filteredRepos.filter(r => !r.isActive);
+
+    // Pagination (12 repos per page, applying only to inactive repos)
     const pageSize = 12;
-    const totalPages = Math.max(1, Math.ceil(filteredRepos.length / pageSize));
-    
+    let displayedRepos = [];
+    let totalPages = 1;
+
+    if (filter === "all") {
+        totalPages = Math.max(1, Math.ceil(inactiveRepos.length / pageSize));
+        const startIndex = (page - 1) * pageSize;
+        const paginatedInactive = inactiveRepos.slice(startIndex, startIndex + pageSize);
+        if (page === 1) {
+            displayedRepos = [...activeRepos, ...paginatedInactive];
+        } else {
+            displayedRepos = paginatedInactive;
+        }
+    } else if (filter === "active") {
+        totalPages = 1;
+        displayedRepos = activeRepos;
+    } else {
+        // filter === "inactive"
+        totalPages = Math.max(1, Math.ceil(inactiveRepos.length / pageSize));
+        const startIndex = (page - 1) * pageSize;
+        displayedRepos = inactiveRepos.slice(startIndex, startIndex + pageSize);
+    }
+
     // Reset to page 1 if current page is out of bounds after filtering
     React.useEffect(() => {
         if (page > totalPages) {
             setPage(1);
         }
     }, [filteredRepos.length, totalPages, page]);
-
-    const startIndex = (page - 1) * pageSize;
-    const displayedRepos = filteredRepos.slice(startIndex, startIndex + pageSize);
 
     return (
         <div className="space-y-10 animate-fade">

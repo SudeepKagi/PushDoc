@@ -60,7 +60,7 @@ export const readFile = (
         path: relativePath,
 
         category:
-            relativePath.split(path.sep)[0],
+            getCategory(relativePath),
 
         extension:
             path.extname(relativePath),
@@ -80,6 +80,34 @@ export const readFile = (
     };
 
 };
+
+function getCategory(relativePath) {
+    const segments = relativePath.split(/[/\\]/);
+    if (segments.length === 0) return "";
+    
+    const categories = new Set([
+        "controllers", "controller",
+        "routes", "route",
+        "models", "model",
+        "middlewares", "middleware",
+        "config",
+        "services", "service",
+        "workers", "worker",
+        "pipelines", "pipeline"
+    ]);
+
+    for (let i = segments.length - 2; i >= 0; i--) {
+        const seg = segments[i].toLowerCase();
+        if (categories.has(seg)) {
+            return seg;
+        }
+    }
+
+    if (segments.length > 1) {
+        return segments[segments.length - 2];
+    }
+    return segments[0];
+}
 
 function detectLanguage(
     filePath

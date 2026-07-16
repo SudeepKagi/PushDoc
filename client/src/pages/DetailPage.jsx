@@ -49,14 +49,21 @@ function ProgressTracker({ status }) {
                     
                     return (
                         <div key={idx} className="flex flex-col items-center z-10 relative">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
                                 isPassed 
-                                    ? "bg-primary text-white scale-110 shadow-sm" 
+                                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20 scale-110" 
                                     : isActive 
-                                        ? "bg-blue-500 text-white animate-pulse shadow-md scale-115" 
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-125 ring-4 ring-blue-500/20" 
                                         : "bg-white border-2 border-slate-200 text-slate-400"
                             }`}>
-                                {isPassed ? "✓" : idx + 1}
+                                <span className="material-symbols-outlined text-[18px]">
+                                    {isPassed ? "check" : 
+                                     idx === 0 ? "hourglass_empty" : 
+                                     idx === 1 ? "download" : 
+                                     idx === 2 ? "troubleshoot" : 
+                                     idx === 3 ? "edit_document" : 
+                                     idx === 4 ? "save" : "cloud_upload"}
+                                </span>
                             </div>
                             <span className={`text-[9px] font-bold mt-2.5 uppercase tracking-wider ${
                                 isActive ? "text-blue-600 font-extrabold" : isPassed ? "text-primary" : "text-slate-400"
@@ -71,110 +78,201 @@ function ProgressTracker({ status }) {
     );
 }
 
-function DiffViewer({ original = "", modified = "" }) {
-    const [viewMode, setViewMode] = useState("split"); // "split", "unified", "preview"
+function renderMarkdown(rawContent) {
+    if (!rawContent) return "";
+    // Normalize line endings
+    const content = rawContent.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const lines = content.split("\n");
+    let html = "";
+    let inCodeBlock = false;
+    let codeLines = [];
+    let inTable = false;
+    let tableRows = [];
 
-    const originalLines = original ? original.split("\n") : [];
-    const modifiedLines = modified ? modified.split("\n") : [];
+    // Process inline markdown (bold, italic, images, links, code)
+    const inline = (text) => {
+        let t = text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        // Images/badges first (so alt text isn't link-processed)
+        t = t.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
+            '<img src="$2" alt="$1" style="display:inline;max-height:24px;margin:2px 3px 0;vertical-align:middle;" loading="lazy"/>');
+        // Links
+        t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
+            '<a href="$2" style="color:#0969da;text-decoration:none;" target="_blank" rel="noopener">$1</a>');
+        // Inline code
+        t = t.replace(/`([^`]+)`/g,
+            '<code style="background:#f0f0f0;border-radius:4px;padding:1px 5px;font-size:85%;font-family:\'SFMono-Regular\',Consolas,monospace;border:1px solid #e0e0e0;">$1</code>');
+        // Bold + italic combined
+        t = t.replace(/\*\*\*([^*]+)\*\*\*/g, "<strong><em>$1</em></strong>");
+        // Bold
+        t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+        // Italic
+        t = t.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+        return t;
+    };
 
+    const flushTable = () => {
+        if (tableRows.length < 2) { tableRows = []; inTable = false; return; }
+        const headerCells = tableRows[0]
+            .split("|").filter(c => c.trim())
+            .map(c => `<th style="padding:6px 13px;border:1px solid #d1d9e0;font-weight:600;background:#f6f8fa;white-space:nowrap;text-align:left;">${inline(c.trim())}</th>`)
+            .join("");
+        const bodyHtml = tableRows.slice(2)
+            .filter(r => r.trim() && r.includes("|"))
+            .map(row =>
+                `<tr>${row.split("|").filter(c => c.trim())
+                    .map(c => `<td style="padding:6px 13px;border:1px solid #d1d9e0;vertical-align:top;">${inline(c.trim())}</td>`)
+                    .join("")}</tr>`
+            ).join("");
+        html += `<div style="overflow-x:auto;margin:16px 0;"><table style="border-collapse:collapse;min-width:100%;font-size:13px;"><thead><tr>${headerCells}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
+        tableRows = []; inTable = false;
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+
+        // ── Code fence ──────────────────────────────────────────
+        if (trimmed.startsWith("```")) {
+            if (inTable) flushTable();
+            if (!inCodeBlock) {
+                inCodeBlock = true;
+                codeLines = [];
+            } else {
+                inCodeBlock = false;
+                const escaped = codeLines.join("\n")
+                    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                html += `<pre style="background:#f6f8fa;border:1px solid #d1d9e0;border-radius:6px;padding:16px;overflow-x:auto;font-size:12px;line-height:1.6;margin:16px 0;font-family:'SFMono-Regular',Consolas,monospace;white-space:pre;">${escaped}</pre>`;
+                codeLines = [];
+            }
+            continue;
+        }
+        if (inCodeBlock) { codeLines.push(line); continue; }
+
+        // ── Table ────────────────────────────────────────────────
+        if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+            inTable = true;
+            tableRows.push(trimmed);
+            continue;
+        }
+        if (inTable) flushTable();
+
+        // ── Blank line ───────────────────────────────────────────
+        if (!trimmed) { html += `<div style="height:10px;"></div>`; continue; }
+
+        // ── Horizontal rule ───────────────────────────────────────
+        if (/^-{3,}$/.test(trimmed) || /^\*{3,}$/.test(trimmed) || /^_{3,}$/.test(trimmed)) {
+            html += `<hr style="border:none;border-top:1px solid #d1d9e0;margin:24px 0;"/>`;
+            continue;
+        }
+
+        // ── Headings ─────────────────────────────────────────────
+        if (trimmed.startsWith("#### ")) {
+            html += `<h4 style="font-size:1em;font-weight:700;margin:16px 0 8px;color:#1f2328;">${inline(trimmed.slice(5))}</h4>`;
+            continue;
+        }
+        if (trimmed.startsWith("### ")) {
+            html += `<h3 style="font-size:1.25em;font-weight:700;margin:20px 0 10px;color:#1f2328;padding-bottom:4px;">${inline(trimmed.slice(4))}</h3>`;
+            continue;
+        }
+        if (trimmed.startsWith("## ")) {
+            html += `<h2 style="font-size:1.5em;font-weight:700;border-bottom:1px solid #d1d9e0;padding-bottom:0.3em;margin:24px 0 14px;color:#1f2328;">${inline(trimmed.slice(3))}</h2>`;
+            continue;
+        }
+        if (trimmed.startsWith("# ")) {
+            html += `<h1 style="font-size:2em;font-weight:700;border-bottom:1px solid #d1d9e0;padding-bottom:0.3em;margin:24px 0 16px;color:#1f2328;">${inline(trimmed.slice(2))}</h1>`;
+            continue;
+        }
+
+        // ── Blockquote ───────────────────────────────────────────
+        if (trimmed.startsWith("> ")) {
+            html += `<blockquote style="border-left:4px solid #d1d9e0;padding:4px 16px;color:#656d76;margin:12px 0;background:#f9fafb;border-radius:0 4px 4px 0;">${inline(trimmed.slice(2))}</blockquote>`;
+            continue;
+        }
+
+        // ── Ordered list ─────────────────────────────────────────
+        const olMatch = trimmed.match(/^(\d+)\.\s+(.+)/);
+        if (olMatch) {
+            html += `<div style="display:flex;gap:8px;margin:3px 0 3px 20px;line-height:1.6;"><span style="min-width:20px;color:#1f2328;font-variant-numeric:tabular-nums;">${olMatch[1]}.</span><span style="color:#1f2328;">${inline(olMatch[2])}</span></div>`;
+            continue;
+        }
+
+        // ── Unordered list ───────────────────────────────────────
+        if (/^[-*+] /.test(trimmed)) {
+            const indent = line.search(/\S/);
+            const marginLeft = Math.min(indent, 3) * 12 + 20;
+            html += `<div style="display:flex;gap:8px;margin:3px 0 3px ${marginLeft}px;line-height:1.6;"><span style="min-width:8px;color:#57606a;">•</span><span style="color:#1f2328;">${inline(trimmed.slice(2))}</span></div>`;
+            continue;
+        }
+
+        // ── Regular paragraph ────────────────────────────────────
+        html += `<p style="margin:8px 0;line-height:1.7;color:#1f2328;">${inline(trimmed)}</p>`;
+    }
+
+    // Flush any remaining table
+    if (inTable) flushTable();
+
+    return html;
+}
+
+function GitHubMarkdownPreview({ content, title, badge, emptyMessage }) {
+    const containerRef = React.useRef(null);
+
+    React.useEffect(() => {
+        if (!containerRef.current) return;
+        if (!content) { containerRef.current.innerHTML = ""; return; }
+        containerRef.current.innerHTML = renderMarkdown(content);
+    }, [content]);
+
+    return (
+        <div className="flex flex-col h-full">
+            <div className="px-4 py-3 border-b border-slate-200 text-[10px] text-slate-600 font-bold uppercase tracking-wider flex justify-between items-center bg-[#f6f8fa]">
+                <span className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                    {title}
+                </span>
+                {badge && (
+                    <span className="text-emerald-600 font-bold text-[9px] bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider border border-emerald-200">{badge}</span>
+                )}
+            </div>
+            <div className="flex-1 overflow-y-auto bg-white">
+                {!content ? (
+                    <div className="text-slate-440 italic py-12 text-center text-sm flex flex-col items-center gap-3">
+                        <span className="text-3xl">📄</span>
+                        {emptyMessage}
+                    </div>
+                ) : (
+                    <div
+                        ref={containerRef}
+                        className="px-8 py-6"
+                        style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif", fontSize: "14px", lineHeight: "1.6", color: "#1f2328", maxWidth: "900px" }}
+                    />
+                )}
+            </div>
+        </div>
+    );
+}
+
+function DiffViewer({ modified = "" }) {
     return (
         <Card className="p-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <h3 className="font-bold text-lg text-slate-800">Generated Documentation Preview</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">Compare original codebase README with the AI draft</p>
-                </div>
-                <div className="flex p-1 bg-slate-100 rounded-full border border-slate-200/50 self-start">
-                    <button 
-                        onClick={() => setViewMode("split")}
-                        className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${viewMode === "split" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
-                    >
-                        Split View
-                    </button>
-                    <button 
-                        onClick={() => setViewMode("unified")}
-                        className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${viewMode === "unified" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
-                    >
-                        Raw Output
-                    </button>
-                    <button 
-                        onClick={() => setViewMode("preview")}
-                        className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${viewMode === "preview" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
-                    >
-                        Markdown Preview
-                    </button>
+                    <p className="text-xs text-slate-500 mt-0.5">Rendered view of the generated README</p>
                 </div>
             </div>
 
-            {viewMode === "split" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[420px] font-mono text-[11px] overflow-hidden border border-slate-200 rounded-2xl bg-slate-950 text-slate-200 shadow-inner">
-                    <div className="flex flex-col border-r border-slate-900 h-full">
-                        <div className="bg-slate-900/50 px-4 py-3.5 border-b border-slate-900 text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
-                            Original README.md
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-5 space-y-1.5 leading-relaxed">
-                            {originalLines.length === 0 || (originalLines.length === 1 && originalLines[0] === "") ? (
-                                <div className="text-slate-650 italic py-8 text-center">No original README detected.</div>
-                            ) : (
-                                originalLines.map((line, idx) => (
-                                    <div key={idx} className="whitespace-pre-wrap">{line || " "}</div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                    <div className="flex flex-col h-full bg-[#052e16]/5">
-                        <div className="bg-slate-900/50 px-4 py-3.5 border-b border-slate-900 text-[10px] text-slate-500 font-bold uppercase tracking-wider flex justify-between items-center">
-                            <span className="flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
-                                Generated README.md
-                            </span>
-                            <span className="text-[#10b981] font-bold text-[9px] bg-[#10b981]/10 px-2 py-0.5 rounded-full uppercase tracking-wider border border-[#10b981]/25">New Draft</span>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-5 space-y-1.5 leading-relaxed bg-[#052e16]/5">
-                            {modifiedLines.length === 0 ? (
-                                <div className="text-slate-650 italic py-8 text-center">No generated draft available.</div>
-                            ) : (
-                                modifiedLines.map((line, idx) => (
-                                    <div key={idx} className="whitespace-pre-wrap text-emerald-300 bg-[#064e3b]/10 px-1 rounded-sm">{line || " "}</div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {viewMode === "unified" && (
-                <div className="h-[420px] font-mono text-[11px] overflow-y-auto border border-slate-200 rounded-2xl bg-slate-950 text-slate-200 p-6 leading-relaxed space-y-1">
-                    {modifiedLines.length === 0 ? (
-                        <div className="text-slate-650 italic py-8 text-center">No generated draft available.</div>
-                    ) : (
-                        modifiedLines.map((line, idx) => (
-                            <div key={idx} className="whitespace-pre-wrap">{line || " "}</div>
-                        ))
-                    )}
-                </div>
-            )}
-
-            {viewMode === "preview" && (
-                <div className="h-[420px] overflow-y-auto border border-slate-200 rounded-2xl bg-white text-slate-800 p-8 shadow-inner">
-                    {modifiedLines.length === 0 ? (
-                        <div className="text-slate-450 italic py-8 text-center">No generated draft available for preview.</div>
-                    ) : (
-                        <div className="space-y-4">
-                            {modifiedLines.map((line, idx) => {
-                                if (line.startsWith("# ")) return <h1 key={idx} className="text-2xl font-black text-slate-900 border-b pb-2.5 mb-4 mt-6">{line.replace("# ", "")}</h1>;
-                                if (line.startsWith("## ")) return <h2 key={idx} className="text-lg font-bold text-slate-800 mt-6 mb-2">{line.replace("## ", "")}</h2>;
-                                if (line.startsWith("### ")) return <h3 key={idx} className="text-base font-bold text-slate-800 mt-4 mb-2">{line.replace("### ", "")}</h3>;
-                                if (line.startsWith("- ")) return <li key={idx} className="ml-5 list-disc text-sm text-slate-600 mb-1">{line.replace("- ", "")}</li>;
-                                if (line.startsWith("1. ")) return <li key={idx} className="ml-5 list-decimal text-sm text-slate-600 mb-1">{line.replace("1. ", "")}</li>;
-                                if (line.startsWith("```")) return null;
-                                return <p key={idx} className="text-sm text-slate-600 leading-relaxed mb-3">{line}</p>;
-                            })}
-                        </div>
-                    )}
-                </div>
-            )}
+            <div className="h-[420px] overflow-hidden border border-slate-200 rounded-2xl shadow-inner">
+                <GitHubMarkdownPreview
+                    content={modified}
+                    title="README.md — Current (GitHub Preview)"
+                    badge="Live in Repo"
+                    emptyMessage="No README generated yet."
+                />
+            </div>
         </Card>
     );
 }
@@ -227,46 +325,8 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    {/* Validation Card */}
-                    <Card className="p-8">
-                        <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <h3 className="font-bold text-lg text-slate-800">Validation Warnings</h3>
-                                <p className="text-xs text-slate-500 mt-0.5">Automated lint and semantic rule check results</p>
-                            </div>
-                            <span
-                                className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                    displayWarnings.length === 0
-                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                                        : "bg-rose-50 text-rose-750 border border-rose-100"
-                                }`}
-                            >
-                                {displayWarnings.length} Warnings
-                            </span>
-                        </div>
-                        {displayWarnings.length === 0 ? (
-                            <div className="text-emerald-750 text-sm font-semibold flex items-center gap-3 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-                                <span className="material-symbols-outlined text-emerald-650">check_circle</span>
-                                No issues found. The README meets all structural and semantic criteria!
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {displayWarnings.map((w, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="flex items-start gap-3 p-4 bg-rose-50/20 border border-rose-100/50 rounded-2xl text-sm"
-                                    >
-                                        <span className="material-symbols-outlined text-rose-600 text-sm mt-0.5">warning</span>
-                                        <span className="text-slate-700 leading-relaxed">{w}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </Card>
-
                     {/* Interactive Diff Viewer */}
                     <DiffViewer 
-                        original={latestJob?.originalReadme || ""} 
                         modified={latestJob?.generatedReadme || ""} 
                     />
                 </div>
@@ -278,32 +338,23 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                             <h3 className="font-bold text-lg text-slate-800">Quality Coverage</h3>
                             <p className="text-xs text-slate-500 mt-0.5">AI-assessed content depth scoring</p>
                         </div>
-                        <div className="space-y-5">
+                        <div className="space-y-6">
                             <div>
                                 <div className="flex justify-between text-xs font-semibold mb-2 text-slate-700">
-                                    <span>Readme Score</span>
-                                    <span>{displayScore}/100</span>
-                                </div>
-                                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div className="bg-primary h-full transition-all duration-500" style={{ width: `${displayScore}%` }}></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between text-xs font-semibold mb-2 text-slate-700">
-                                    <span>Features Scan</span>
+                                    <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px]">psychology</span> Features Scan Coverage</span>
                                     <span>{latestJob ? "90%" : "0%"}</span>
                                 </div>
-                                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div className="bg-secondary h-full transition-all duration-500" style={{ width: latestJob ? "90%" : "0%" }}></div>
+                                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden shadow-inner">
+                                    <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full transition-all duration-700 rounded-full" style={{ width: latestJob ? "90%" : "0%" }}></div>
                                 </div>
                             </div>
                             <div>
                                 <div className="flex justify-between text-xs font-semibold mb-2 text-slate-700">
-                                    <span>Routes &amp; API Scope</span>
+                                    <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px]">route</span> Routes &amp; API Scope</span>
                                     <span>{latestJob ? "85%" : "0%"}</span>
                                 </div>
-                                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div className="bg-secondary h-full transition-all duration-500" style={{ width: latestJob ? "85%" : "0%" }}></div>
+                                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden shadow-inner">
+                                    <div className="bg-gradient-to-r from-emerald-400 to-teal-500 h-full transition-all duration-700 rounded-full" style={{ width: latestJob ? "85%" : "0%" }}></div>
                                 </div>
                             </div>
                         </div>

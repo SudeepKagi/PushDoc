@@ -19,9 +19,15 @@ export default function RepoGrid({ repos, onRepoClick, triggerSync, token, onTog
         );
     }
 
+    // Sort: active repos first, then inactive
+    const sortedRepos = [...repos].sort((a, b) => {
+        if (a.isActive === b.isActive) return 0;
+        return a.isActive ? -1 : 1;
+    });
+
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {repos.map((repo) => (
+            {sortedRepos.map((repo) => (
                 <div key={repo._id} onClick={() => onRepoClick(repo)}>
                     <RepoCard
                         repo={repo}

@@ -9,13 +9,16 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const keyPath = path.join(
-    __dirname,
-    "../../keys/pushdoc.2026-06-29.private-key.pem"
-
-);
-
-const privateKey = fs.readFileSync(keyPath, "utf8");
+let privateKey;
+if (process.env.GITHUB_PRIVATE_KEY) {
+    privateKey = process.env.GITHUB_PRIVATE_KEY.replace(/\\n/g, "\n");
+} else {
+    const keyPath = path.join(
+        __dirname,
+        "../../keys/pushdoc.2026-06-29.private-key.pem"
+    );
+    privateKey = fs.readFileSync(keyPath, "utf8");
+}
 
 const app = new App({
     appId: process.env.GITHUB_APP_ID,

@@ -10,6 +10,9 @@ const ALLOWED_CATEGORIES = new Set([
     "models", "model",
     "middlewares", "middleware",
     "config",
+    "services", "service",
+    "workers", "worker",
+    "pipelines", "pipeline"
 ]);
 
 const ALLOWED_EXPLICIT_FILES = new Set([
@@ -60,27 +63,30 @@ export const buildRepositoryContext = (repository, precalculatedKnowledge) => {
         context += buildTechStackSection(packageInfo);
     }
 
-    // 3. Format APPLICATION FEATURES section
+    // 3. Format FOLDER STRUCTURE section (derived from actual file paths)
+    context += buildFolderStructureSection(repository.files);
+
+    // 4. Format APPLICATION FEATURES section
     if (knowledge.features) {
         context += buildFeaturesSection(knowledge.features);
     }
 
-    // 4. Format API OVERVIEW section
+    // 5. Format API OVERVIEW section
     if (knowledge.routes && knowledge.routes.length > 0) {
         context += buildApiOverviewSection(knowledge.routes);
     }
 
-    // 5. Format DATABASE MODELS section
+    // 6. Format DATABASE MODELS section
     if (knowledge.models && knowledge.models.length > 0) {
         context += buildModelsSection(knowledge.models);
     }
 
-    // 6. Format CONTROLLERS section
+    // 7. Format CONTROLLERS section
     if (knowledge.controllers && knowledge.controllers.length > 0) {
         context += buildControllersSection(knowledge.controllers);
     }
 
-    // 7. Append minimized RAW SOURCE code
+    // 8. Append minimized RAW SOURCE code
     context += buildRawSourceSection(repository.files);
 
     return context;
@@ -89,6 +95,80 @@ export const buildRepositoryContext = (repository, precalculatedKnowledge) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Section Builders
 // ─────────────────────────────────────────────────────────────────────────────
+
+function buildFolderStructureSection(files) {
+    // Build a set of unique directory paths from actual file paths
+    const dirSet = new Set();
+    const fileSet = new Set();
+
+    for (const file of files) {
+        const parts = file.path.replace(/\\/g, "/").split("/");
+        fileSet.add(parts[parts.length - 1]);
+        // Add each directory segment
+        for (let i = 0; i < parts.length - 1; i++) {
+            dirSet.add(parts.slice(0, i + 1).join("/"));
+        }
+    }
+
+    // Build tree as sorted unique paths
+    const allPaths = [...dirSet].sort();
+    const allFiles = [...fileSet].sort();
+
+    // Show top-level structure concisely
+    const topLevelDirs = new Set();
+    const topLevelFiles = new Set();
+
+    for (const file of files) {
+        const parts = file.path.replace(/\\/g, "/").split("/");
+        if (parts.length === 1) {
+            topLevelFiles.add(parts[0]);
+        } else {
+            topLevelDirs.add(parts[0]);
+        }
+    }
+
+    // Build a simplified tree view
+    const treeLines = [];
+    const rootDirs = [...topLevelDirs].sort();
+    const rootFiles = [...topLevelFiles].sort();
+
+    // For each top-level dir, collect its immediate children
+    const dirChildren = {};
+    for (const file of files) {
+        const parts = file.path.replace(/\\/g, "/").split("/");
+        if (parts.length >= 2) {
+            const dir = parts[0];
+            const child = parts[1];
+            if (!dirChildren[dir]) dirChildren[dir] = new Set();
+            dirChildren[dir].add(child);
+        }
+    }
+
+    for (let i = 0; i < rootDirs.length; i++) {
+        const dir = rootDirs[i];
+        const isLast = i === rootDirs.length - 1 && rootFiles.length === 0;
+        treeLines.push(`${isLast ? "└──" : "├──"} ${dir}/`);
+        const children = dirChildren[dir] ? [...dirChildren[dir]].sort() : [];
+        for (let j = 0; j < children.length; j++) {
+            const child = children[j];
+            const childIsLast = j === children.length - 1;
+            const prefix = isLast ? "    " : "│   ";
+            treeLines.push(`${prefix}${childIsLast ? "└──" : "├──"} ${child}`);
+        }
+    }
+    for (const f of rootFiles) {
+        treeLines.push(`├── ${f}`);
+    }
+
+    return `================================================================================
+FOLDER STRUCTURE (actual files scanned)
+================================================================================
+\`\`\`
+${treeLines.join("\n")}
+\`\`\`
+
+`;
+}
 
 function buildProjectSection(packageInfo) {
     const proj = packageInfo.project;

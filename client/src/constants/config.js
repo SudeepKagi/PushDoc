@@ -1,4 +1,4 @@
-export const BACKEND_URL = "http://localhost:3000";
+export const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
 
 export const INITIAL_LOGS = [
     { time: "14:02:01", type: "INFO", text: "Initializing PushDoc Worker v2.4.0..." },

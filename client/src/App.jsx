@@ -59,8 +59,9 @@ export default function App() {
         setLogsSearchQuery,
         logsContainerRef,
         rerunJob,
-        loadingJobs
-    } = useLiveLogs(token, page === "logs");
+        loadingJobs,
+        refreshJobs
+    } = useLiveLogs(token, page === "logs" || page === "detail");
 
     // Settings page state
     const [webhookSecretVisible, setWebhookSecretVisible] = useState(false);
@@ -95,6 +96,8 @@ export default function App() {
             if (!token) return;
             const data = await apiTriggerManualBuild(repoId, token);
             if (data.success) {
+                // Refresh the jobs list to include the newly queued job
+                await refreshJobs();
                 // Instantly navigate to the logs console so they can watch it run live
                 setPage("logs");
             } else {

@@ -277,7 +277,7 @@ export const triggerManualBuild = async (req, res) => {
             });
         }
 
-        if (repository.installation.toString() !== installation._id.toString()) {
+        if (repository.installation._id.toString() !== installation._id.toString()) {
             return res.status(403).json({
                 success: false,
                 message: "Unauthorized: You do not have permission to trigger verification for this repository"

@@ -32,6 +32,23 @@ export default function useLiveLogs(token, isActive) {
         }
     }, [isActive, token]);
 
+    // Poll jobs list if any job is currently in progress
+    useEffect(() => {
+        if (!isActive || !token || jobs.length === 0) return;
+
+        const hasInProgress = jobs.some(job =>
+            ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(job.status)
+        );
+
+        if (!hasInProgress) return;
+
+        const interval = setInterval(() => {
+            loadJobsList();
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [isActive, token, jobs]);
+
     // Fetch Logs for the active job
     useEffect(() => {
         if (!isActive || !token || jobs.length === 0) return;
