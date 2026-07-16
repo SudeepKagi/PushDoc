@@ -224,7 +224,7 @@ export default function Hero({ handleLoginRedirect, setPage }) {
                         {/* Video mockup */}
                         <div style={{ position: "relative", background: "#0b0f19", display: "flex", alignItems: "center", justifyContent: "center" }}>
                             <img 
-                                src={demoWebp} 
+                                src={demoWebp.default || demoWebp} 
                                 alt="PushDoc Walkthrough Demo" 
                                 style={{ width: "100%", height: "auto", display: "block" }} 
                             />
