@@ -26,11 +26,13 @@ export const config = {
     },
     ai: {
         geminiKeys: [
+            process.env.GEMINI_API_KEY,
             process.env.GEMINI_API_KEY_1,
             process.env.GEMINI_API_KEY_2,
             process.env.GEMINI_API_KEY_3,
         ].filter(Boolean),
         groqKeys: [
+            process.env.GROQ_API_KEY,
             process.env.GROQ_API_KEY_1,
             process.env.GROQ_API_KEY_2,
         ].filter(Boolean),
