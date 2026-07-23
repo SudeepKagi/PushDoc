@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import connection from "../queue/connection.js";
+import { createConnection } from "../queue/connection.js";
 import path from "path";
 import fs from "fs";
 
@@ -260,7 +260,7 @@ const readmeWorker = new Worker(
     },
 
     {
-        connection,
+        connection: createConnection(),   // Worker needs its own dedicated connection
     }
 );
 
