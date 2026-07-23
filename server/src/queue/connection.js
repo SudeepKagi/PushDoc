@@ -3,39 +3,41 @@ import { config } from "../config/app.config.js";
 import * as logger from "../services/logger.service.js";
 
 /**
- * Creates a new IORedis connection.
+ * Returns the base IORedis options suitable for BullMQ and cloud Redis.
  *
- * BullMQ requires a SEPARATE connection instance for each consumer
- * (Queue, Worker, QueueEvents). Sharing one connection causes it to
- * enter blocking mode for one consumer and break all others —
- * producing the ECONNRESET reconnection loop seen in Render logs.
+ * BullMQ requires separate IORedis instances for Queue vs Worker —
+ * sharing one causes blocking-mode conflicts and ECONNRESET storms.
  *
- * Cloud Redis providers (Upstash, Redis Cloud free tier) also drop
- * idle TCP connections, so enableReadyCheck:false + keepAlive are required.
+ * Cloud Redis (Upstash free tier) drops idle TCP connections, so
+ * enableReadyCheck must be false and a retryStrategy is required.
  */
-export function createConnection() {
-    const baseOptions = {
-        maxRetriesPerRequest: null,   // Required by BullMQ
-        enableReadyCheck: false,      // Needed for Upstash / cloud Redis
-        lazyConnect: false,
-        keepAlive: 30000,             // TCP keepalive every 30s to prevent idle resets
-        retryStrategy: (times) => {
-            // Cap retry delay at 10s; IORedis handles reconnection automatically
-            return Math.min(times * 500, 10_000);
-        },
+function getRedisOptions() {
+    const opts = {
+        maxRetriesPerRequest: null,   // BullMQ requirement
+        enableReadyCheck: false,      // Required for Upstash / cloud Redis
+        retryStrategy: (times) => Math.min(times * 200, 5_000),
     };
 
+    // TLS required for rediss:// URLs (Upstash, Redis Cloud)
     if (config.redis.url && config.redis.url.startsWith("rediss://")) {
-        baseOptions.tls = { rejectUnauthorized: false };
+        opts.tls = { rejectUnauthorized: false };
     }
 
+    return opts;
+}
+
+/**
+ * Creates a fresh IORedis connection.
+ * Call this once per BullMQ consumer (Queue, Worker, QueueEvents).
+ */
+export function createConnection() {
     const conn = config.redis.url
-        ? new IORedis(config.redis.url, baseOptions)
+        ? new IORedis(config.redis.url, getRedisOptions())
         : new IORedis({
             host: config.redis.host,
             port: config.redis.port,
             password: config.redis.password,
-            ...baseOptions,
+            ...getRedisOptions(),
         });
 
     conn.on("connect", () => logger.success("Redis Connected"));
@@ -44,7 +46,4 @@ export function createConnection() {
     return conn;
 }
 
-// Default shared connection for simple use cases.
-// Queue and Worker MUST call createConnection() to get their own instance.
-const connection = createConnection();
-export default connection;
+export default createConnection;
