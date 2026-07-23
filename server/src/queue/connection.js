@@ -3,47 +3,70 @@ import { config } from "../config/app.config.js";
 import * as logger from "../services/logger.service.js";
 
 /**
- * Returns the base IORedis options suitable for BullMQ and cloud Redis.
+ * Returns a plain connection-options object for BullMQ to consume.
  *
- * BullMQ requires separate IORedis instances for Queue vs Worker —
- * sharing one causes blocking-mode conflicts and ECONNRESET storms.
+ * Passing raw options (instead of an IORedis instance) prevents BullMQ
+ * from calling .duplicate() on our instance — which was creating 8+
+ * connections at startup and triggering the Upstash ECONNRESET storm.
  *
- * Cloud Redis (Upstash free tier) drops idle TCP connections, so
- * enableReadyCheck must be false and a retryStrategy is required.
+ * Upstash free tier drops idle TCP connections quickly; the retryStrategy
+ * here ensures IORedis reconnects silently without crashing.
  */
-function getRedisOptions() {
-    const opts = {
+export function getRedisOptions() {
+    const base = {
         maxRetriesPerRequest: null,   // BullMQ requirement
         enableReadyCheck: false,      // Required for Upstash / cloud Redis
         retryStrategy: (times) => Math.min(times * 200, 5_000),
     };
 
-    // TLS required for rediss:// URLs (Upstash, Redis Cloud)
-    if (config.redis.url && config.redis.url.startsWith("rediss://")) {
-        opts.tls = { rejectUnauthorized: false };
+    if (config.redis.url) {
+        try {
+            const parsed = new URL(config.redis.url);
+            return {
+                ...base,
+                host: parsed.hostname,
+                port: parseInt(parsed.port || "6379", 10),
+                password: parsed.password || undefined,
+                ...(config.redis.url.startsWith("rediss://")
+                    ? { tls: { rejectUnauthorized: false } }
+                    : {}),
+            };
+        } catch {
+            // Fallback: pass URL string directly (older ioredis versions)
+            return { ...base };
+        }
     }
 
-    return opts;
+    return {
+        ...base,
+        host: config.redis.host,
+        port: config.redis.port,
+        password: config.redis.password,
+    };
 }
 
 /**
- * Creates a fresh IORedis connection.
- * Call this once per BullMQ consumer (Queue, Worker, QueueEvents).
+ * Creates a single monitored IORedis connection for health logging.
+ * NOT passed to BullMQ — BullMQ uses getRedisOptions() directly.
  */
-export function createConnection() {
-    const conn = config.redis.url
-        ? new IORedis(config.redis.url, getRedisOptions())
-        : new IORedis({
-            host: config.redis.host,
-            port: config.redis.port,
-            password: config.redis.password,
-            ...getRedisOptions(),
-        });
+export function createMonitoringConnection() {
+    const opts = getRedisOptions();
+
+    const conn = config.redis.url && !opts.host
+        ? new IORedis(config.redis.url, opts)
+        : new IORedis(opts);
 
     conn.on("connect", () => logger.success("Redis Connected"));
-    conn.on("error",   (err) => logger.error(`Redis Error: ${err.message}`));
+    conn.on("error", (err) => {
+        // ECONNRESET is expected when Upstash/cloud Redis drops idle connections.
+        // IORedis auto-reconnects — suppress to avoid log spam.
+        if (err.code !== "ECONNRESET") {
+            logger.error(`Redis Error: ${err.message}`);
+        }
+    });
 
     return conn;
 }
 
-export default createConnection;
+// Default export for backwards compatibility (server.js, OAuth state, etc.)
+export default createMonitoringConnection;

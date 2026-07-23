@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import { createConnection } from "../queue/connection.js";
+import { getRedisOptions } from "../queue/connection.js";
 import path from "path";
 import fs from "fs";
 
@@ -260,7 +260,7 @@ const readmeWorker = new Worker(
     },
 
     {
-        connection: createConnection(),   // Worker needs its own dedicated connection
+        connection: getRedisOptions(),   // Raw options — BullMQ manages connections internally
     }
 );
 

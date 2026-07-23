@@ -4,6 +4,7 @@ import connectDB from "./src/config/database.js";
 import { config, validateConfig } from "./src/config/app.config.js";
 import * as logger from "./src/services/logger.service.js";
 import { purgeStaleWorkspaces } from "./src/services/workspace.service.js";
+import { createMonitoringConnection } from "./src/queue/connection.js";
 import "./src/workers/readme.worker.js";
 
 dotenv.config();
@@ -28,6 +29,8 @@ const startServer = async () => {
 
         const server = app.listen(PORT, () => {
             logger.success(`Server running in ${config.env} mode on port ${PORT}`);
+            // Single monitored Redis connection for health visibility
+            createMonitoringConnection();
         });
 
         // ── Graceful shutdown ────────────────────────────────────
