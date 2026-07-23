@@ -46,8 +46,7 @@ export function getRedisOptions() {
 }
 
 /**
- * Creates a single monitored IORedis connection for health logging.
- * NOT passed to BullMQ — BullMQ uses getRedisOptions() directly.
+ * Creates a single monitored IORedis connection for app-level usage (OAuth state storage, health logging).
  */
 export function createMonitoringConnection() {
     const opts = getRedisOptions();
@@ -68,5 +67,6 @@ export function createMonitoringConnection() {
     return conn;
 }
 
-// Default export for backwards compatibility (server.js, OAuth state, etc.)
-export default createMonitoringConnection;
+// Single instance for general app use (e.g. auth service storing OAuth state)
+const connection = createMonitoringConnection();
+export default connection;
