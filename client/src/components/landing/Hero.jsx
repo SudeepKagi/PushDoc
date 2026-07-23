@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import LOGO_BASE64 from "../../logoBase64.js";
-import demoWebp from "../../demo.webp";
 
 // Floating tech language icons — aligned lower to match text block
 const FLOATING_ICONS = [
@@ -200,37 +199,7 @@ export default function Hero({ handleLoginRedirect, setPage }) {
                     </div>
                 </div>
 
-                {/* Video Demo Mockup */}
-                <div className="reveal" style={{ position: "relative", maxWidth: "900px", margin: "0 auto" }}>
-                    <div className="animate-pulse-glow" style={{
-                        position: "absolute", inset: "-4px",
-                        borderRadius: "16px",
-                        background: "linear-gradient(to right, #3b82f6, #0ea5e9)",
-                        opacity: 0.12, filter: "blur(2px)",
-                    }} />
-                    <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", border: "1px solid #e2e8f0", background: "#fff", boxShadow: "0 32px 64px rgba(0,0,0,0.07)" }}>
-                        {/* Browser chrome */}
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 16px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                            <div style={{ display: "flex", gap: "6px" }}>
-                                <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#f87171" }} />
-                                <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#fbbf24" }} />
-                                <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#34d399" }} />
-                            </div>
-                            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", background: "#fff", borderRadius: "6px", padding: "4px 40px", fontFamily: "monospace", fontSize: "11px", color: "#94a3b8" }}>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-                                pushdoc.dev/demo
-                            </div>
-                        </div>
-                        {/* Video mockup */}
-                        <div style={{ position: "relative", background: "#0b0f19", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <img 
-                                src={demoWebp.default || demoWebp} 
-                                alt="PushDoc Walkthrough Demo" 
-                                style={{ width: "100%", height: "auto", display: "block" }} 
-                            />
-                        </div>
-                    </div>
-                </div>
+
             </div>
 
             {/* Bottom fade */}
