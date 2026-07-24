@@ -271,36 +271,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                 {/* Sidebar Properties */}
                 <div className="space-y-6">
                     <Card className="shadow-none border-border">
-                        <CardHeader className="p-4 pb-2">
-                            <CardTitle className="text-sm font-semibold">Quality Scan Coverage</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4 space-y-4">
-                            <div>
-                                <div className="flex justify-between text-xs font-medium mb-1.5">
-                                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                                        <Sparkles className="h-3.5 w-3.5" /> Features Coverage
-                                    </span>
-                                    <span className="font-semibold text-foreground">{latestJob ? "90%" : "0%"}</span>
-                                </div>
-                                <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
-                                    <div className="bg-primary h-full rounded-full transition-all duration-500" style={{ width: latestJob ? "90%" : "0%" }} />
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between text-xs font-medium mb-1.5">
-                                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                                        <Route className="h-3.5 w-3.5" /> API Scope
-                                    </span>
-                                    <span className="font-semibold text-foreground">{latestJob ? "85%" : "0%"}</span>
-                                </div>
-                                <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
-                                    <div className="bg-primary/70 h-full rounded-full transition-all duration-500" style={{ width: latestJob ? "85%" : "0%" }} />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
 
-                    <Card className="shadow-none border-border">
                         <CardHeader className="p-4 pb-2">
                             <CardTitle className="text-sm font-semibold">Repository Properties</CardTitle>
                         </CardHeader>

@@ -152,7 +152,8 @@ export default function App() {
     const isAppPage = page !== "landing" && page !== "onboarding" && page !== "connect";
 
     return (
-        <div className="min-h-screen" style={{ background: "#ffffff", color: "#0f172a" }}>
+        <div className="min-h-screen bg-background text-foreground">
+
 
             {/* Global error toast */}
             {syncError && (
