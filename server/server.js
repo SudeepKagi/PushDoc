@@ -27,7 +27,7 @@ const startServer = async () => {
         // Clean up any workspaces left over from an unclean shutdown
         purgeStaleWorkspaces();
 
-        const server = app.listen(PORT, () => {
+        const server = app.listen(PORT, "0.0.0.0", () => {
             logger.success(`Server running in ${config.env} mode on port ${PORT}`);
         });
 

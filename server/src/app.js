@@ -12,6 +12,10 @@ import webhookRouter from "./routes/webhook.js";
 
 const app = express();
 
+// Trust Render's (and similar hosts') reverse proxy so express-rate-limit
+// identifies real client IPs from X-Forwarded-For, not the proxy's IP.
+app.set("trust proxy", 1);
+
 app.use(cors({
     origin: config.cors.origin,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
