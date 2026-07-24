@@ -42,6 +42,9 @@ export const config = {
     cors: {
         origin: process.env.CORS_ORIGIN || "http://localhost:1234",
     },
+    frontend: {
+        url: process.env.FRONTEND_URL || "http://localhost:1234",
+    },
     workspace: {
         // In production: set WORKSPACE_ROOT_PATH to an absolute path outside the app
         // e.g. /var/pushdoc/workspaces or a mounted volume

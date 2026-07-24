@@ -1,5 +1,6 @@
 import * as authService from "../services/auth.service.js";
 import { ValidationError } from "../utils/errors.js";
+import { config } from "../config/app.config.js";
 
 export const githubLogin = async (req, res) => {
     try {
@@ -27,7 +28,7 @@ export const githubCallback = async (req, res) => {
 
         const result = await authService.githubCallback(code, state);
 
-        const frontendUrl = `http://localhost:1234/?token=${result.token}&username=${result.user.username}&avatarUrl=${encodeURIComponent(result.user.avatarUrl || '')}`;
+        const frontendUrl = `${config.frontend.url}/?token=${result.token}&username=${result.user.username}&avatarUrl=${encodeURIComponent(result.user.avatarUrl || '')}`;
         return res.redirect(frontendUrl);
 
     } catch (error) {
