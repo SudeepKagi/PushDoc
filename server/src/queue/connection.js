@@ -68,7 +68,17 @@ export function createMonitoringConnection() {
         ? new IORedis(config.redis.url, opts)
         : new IORedis(opts);
 
-    conn.on("connect", () => logger.success("Redis Connected"));
+    // ── Diagnostic lifecycle listeners ───────────────────────────────────────
+    // "connect"     = TCP socket opened (auth/TLS not yet complete)
+    // "ready"       = AUTH + SELECT finished — commands can actually run
+    // "close"       = socket closed (Upstash idle-drop or network issue)
+    // "reconnecting"= ioredis is waiting before the next retry attempt
+    // "end"         = ioredis gave up entirely (retryStrategy returned false/null)
+    conn.on("connect",     ()      => logger.info("Redis: socket connected"));
+    conn.on("ready",       ()      => logger.success("Redis: ready (auth complete)"));
+    conn.on("close",       ()      => logger.warn("Redis: connection closed"));
+    conn.on("reconnecting",(delay) => logger.warn(`Redis: reconnecting in ${delay}ms`));
+    conn.on("end",         ()      => logger.error("Redis: connection ended — ioredis gave up"));
     conn.on("error", (err) => {
         // ECONNRESET / EPIPE are expected when Upstash/cloud Redis drops idle connections.
         // IORedis auto-reconnects — suppress to avoid log spam.
