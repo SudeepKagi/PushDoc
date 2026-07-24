@@ -264,4 +264,12 @@ const readmeWorker = new Worker(
     }
 );
 
+// BullMQ re-emits internal IORedis errors through the Worker EventEmitter.
+// Without this listener, Node throws on 'error' → uncaught exception → crash.
+readmeWorker.on("error", (err) => {
+    if (err.code !== "ECONNRESET" && err.code !== "EPIPE") {
+        logger.error(`Worker Redis Error: ${err.message}`);
+    }
+});
+
 export default readmeWorker;
