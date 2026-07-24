@@ -1,4 +1,6 @@
 import * as repositoryAnalyzer from "../analyzers/repository.analyzer.js";
+import * as embeddingService  from "../services/embedding.service.js";
+import * as retrievalService  from "../services/retrieval.service.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -70,13 +72,11 @@ const INTEGRATION_OPS_MAP = {
 /**
  * Builds a structured repository knowledge context document.
  *
- * This version moves PushDoc from a basic "raw file dumper" to a highly structured
- * context system. It formats the output of all intelligence analyzers (Package,
- * Route, Model, Controller, and Feature) before appending a minimized raw source dump.
- * This guarantees the LLM understands 95% of the codebase architecture and features
- * before seeing any code.
+ * Implements Size-Threshold Branching:
+ * - Repos <= 40 files: Full deterministic AST + key raw source files (0 retrieval latency)
+ * - Repos > 40 files : In-memory RAG via Gemini text-embedding-004 to pull top relevant chunks
  */
-export const buildRepositoryContext = (repository, precalculatedKnowledge) => {
+export const buildRepositoryContext = async (repository, precalculatedKnowledge) => {
     let context = "";
 
     // 1. Run all repository intelligence analyzers
@@ -121,11 +121,49 @@ export const buildRepositoryContext = (repository, precalculatedKnowledge) => {
         context += buildControllersSection(knowledge.controllers);
     }
 
-    // 10. Append minimized RAW SOURCE code
+    // 10. Raw Source Inclusion: Branch by repository size
+    const RAG_THRESHOLD_FILE_COUNT = 40;
+    if (repository.files && repository.files.length > RAG_THRESHOLD_FILE_COUNT) {
+        try {
+            const chunks = embeddingService.chunkRepository(repository.files);
+            const vectorIndex = await embeddingService.buildVectorIndex(chunks);
+
+            const relevantChunks = await retrievalService.queryVectorIndex(
+                vectorIndex,
+                "Main application entry point, core features, API routes, data flow, external integrations",
+                12
+            );
+
+            context += buildRagSourceSection(relevantChunks);
+            return context;
+        } catch {
+            // Fallback to standard raw source section on embedding error
+        }
+    }
+
+    // Default for small repos (<= 40 files)
     context += buildRawSourceSection(repository.files, projectType);
 
     return context;
 };
+
+function buildRagSourceSection(relevantChunks) {
+    let section = `================================================================================
+SEMANTICALLY RETRIEVED CODE CHUNKS (RAG Engine)
+================================================================================\n`;
+
+    for (const chunk of relevantChunks) {
+        section += `\n================================================================================\n`;
+        section += `FILE: ${chunk.filePath} (Lines ${chunk.startLine}-${chunk.endLine}, Similarity Score: ${(chunk.score || 0).toFixed(3)})\n`;
+        section += `================================================================================\n`;
+        section += `\`\`\`\n`;
+        section += `${chunk.content}\n`;
+        section += `\`\`\`\n`;
+    }
+
+    return section;
+}
+
 
 
 // ─────────────────────────────────────────────────────────────────────────────

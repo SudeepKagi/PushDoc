@@ -38,10 +38,11 @@ export const generateReadme = async (
     );
 
     const repositoryContext =
-        repositoryContextBuilder.buildRepositoryContext(
+        await repositoryContextBuilder.buildRepositoryContext(
             repository,
             knowledge
         );
+
 
     logger.info(
         jobId,
