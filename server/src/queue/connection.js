@@ -28,9 +28,10 @@ export function getRedisOptions() {
                 host: parsed.hostname,
                 port: parseInt(parsed.port || "6379", 10),
                 password: parsed.password || undefined,
-                ...(config.redis.url.startsWith("rediss://")
-                    ? { tls: { rejectUnauthorized: false } }
-                    : {}),
+                // Always enable TLS for URL-based connections (Upstash requires it
+                // on all endpoints regardless of the redis:// vs rediss:// scheme).
+                // A missing tls: {} is the most common cause of sub-1ms closes.
+                tls: { rejectUnauthorized: false },
             };
         } catch {
             // Fallback: pass URL string directly (older ioredis versions)
@@ -55,7 +56,9 @@ export function createMonitoringConnection() {
         // Override BullMQ's "retry forever" setting — this connection is used
         // for HTTP-facing operations (OAuth state storage) and must fail fast
         // so a mid-reconnect Redis call never hangs an Express response indefinitely.
-        maxRetriesPerRequest: 3,
+        // 8 retries (vs BullMQ's null) gives enough budget to survive the 4-retry
+        // boot churn while still failing in <10s rather than never.
+        maxRetriesPerRequest: 8,
         // Don't open a socket at import time. BullMQ opens 3 connections
         // simultaneously at boot (Queue command, Worker command, Worker blocking).
         // lazyConnect: true defers this connection until the first command is
