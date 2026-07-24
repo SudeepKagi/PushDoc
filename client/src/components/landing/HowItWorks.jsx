@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card.jsx";
 import { Badge } from "../ui/badge.jsx";
 import { Zap, FileText } from "lucide-react";
-import { GithubIcon as Github } from "../ui/GithubIcon.jsx";
+import { GithubIcon as Github } from "../ui/githubIcon.jsx";
 
 
 const STEPS = [

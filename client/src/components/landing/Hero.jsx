@@ -4,7 +4,7 @@ import { Button } from "../ui/button.jsx";
 import { Badge } from "../ui/badge.jsx";
 import { Card, CardContent } from "../ui/card.jsx";
 import { Zap, FileText, ArrowRight, Sparkles } from "lucide-react";
-import { GithubIcon as Github } from "../ui/GithubIcon.jsx";
+import { GithubIcon as Github } from "../ui/githubIcon.jsx";
 
 
 const STEPS = [

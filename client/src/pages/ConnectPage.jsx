@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/card.jsx";
 import { Button } from "../components/ui/button.jsx";
 import { Check, RefreshCw } from "lucide-react";
-import { GithubIcon as Github } from "../components/ui/GithubIcon.jsx";
+import { GithubIcon as Github } from "../components/ui/githubIcon.jsx";
 
 
 

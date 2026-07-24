@@ -3,7 +3,7 @@ import LOGO_BASE64 from "../../logoBase64.js";
 import { Button } from "../ui/button.jsx";
 import { Separator } from "../ui/separator.jsx";
 import { ArrowRight } from "lucide-react";
-import { GithubIcon as Github } from "../ui/GithubIcon.jsx";
+import { GithubIcon as Github } from "../ui/githubIcon.jsx";
 
 
 export default function LandingFooter({ setPage }) {
