@@ -56,11 +56,11 @@ export function createMonitoringConnection() {
         // for HTTP-facing operations (OAuth state storage) and must fail fast
         // so a mid-reconnect Redis call never hangs an Express response indefinitely.
         maxRetriesPerRequest: 3,
-        // Don't open a socket at import time — BullMQ opens 3 connections
+        // Don't open a socket at import time. BullMQ opens 3 connections
         // simultaneously at boot (Queue command, Worker command, Worker blocking).
-        // Upstash free tier struggles with that burst; staggering by 1.5s lets
-        // BullMQ's connections stabilise first and eliminates the startup
-        // "Reached max retries" noise on the monitoring connection.
+        // lazyConnect: true defers this connection until the first command is
+        // issued (i.e. when a user actually hits the OAuth login route), by which
+        // time the BullMQ burst has settled and Upstash has a free connection slot.
         lazyConnect: true,
     };
 
@@ -87,10 +87,9 @@ export function createMonitoringConnection() {
         }
     });
 
-    // Stagger the initial connect so it doesn't race BullMQ's 3 connections.
-    // Any command issued before this resolves will queue internally and execute
-    // once the connection is established (lazyConnect doesn't drop commands).
-    setTimeout(() => conn.connect().catch(() => {}), 1_500);
+    // No pre-connect timer — ioredis will open the socket on the first command.
+    // redisWithTimeout() in auth.service.js guarantees a 5s ceiling on that
+    // first-connection latency if Upstash is momentarily busy.
 
     return conn;
 }
