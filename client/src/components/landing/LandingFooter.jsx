@@ -5,7 +5,7 @@ import { Separator } from "../ui/separator.jsx";
 import { GithubIcon as Github } from "../ui/githubIcon.jsx";
 import { ArrowRight, Copy, Check } from "lucide-react";
 
-export default function LandingFooter({ setPage }) {
+export default function LandingFooter({ setPage, handleLoginRedirect }) {
     const year = new Date().getFullYear();
     const [copied, setCopied] = useState(false);
 
@@ -72,26 +72,26 @@ export default function LandingFooter({ setPage }) {
                     <div className="font-semibold text-foreground text-xs uppercase tracking-wider">Product</div>
                     <ul className="space-y-2">
                         <li><a href="#features" className="hover:text-foreground transition-colors">Features</a></li>
-                        <li><a href="#features" className="hover:text-foreground transition-colors">AST Parser</a></li>
-                        <li><a href="#features" className="hover:text-foreground transition-colors">AI Routing</a></li>
+                        <li><a href="#architecture" className="hover:text-foreground transition-colors">AST Engine</a></li>
+                        <li><a href="#integrations" className="hover:text-foreground transition-colors">Ecosystem</a></li>
                     </ul>
                 </div>
 
                 <div className="space-y-3">
                     <div className="font-semibold text-foreground text-xs uppercase tracking-wider">Resources</div>
                     <ul className="space-y-2">
-                        <li><a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">GitHub App</a></li>
+                        <li><a href="#security" className="hover:text-foreground transition-colors">Security & Privacy</a></li>
+                        <li><a href="#faq" className="hover:text-foreground transition-colors">FAQ</a></li>
                         <li><a href="https://pushdoc-api.onrender.com/health" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">API Status</a></li>
-                        <li><a href="#features" className="hover:text-foreground transition-colors">Documentation</a></li>
                     </ul>
                 </div>
 
                 <div className="space-y-3">
                     <div className="font-semibold text-foreground text-xs uppercase tracking-wider">Company</div>
                     <ul className="space-y-2">
-                        <li><a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Open Source</a></li>
-                        <li><a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a></li>
-                        <li><a href="#" className="hover:text-foreground transition-colors">Terms of Service</a></li>
+                        <li><a href="https://github.com/SudeepKagi/PushDoc" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">GitHub Repository</a></li>
+                        <li><a href="#security" className="hover:text-foreground transition-colors">Privacy Policy</a></li>
+                        <li><a href="#security" className="hover:text-foreground transition-colors">Terms of Service</a></li>
                     </ul>
                 </div>
             </div>

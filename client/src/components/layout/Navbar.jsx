@@ -13,8 +13,11 @@ import {
 import { LogOut, LayoutDashboard, Settings } from "lucide-react";
 
 const NAV_LINKS = [
-    { label: "Solutions", href: "#features" },
-    { label: "Features", href: "#capabilities" },
+    { label: "Features", href: "#features" },
+    { label: "Architecture", href: "#architecture" },
+    { label: "Integrations", href: "#integrations" },
+    { label: "Security", href: "#security" },
+    { label: "FAQ", href: "#faq" },
 ];
 
 export default function Navbar({ page, setPage, user, handleLoginRedirect, logout }) {
@@ -48,7 +51,7 @@ export default function Navbar({ page, setPage, user, handleLoginRedirect, logou
                             <a 
                                 key={l.label} 
                                 href={l.href} 
-                                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                             >
                                 {l.label}
                             </a>
@@ -97,7 +100,7 @@ export default function Navbar({ page, setPage, user, handleLoginRedirect, logou
                         <Button 
                             onClick={() => setPage("connect")}
                             size="sm"
-                            className="rounded-full shadow-sm font-medium"
+                            className="rounded-full shadow-sm font-medium text-xs h-9 px-5"
                         >
                             Get Started
                         </Button>

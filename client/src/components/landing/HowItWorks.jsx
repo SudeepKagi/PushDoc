@@ -1,10 +1,9 @@
-import React, { useState } from "react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card.jsx";
+import React from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/card.jsx";
 import { Badge } from "../ui/badge.jsx";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs.jsx";
 import { Accordion, AccordionItem } from "../ui/accordion.jsx";
-import { GithubIcon as Github } from "../ui/githubIcon.jsx";
-import { Zap, FileText, CheckCircle2, HelpCircle, Code2, GitCommit } from "lucide-react";
+import { CheckCircle2, HelpCircle, Code2, GitCommit, FileText } from "lucide-react";
 
 const FAQS = [
     {
@@ -31,7 +30,7 @@ export default function HowItWorks() {
             <div className="max-w-7xl mx-auto px-6 space-y-24">
 
                 {/* Polar Code & Pipeline Showcase Block */}
-                <div className="max-w-4xl mx-auto space-y-6">
+                <div id="architecture" className="max-w-4xl mx-auto space-y-6">
                     <div className="text-center space-y-3">
                         <Badge variant="outline" className="text-xs font-normal rounded-full px-3">
                             Pipeline Mechanics
@@ -103,7 +102,7 @@ export default function HowItWorks() {
                 </div>
 
                 {/* Polar FAQ Accordion */}
-                <div className="max-w-3xl mx-auto space-y-6">
+                <div id="faq" className="max-w-3xl mx-auto space-y-6">
                     <div className="text-center space-y-2">
                         <Badge variant="outline" className="text-xs font-normal gap-1 rounded-full px-3">
                             <HelpCircle className="h-3.5 w-3.5 text-primary" /> FAQ
