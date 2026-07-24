@@ -15,10 +15,36 @@ const ALLOWED_CATEGORIES = new Set([
     "pipelines", "pipeline"
 ]);
 
+const FRONTEND_CATEGORIES = new Set([
+    "pages", "page",
+    "components", "component",
+    "hooks", "hook",
+    "context",
+    "store",
+    "views", "view",
+    "screens", "screen",
+    "layouts", "layout",
+    "utils", "util",
+    "helpers", "helper",
+    "lib",
+]);
+
 const ALLOWED_EXPLICIT_FILES = new Set([
     "package.json",
     "server.js",
     "app.js",
+    "readme.md",
+]);
+
+const FRONTEND_EXPLICIT_FILES = new Set([
+    "package.json",
+    "app.jsx",
+    "app.tsx",
+    "app.js",
+    "main.jsx",
+    "main.tsx",
+    "index.jsx",
+    "index.tsx",
     "readme.md",
 ]);
 
@@ -55,39 +81,43 @@ export const buildRepositoryContext = (repository, precalculatedKnowledge) => {
 
     // 1. Run all repository intelligence analyzers
     const knowledge = precalculatedKnowledge || repositoryAnalyzer.analyzeRepository(repository);
+    const projectType = knowledge.projectType || "backend";
 
-    // 2. Format PROJECT section
+    // 2. Inject project type as the first line so the AI knows the architecture upfront
+    context += `================================================================================\r\nPROJECT TYPE: ${projectType.toUpperCase()}\r\n================================================================================\r\n\r\n`;
+
+    // 3. Format PROJECT section
     const packageInfo = knowledge.package;
     if (packageInfo) {
         context += buildProjectSection(packageInfo);
         context += buildTechStackSection(packageInfo);
     }
 
-    // 3. Format FOLDER STRUCTURE section (derived from actual file paths)
+    // 4. Format FOLDER STRUCTURE section (derived from actual file paths)
     context += buildFolderStructureSection(repository.files);
 
-    // 4. Format APPLICATION FEATURES section
+    // 5. Format APPLICATION FEATURES section
     if (knowledge.features) {
         context += buildFeaturesSection(knowledge.features);
     }
 
-    // 5. Format API OVERVIEW section
+    // 6. Format API OVERVIEW section (backend/fullstack only)
     if (knowledge.routes && knowledge.routes.length > 0) {
         context += buildApiOverviewSection(knowledge.routes);
     }
 
-    // 6. Format DATABASE MODELS section
+    // 7. Format DATABASE MODELS section (backend/fullstack only)
     if (knowledge.models && knowledge.models.length > 0) {
         context += buildModelsSection(knowledge.models);
     }
 
-    // 7. Format CONTROLLERS section
+    // 8. Format CONTROLLERS section (backend/fullstack only)
     if (knowledge.controllers && knowledge.controllers.length > 0) {
         context += buildControllersSection(knowledge.controllers);
     }
 
-    // 8. Append minimized RAW SOURCE code
-    context += buildRawSourceSection(repository.files);
+    // 9. Append minimized RAW SOURCE code
+    context += buildRawSourceSection(repository.files, projectType);
 
     return context;
 };
@@ -356,15 +386,30 @@ CONTROLLERS
     return section;
 }
 
-function buildRawSourceSection(files) {
+function buildRawSourceSection(files, projectType = "backend") {
     let section = `================================================================================
 RAW SOURCE CODE
 ================================================================================\n`;
 
+    const isFrontend = projectType === "frontend";
+
+    // For frontend projects: pages/ and explicit entry files first (most informative),
+    // then other frontend categories. Cap at 10 files to avoid token overflow.
+    const MAX_FRONTEND_FILES = 10;
     let codeFilesIncluded = 0;
 
-    for (const file of files) {
-        if (shouldIncludeRawSource(file)) {
+    // Prioritise pages for frontend (they reveal what screens the app has)
+    const orderedFiles = isFrontend
+        ? [
+            ...files.filter(f => (f.category || "").toLowerCase().startsWith("page")),
+            ...files.filter(f => !((f.category || "").toLowerCase().startsWith("page"))),
+          ]
+        : files;
+
+    for (const file of orderedFiles) {
+        if (isFrontend && codeFilesIncluded >= MAX_FRONTEND_FILES) break;
+
+        if (shouldIncludeRawSource(file, projectType)) {
             section += `\n================================================================================\n`;
             section += `FILE: ${file.path}\n`;
             section += `================================================================================\n`;
@@ -386,9 +431,15 @@ RAW SOURCE CODE
 // Filter Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function shouldIncludeRawSource(file) {
-    const cat = (file.category || "").toLowerCase();
+function shouldIncludeRawSource(file, projectType = "backend") {
+    const cat      = (file.category || "").toLowerCase();
     const basename = file.path.split(/[/\\]/).pop().toLowerCase();
+
+    if (projectType === "frontend") {
+        if (FRONTEND_CATEGORIES.has(cat)) return true;
+        if (FRONTEND_EXPLICIT_FILES.has(basename)) return true;
+        return false;
+    }
 
     if (ALLOWED_CATEGORIES.has(cat)) return true;
     if (ALLOWED_EXPLICIT_FILES.has(basename)) return true;

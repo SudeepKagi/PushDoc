@@ -45,6 +45,7 @@
  * Synthesises high-level features and capabilities from repository knowledge.
  *
  * @param {object} knowledge
+ * @param {string} knowledge.projectType   'frontend' | 'fullstack' | 'backend'
  * @param {object} knowledge.package      Output of Package Analyzer
  * @param {array}  knowledge.routes       Output of Route Analyzer
  * @param {array}  knowledge.models       Output of Model Analyzer
@@ -55,9 +56,20 @@ export const analyzeFeatures = (knowledge) => {
     const packageInfo = knowledge.package || {};
     const models      = knowledge.models || [];
     const controllers = knowledge.controllers || [];
+    const projectType = knowledge.projectType || "backend";
 
     // Collect all unique dependencies
     const dependencies = new Set(packageInfo.dependencies || []);
+
+    // Route to the frontend inference path for React/Vue/etc. projects.
+    // The backend path (routes + models + controllers) returns nothing for
+    // frontend repos and causes the AI to receive an empty features section.
+    if (projectType === "frontend") {
+        return {
+            features:     inferFrontendFeatures(dependencies),
+            capabilities: inferFrontendCapabilities(dependencies),
+        };
+    }
 
     // Collect all unique controller operations and models referenced
     const controllerOps = new Set();
@@ -272,4 +284,157 @@ function pluralize(name) {
     if (/(?:s|x|z|ch|sh)$/.test(lower)) return name + "es";
     if (/[^aeiou]y$/.test(lower)) return name.slice(0, -1) + "ies";
     return name + "s";
+}
+// -----------------------------------------------------------------------------
+// Frontend Feature Inference
+// -----------------------------------------------------------------------------
+
+/**
+ * Maps frontend ecosystem dependencies to user-facing feature descriptions.
+ * Called when projectType === 'frontend' instead of the backend inference path.
+ */
+function inferFrontendFeatures(dependencies) {
+    const features = [];
+    const added = new Set();
+
+    const add = (title, description) => {
+        if (!added.has(title)) {
+            features.push({ title, description });
+            added.add(title);
+        }
+    };
+
+    // Routing
+    if (dependencies.has("react-router-dom") || dependencies.has("react-router")) {
+        add("Client-side Routing", "Multi-page navigation without full-page reloads using React Router.");
+    }
+    if (dependencies.has("next")) {
+        add("File-based Routing", "Page routing handled automatically by Next.js file conventions.");
+    }
+
+    // State management
+    if (dependencies.has("redux") || dependencies.has("@reduxjs/toolkit")) {
+        add("Global State Management", "Application state managed centrally with Redux Toolkit.");
+    }
+    if (dependencies.has("zustand")) {
+        add("Lightweight State Management", "Global state managed with Zustand.");
+    }
+    if (dependencies.has("jotai") || dependencies.has("recoil")) {
+        add("Atomic State Management", "Fine-grained state management with atomic state primitives.");
+    }
+    if (dependencies.has("mobx") || dependencies.has("mobx-react")) {
+        add("Reactive State Management", "Observable-based state management with MobX.");
+    }
+
+    // Data fetching
+    if (dependencies.has("axios")) {
+        add("HTTP API Integration", "Fetches data from external APIs using Axios.");
+    }
+    if (dependencies.has("@tanstack/react-query") || dependencies.has("react-query")) {
+        add("Server State & Caching", "Declarative data fetching, caching, and synchronisation with React Query.");
+    }
+    if (dependencies.has("swr")) {
+        add("Data Fetching with SWR", "Stale-while-revalidate data fetching strategy using SWR.");
+    }
+    if (dependencies.has("apollo-client") || dependencies.has("@apollo/client")) {
+        add("GraphQL API Integration", "Queries and mutations via Apollo Client for GraphQL APIs.");
+    }
+
+    // Styling
+    if (dependencies.has("tailwindcss")) {
+        add("Utility-first Styling", "Rapid UI composition using Tailwind CSS utility classes.");
+    }
+    if (dependencies.has("styled-components")) {
+        add("CSS-in-JS Styling", "Component-scoped styles authored with styled-components.");
+    }
+    if (dependencies.has("@emotion/react") || dependencies.has("@emotion/styled")) {
+        add("CSS-in-JS Styling", "Component-scoped styles with Emotion.");
+    }
+    if (dependencies.has("sass") || dependencies.has("node-sass")) {
+        add("SCSS Styling", "Extended CSS capabilities via SCSS.");
+    }
+
+    // Animations
+    if (dependencies.has("framer-motion")) {
+        add("Animations", "Smooth UI transitions and animations powered by Framer Motion.");
+    }
+    if (dependencies.has("gsap")) {
+        add("Advanced Animations", "High-performance animations with GreenSock (GSAP).");
+    }
+
+    // Auth
+    if (dependencies.has("next-auth") || dependencies.has("@auth/core")) {
+        add("Authentication", "User sign-in and session management with NextAuth.");
+    }
+    if (dependencies.has("firebase") || dependencies.has("@firebase/auth")) {
+        add("Firebase Authentication", "User authentication via Firebase Auth.");
+    }
+
+    // UI libraries
+    if (dependencies.has("@mui/material") || dependencies.has("@material-ui/core")) {
+        add("Material Design UI", "Component library based on Google's Material Design.");
+    }
+    if (dependencies.has("antd")) {
+        add("Ant Design UI", "Enterprise-grade UI components from Ant Design.");
+    }
+    if (dependencies.has("@chakra-ui/react")) {
+        add("Chakra UI Components", "Accessible component library built with Chakra UI.");
+    }
+    if (dependencies.has("@radix-ui/react-dialog") || dependencies.has("shadcn-ui")) {
+        add("Headless UI Components", "Accessible, unstyled components from Radix UI / shadcn.");
+    }
+
+    // Charts
+    if (dependencies.has("recharts") || dependencies.has("chart.js") || dependencies.has("react-chartjs-2")) {
+        add("Data Visualisation", "Interactive charts and graphs for displaying data.");
+    }
+
+    // Forms
+    if (dependencies.has("react-hook-form")) {
+        add("Form Management", "Performant, flexible forms managed with React Hook Form.");
+    }
+    if (dependencies.has("formik")) {
+        add("Form Management", "Form state and validation handled with Formik.");
+    }
+
+    // Maps
+    if (dependencies.has("leaflet") || dependencies.has("react-leaflet")) {
+        add("Interactive Maps", "Map rendering and geolocation features with Leaflet.");
+    }
+    if (dependencies.has("mapbox-gl") || dependencies.has("react-map-gl")) {
+        add("Interactive Maps", "High-performance map rendering with Mapbox GL.");
+    }
+
+    return features;
+}
+
+/**
+ * Infers capability tags for a frontend project from its dependencies.
+ */
+function inferFrontendCapabilities(dependencies) {
+    const caps = new Set();
+
+    if (dependencies.has("axios") || dependencies.has("swr") || dependencies.has("react-query") || dependencies.has("@tanstack/react-query")) {
+        caps.add("API Integration");
+    }
+    if (dependencies.has("react-router-dom") || dependencies.has("next")) {
+        caps.add("Client-side Routing");
+    }
+    if (dependencies.has("redux") || dependencies.has("@reduxjs/toolkit") || dependencies.has("zustand") || dependencies.has("jotai") || dependencies.has("mobx")) {
+        caps.add("State Management");
+    }
+    if (dependencies.has("next-auth") || dependencies.has("firebase") || dependencies.has("@auth/core")) {
+        caps.add("Authentication");
+    }
+    if (dependencies.has("framer-motion") || dependencies.has("gsap")) {
+        caps.add("Animations");
+    }
+    if (dependencies.has("recharts") || dependencies.has("chart.js") || dependencies.has("react-chartjs-2")) {
+        caps.add("Data Visualisation");
+    }
+    if (dependencies.has("react-hook-form") || dependencies.has("formik")) {
+        caps.add("Form Handling");
+    }
+
+    return Array.from(caps);
 }

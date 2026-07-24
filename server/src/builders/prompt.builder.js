@@ -12,22 +12,37 @@ STEP 1 — UNDERSTAND THE PROJECT PURPOSE (READ THIS FIRST)
 Before writing anything, READ the entire REPOSITORY CONTEXT carefully and answer these questions:
 
 1. What does this project actually DO for its end users? (not just what models it has)
-2. Look at WORKER and PIPELINE file names — they reveal the CORE automated workflow.
-   - e.g. "readme.worker.js" + "readme.pipeline.js" = this project generates READMEs automatically
-   - e.g. "email.worker.js" = this project sends emails in the background
-3. Look at SERVICE file names for domain actions:
+
+2. CHECK THE PROJECT TYPE (first line of context):
+   - **BACKEND**: Look at WORKER, PIPELINE, SERVICE, ROUTE, and MODEL file names.
+     - e.g. "readme.worker.js" + "readme.pipeline.js" = this project generates READMEs automatically
+   - **FRONTEND**: Look at COMPONENT and PAGE files to understand what UI screens exist.
+     - e.g. "RestaurantList.jsx" = app displays restaurants
+     - e.g. "axios.get('/api/restaurants')" in a component = app fetches restaurant data from an API
+     - Read the actual JSX/TSX source carefully — the component names and data they render IS the feature list.
+   - **FULLSTACK**: Look at both sides.
+
+3. For FRONTEND projects specifically:
+   - Read every file in RAW SOURCE CODE and identify what data is displayed (what the user sees)
+   - Look for fetch/axios calls to understand what APIs are consumed
+   - Look for component names like "RestaurantCard", "MovieList", "ProductGrid" — they reveal the domain
+   - NEVER describe a frontend project as "a foundational React app" or "Vite boilerplate" — that describes the scaffolding, not the project
+
+4. Look at SERVICE file names for domain actions (backend/fullstack):
    - git.service.js = Git operations
    - github.service.js = GitHub API integration
    - readme.service.js = README file handling
-4. Look at COMPONENTS/PAGES to understand frontend features:
+5. Look at COMPONENTS/PAGES to understand frontend features:
    - Dashboard.jsx = User dashboard
    - Login.jsx = Authentication
-5. Look at the FOLDER STRUCTURE — what does the architecture reveal about the product?
-6. Look at API ROUTES — what does the API actually expose to users?
+6. Look at the FOLDER STRUCTURE — what does the architecture reveal about the product?
+7. Look at API ROUTES — what does the API actually expose to users?
 
 Your opening description MUST capture the REAL purpose of the tool from a USER perspective:
-- WRONG: "An Express.js application for managing installations, jobs, and repositories"
-- RIGHT: "PushDoc is a GitHub App that automatically generates and commits professional README.md files to your repositories using AI."
+- WRONG (backend): "An Express.js application for managing installations, jobs, and repositories"
+- RIGHT (backend):  "PushDoc is a GitHub App that automatically generates and commits professional README.md files to your repositories using AI."
+- WRONG (frontend): "A foundational React application bootstrapped with Vite for a modern development workflow."
+- RIGHT (frontend):  "A React app that fetches live restaurant listings from the Swiggy API and displays them in a browsable card gallery."
 
 ========================
 CRITICAL RULES
