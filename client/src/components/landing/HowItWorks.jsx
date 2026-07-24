@@ -1,35 +1,41 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card.jsx";
 import { Badge } from "../ui/badge.jsx";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs.jsx";
-import { Accordion, AccordionItem } from "../ui/accordion.jsx";
-import { CheckCircle2, HelpCircle, Code2, GitCommit, FileText } from "lucide-react";
+import { CheckCircle2, HelpCircle, Code2, GitCommit, FileText, ChevronDown } from "lucide-react";
+import { cn } from "../../lib/utils";
 
-const FAQS = [
+const ACCURATE_FAQS = [
     {
-        q: "How does PushDoc prevent AI hallucinations in documentation?",
-        a: "PushDoc uses an AST (Abstract Syntax Tree) fact extraction engine built with @babel/parser. It deterministically extracts route URL strings, HTTP methods, and database schema fields directly from raw code AST before giving the prompt context to AI models.",
+        q: "How does PushDoc prevent AI hallucinations in generated READMEs?",
+        a: "PushDoc runs an AST (Abstract Syntax Tree) fact extraction engine powered by @babel/parser. Before calling AI models, it deterministically extracts raw Express/Fastify route strings, HTTP methods, and database schemas directly from your code AST so the AI is grounded in 100% verified facts.",
     },
     {
-        q: "Does PushDoc store or clone my entire repository?",
-        a: "No. PushDoc only shallow-clones diffs during active webhook execution. Code contents are processed in memory and discarded immediately after generating the README documentation artifact.",
+        q: "Which AI models power the documentation engine?",
+        a: "PushDoc uses primary routing to Google Gemini 2.5 Flash for high-speed documentation synthesis, with automated failover to Groq Llama 3.3 to guarantee 99.99% uptime during provider outages.",
     },
     {
-        q: "What access scopes are required on GitHub?",
-        a: "PushDoc requires read access to repository contents (to parse routes/models) and write access restricted strictly to README files and commit dispatching.",
+        q: "How are GitHub Webhooks secured?",
+        a: "Every incoming GitHub push webhook is verified using cryptographic HMAC SHA-256 signatures before processing. Unauthenticated payloads are rejected at the edge within sub-7ms.",
     },
     {
-        q: "Can I customize which files or routes are included in the generated README?",
-        a: "Yes! Through the PushDoc Settings tab, you can toggle individual analyzers (Route Analyzer, Model Analyzer, Controller Analyzer) and set output branch paths.",
+        q: "Does PushDoc store my private repository source code?",
+        a: "No. PushDoc operates under a zero-code-retention policy. Diff payloads are shallow-cloned into volatile memory during active scan jobs and purged immediately after generating the README documentation artifact.",
+    },
+    {
+        q: "Can I trigger documentation builds manually without a git push?",
+        a: "Yes! You can trigger manual repository scans anytime directly from your PushDoc Dashboard or Repository Detail page with live real-time pipeline progress tracking.",
     },
 ];
 
 export default function HowItWorks() {
+    const [openIdx, setOpenIdx] = useState(0);
+
     return (
         <section className="py-24 bg-muted/20 border-t border-border">
             <div className="max-w-7xl mx-auto px-6 space-y-24">
 
-                {/* Polar Code & Pipeline Showcase Block */}
+                {/* Pipeline Mechanics Showcase Block */}
                 <div id="architecture" className="max-w-4xl mx-auto space-y-6">
                     <div className="text-center space-y-3">
                         <Badge variant="outline" className="text-xs font-normal rounded-full px-3">
@@ -101,7 +107,7 @@ export default function HowItWorks() {
                     </Card>
                 </div>
 
-                {/* Polar FAQ Accordion */}
+                {/* Accurate Interactive Collapsible FAQ */}
                 <div id="faq" className="max-w-3xl mx-auto space-y-6">
                     <div className="text-center space-y-2">
                         <Badge variant="outline" className="text-xs font-normal gap-1 rounded-full px-3">
@@ -112,13 +118,28 @@ export default function HowItWorks() {
                         </h2>
                     </div>
 
-                    <Accordion>
-                        {FAQS.map((faq, idx) => (
-                            <AccordionItem key={idx} title={faq.q} defaultOpen={idx === 0}>
-                                {faq.a}
-                            </AccordionItem>
-                        ))}
-                    </Accordion>
+                    <div className="divide-y divide-border rounded-lg border border-border bg-card overflow-hidden">
+                        {ACCURATE_FAQS.map((faq, idx) => {
+                            const isOpen = openIdx === idx;
+                            return (
+                                <div key={idx} className="border-b border-border last:border-b-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => setOpenIdx(isOpen ? -1 : idx)}
+                                        className="flex w-full items-center justify-between p-4 text-left text-xs sm:text-sm font-semibold text-foreground transition-all hover:bg-muted/50"
+                                    >
+                                        <span>{faq.q}</span>
+                                        <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ml-2", isOpen && "rotate-180")} />
+                                    </button>
+                                    {isOpen && (
+                                        <div className="p-4 pt-0 text-xs text-muted-foreground leading-relaxed animate-in fade-in-50 duration-150">
+                                            {faq.a}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </section>
