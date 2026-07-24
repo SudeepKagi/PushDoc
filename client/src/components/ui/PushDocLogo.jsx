@@ -1,14 +1,14 @@
 import React from "react";
+import logoImg from "../../logo.png";
 
-export function PushDocLogo({ className = "h-7 w-auto", ...props }) {
+export function PushDocLogo({ className = "", ...props }) {
   return (
     <div className={`flex items-center gap-2.5 ${className}`} {...props}>
-      <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-md border border-primary/30">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2v20" />
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-        </svg>
-      </div>
+      <img
+        src={logoImg}
+        alt="PushDoc"
+        className="h-8 w-8 object-contain rounded-lg border border-border bg-card p-0.5 shadow-sm transition-transform hover:scale-105"
+      />
       <span className="font-extrabold text-lg tracking-tight text-foreground">
         PushDoc
       </span>
