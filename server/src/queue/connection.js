@@ -50,7 +50,13 @@ export function getRedisOptions() {
  * Creates a single monitored IORedis connection for app-level usage (OAuth state storage, health logging).
  */
 export function createMonitoringConnection() {
-    const opts = getRedisOptions();
+    const opts = {
+        ...getRedisOptions(),
+        // Override BullMQ's "retry forever" setting — this connection is used
+        // for HTTP-facing operations (OAuth state storage) and must fail fast
+        // so a mid-reconnect Redis call never hangs an Express response indefinitely.
+        maxRetriesPerRequest: 3,
+    };
 
     const conn = config.redis.url && !opts.host
         ? new IORedis(config.redis.url, opts)

@@ -6,6 +6,19 @@ import { GitHubError, ValidationError } from "../utils/errors.js";
 import crypto from "crypto";
 import connection from "../queue/connection.js";
 
+/**
+ * Wraps a Redis command promise with a hard timeout.
+ * Prevents a mid-reconnect ioredis command from hanging an HTTP response
+ * indefinitely when maxRetriesPerRequest kicks in during a reconnect window.
+ */
+const redisWithTimeout = (promise, ms = 5_000) =>
+    Promise.race([
+        promise,
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`Redis call timed out after ${ms}ms`)), ms)
+        ),
+    ]);
+
 export const githubLogin = async () => {
     if (!config.github.clientId) {
         throw new GitHubError("GitHub Client ID is not configured");
@@ -14,7 +27,7 @@ export const githubLogin = async () => {
     // Generate a cryptographically random CSRF nonce, store it in Redis for 10 min
     const state = crypto.randomBytes(16).toString("hex");
     const redis = connection;
-    await redis.set(`oauth_state:${state}`, "1", "EX", 600);
+    await redisWithTimeout(redis.set(`oauth_state:${state}`, "1", "EX", 600));
 
     const githubAuthURL = new URL(
         GITHUB_URLS.OAUTH_AUTHORIZE
@@ -48,12 +61,11 @@ export const githubCallback = async (code, state) => {
         throw new ValidationError("Missing OAuth state parameter");
     }
     const redis = connection;
-    const stored = await redis.get(`oauth_state:${state}`);
+    const stored = await redisWithTimeout(redis.get(`oauth_state:${state}`));
     if (!stored) {
         throw new ValidationError("Invalid or expired OAuth state. Please try logging in again.");
     }
-    await redis.del(`oauth_state:${state}`);
-
+    await redisWithTimeout(redis.del(`oauth_state:${state}`));
     let tokenData;
     try {
         const tokenResponse = await fetch(
