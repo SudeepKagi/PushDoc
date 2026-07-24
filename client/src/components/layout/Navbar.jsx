@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import LOGO_BASE64 from "../../logoBase64.js";
+import { PushDocLogo } from "../ui/PushDocLogo.jsx";
 import { Button } from "../ui/button.jsx";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar.jsx";
 import {
@@ -36,12 +36,9 @@ export default function Navbar({ page, setPage, user, handleLoginRedirect, logou
                 {/* Logo */}
                 <button 
                     onClick={() => setPage(user ? "dashboard" : "landing")}
-                    className="flex items-center gap-2.5 bg-transparent border-none p-0 cursor-pointer focus:outline-none"
+                    className="bg-transparent border-none p-0 cursor-pointer focus:outline-none"
                 >
-                    <img src={LOGO_BASE64} alt="PushDoc" className="h-7 w-auto" />
-                    <span className="font-semibold text-lg text-foreground tracking-tight">
-                        PushDoc
-                    </span>
+                    <PushDocLogo />
                 </button>
 
                 {/* Desktop nav */}

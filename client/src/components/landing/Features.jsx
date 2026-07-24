@@ -1,78 +1,100 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card.jsx";
 import { Badge } from "../ui/badge.jsx";
-import { Cpu, Webhook, ShieldCheck, Route, FileCode, Sparkles } from "lucide-react";
-
-const FEATURES = [
-    {
-        icon: Cpu,
-        title: "Intelligent Code Analysis",
-        desc: "Powered by Gemini & Groq models, our AST engine deeply understands your codebase structure, logic, and routes to generate human-quality documentation.",
-    },
-    {
-        icon: Webhook,
-        title: "Real-time Webhook Integration",
-        desc: "Push once, sync forever. We listen for git push events in real-time, ensuring your README is never out of date.",
-    },
-    {
-        icon: ShieldCheck,
-        title: "Enterprise-Grade Security",
-        desc: "Your code stays yours. All GitHub tokens and repository access keys are protected with AES-256 encryption at rest and in transit.",
-    },
-];
-
-const CAPABILITIES = [
-    { icon: Route, label: "AST Route Parsing", desc: "Extracts Express, FastAPI, and React API endpoints deterministically." },
-    { icon: FileCode, label: "Markdown Formatting", desc: "Generates clean badges, table-of-contents, tech tables, and code snippets." },
-    { icon: Sparkles, label: "Failover Key Routing", desc: "Automated routing between Gemini and Groq to maintain high availability." },
-];
+import { Webhook, Cpu, GitCommit, ShieldCheck, Zap, Code2, Sparkles, Terminal } from "lucide-react";
 
 export default function Features() {
     return (
-        <section id="features" className="py-20 bg-background">
+        <section id="features" className="py-24 bg-background border-t border-border">
             <div className="max-w-7xl mx-auto px-6">
                 <div className="text-center max-w-2xl mx-auto mb-16">
-                    <Badge variant="outline" className="mb-3 text-xs font-normal">Platform Features</Badge>
-                    <h2 className="text-3xl font-bold tracking-tight text-foreground">Built for modern developer workflows</h2>
-                    <p className="text-sm text-muted-foreground mt-2">Zero configuration required. Push code and let AI handle documentation.</p>
+                    <Badge variant="outline" className="mb-3 text-xs font-normal rounded-full px-3">
+                        Engine Architecture
+                    </Badge>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+                        Built for modern developer workflows
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+                        Deterministic AST extraction combined with AI synthesis for automated, zero-maintenance documentation.
+                    </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-                    {FEATURES.map((f) => {
-                        const Icon = f.icon;
-                        return (
-                            <Card key={f.title} className="shadow-none border-border">
-                                <CardHeader className="p-6 pb-2">
-                                    <div className="h-10 w-10 rounded-md bg-secondary flex items-center justify-center text-foreground mb-3 border border-border">
-                                        <Icon className="h-5 w-5" />
-                                    </div>
-                                    <CardTitle className="text-base font-semibold">{f.title}</CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-6 pt-2">
-                                    <CardDescription className="text-xs text-muted-foreground leading-relaxed">
-                                        {f.desc}
-                                    </CardDescription>
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
-                </div>
-
-                <div id="capabilities" className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-border">
-                    {CAPABILITIES.map((c) => {
-                        const Icon = c.icon;
-                        return (
-                            <div key={c.label} className="flex items-start gap-3">
-                                <div className="h-8 w-8 rounded bg-muted flex items-center justify-center text-muted-foreground shrink-0 border border-border mt-0.5">
-                                    <Icon className="h-4 w-4" />
-                                </div>
-                                <div>
-                                    <h4 className="text-xs font-semibold text-foreground">{c.label}</h4>
-                                    <p className="text-xs text-muted-foreground mt-0.5">{c.desc}</p>
-                                </div>
+                {/* Polar-style Bento Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Card 1: Webhook Engine (Span 2) */}
+                    <Card className="md:col-span-2 shadow-none border-border bg-card/60 hover:bg-card/90 transition-all">
+                        <CardHeader className="p-6 pb-2">
+                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-3 border border-primary/20">
+                                <Webhook className="h-5 w-5" />
                             </div>
-                        );
-                    })}
+                            <CardTitle className="text-lg font-bold">Zero-Config Webhook Listener</CardTitle>
+                            <CardDescription className="text-xs text-muted-foreground mt-1">
+                                Listen for git push events with HMAC-SHA256 payload verification and sub-7ms dispatch latency.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-6 pt-4 font-mono text-xs">
+                            <div className="p-4 bg-muted rounded-md border border-border space-y-1.5 text-muted-foreground">
+                                <div><span className="text-emerald-500 font-semibold">POST</span> /webhooks/github — 202 Accepted</div>
+                                <div className="text-[11px]">Header: X-Hub-Signature-256: sha256=9f82ab...</div>
+                                <div className="text-foreground text-[11px] font-semibold pt-1">✓ Triggered README pipeline worker in background</div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Card 2: AST Fact Extraction (Span 1) */}
+                    <Card className="shadow-none border-border bg-card/60 hover:bg-card/90 transition-all flex flex-col justify-between">
+                        <CardHeader className="p-6 pb-2">
+                            <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-3 border border-emerald-500/20">
+                                <Code2 className="h-5 w-5" />
+                            </div>
+                            <CardTitle className="text-lg font-bold">AST Fact Extraction</CardTitle>
+                            <CardDescription className="text-xs text-muted-foreground mt-1">
+                                Uses @babel/parser to extract real Express routes, Fastify endpoints, and Prisma schemas without guessing.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-6 pt-2">
+                            <Badge variant="success" className="text-xs font-mono font-normal">
+                                Zero Hallucination
+                            </Badge>
+                        </CardContent>
+                    </Card>
+
+                    {/* Card 3: AI Failover Routing (Span 1) */}
+                    <Card className="shadow-none border-border bg-card/60 hover:bg-card/90 transition-all flex flex-col justify-between">
+                        <CardHeader className="p-6 pb-2">
+                            <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 mb-3 border border-amber-500/20">
+                                <Zap className="h-5 w-5" />
+                            </div>
+                            <CardTitle className="text-lg font-bold">AI Failover Routing</CardTitle>
+                            <CardDescription className="text-xs text-muted-foreground mt-1">
+                                Automatic failover between Gemini 2.5 Flash and Groq Llama 3.3 for 99.99% pipeline uptime.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-6 pt-2">
+                            <Badge variant="outline" className="text-xs font-mono font-normal gap-1">
+                                <Sparkles className="h-3 w-3 text-amber-500" /> Auto-Switching
+                            </Badge>
+                        </CardContent>
+                    </Card>
+
+                    {/* Card 4: Direct Git Commits (Span 2) */}
+                    <Card className="md:col-span-2 shadow-none border-border bg-card/60 hover:bg-card/90 transition-all">
+                        <CardHeader className="p-6 pb-2">
+                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-3 border border-primary/20">
+                                <GitCommit className="h-5 w-5" />
+                            </div>
+                            <CardTitle className="text-lg font-bold">Automated README Commits</CardTitle>
+                            <CardDescription className="text-xs text-muted-foreground mt-1">
+                                Direct commit or pull request creation directly back into your default GitHub branch with customized markdown badges.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-6 pt-4 font-mono text-xs">
+                            <div className="p-3 bg-muted rounded-md border border-border flex items-center justify-between text-muted-foreground">
+                                <span>git commit -m "docs: auto-update README via PushDoc"</span>
+                                <Badge variant="secondary" className="text-[10px] font-mono">PUSHED</Badge>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </section>
