@@ -2,67 +2,98 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card.jsx";
 import { Button } from "../components/ui/button.jsx";
 import { Badge } from "../components/ui/badge.jsx";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs.jsx";
 import { Separator } from "../components/ui/separator.jsx";
-import { ArrowLeft, Play, RefreshCw, CheckCircle2, Clock, FileText, Lock, Unlock, Eye, Sparkles, Layers, Route } from "lucide-react";
+import { ArrowLeft, Play, RefreshCw, CheckCircle2, Clock, FileText, Lock, Unlock, Sparkles, Terminal, Code2, GitCommit, AlertCircle } from "lucide-react";
 
 function ProgressTracker({ status }) {
     const steps = [
-        { label: "Queued", states: ["QUEUED"] },
-        { label: "Cloning", states: ["CLONING"] },
-        { label: "Analyzing", states: ["READING"] },
-        { label: "AI Writing", states: ["GENERATING", "WRITING"] },
-        { label: "Committing", states: ["COMMITTING"] },
-        { label: "Pushing", states: ["PUSHING"] },
+        { label: "Queued", icon: Clock, desc: "Pipeline job queued in worker queue", states: ["QUEUED"] },
+        { label: "Cloning", icon: Terminal, desc: "Shallow cloning git commit diff", states: ["CLONING"] },
+        { label: "AST Analyzing", icon: Code2, desc: "Extracting Express routes & database schemas", states: ["READING"] },
+        { label: "AI Writing", icon: Sparkles, desc: "Synthesizing documentation with Gemini AI", states: ["GENERATING", "WRITING"] },
+        { label: "Committing", icon: FileText, desc: "Formatting README markdown artifact", states: ["COMMITTING"] },
+        { label: "Pushing", icon: GitCommit, desc: "Pushing README commit to repository", states: ["PUSHING"] },
     ];
 
     const currentStepIndex = steps.findIndex(step => step.states.includes(status));
     const isCompleted = status === "COMPLETED";
     const isFailed = status === "FAILED";
 
+    const activeStepObj = steps[currentStepIndex] || steps[0];
+    const progressPercent = isCompleted ? 100 : Math.max(10, Math.round(((currentStepIndex + 1) / steps.length) * 100));
+
     return (
-        <Card className="mb-6 border-border shadow-none">
-            <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle className="text-sm font-semibold tracking-tight">Pipeline Progress</CardTitle>
-                    <CardDescription className="text-xs">Real-time status of repository scanning & AI generation</CardDescription>
+        <Card className="mb-6 border-border shadow-none bg-card/90">
+            <CardHeader className="p-5 pb-3 flex flex-row items-center justify-between border-b border-border">
+                <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                        <RefreshCw className="h-4 w-4 animate-spin text-primary" />
+                    </div>
+                    <div>
+                        <CardTitle className="text-sm font-semibold tracking-tight text-foreground">Pipeline Processing Status</CardTitle>
+                        <CardDescription className="text-xs text-muted-foreground">Real-time repository scanning, AST parsing & AI generation</CardDescription>
+                    </div>
                 </div>
-                <Badge variant={isFailed ? "destructive" : isCompleted ? "success" : "secondary"}>
+                <Badge variant={isFailed ? "destructive" : isCompleted ? "success" : "default"} className="text-xs font-mono font-normal gap-1.5 px-3 py-1">
+                    <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
                     {status}
                 </Badge>
             </CardHeader>
-            <CardContent className="p-4 pt-2">
-                <div className="relative flex items-center justify-between">
-                    <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-0.5 bg-muted -z-0">
+
+            <CardContent className="p-5 space-y-5">
+                {/* Progress bar */}
+                <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-mono text-muted-foreground">
+                        <span>Progress</span>
+                        <span>{progressPercent}%</span>
+                    </div>
+                    <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
                         <div 
-                            className="h-full bg-primary transition-all duration-500"
-                            style={{ width: isCompleted ? "100%" : `${(Math.max(0, currentStepIndex) / (steps.length - 1)) * 100}%` }}
+                            className="bg-primary h-full rounded-full transition-all duration-500" 
+                            style={{ width: `${progressPercent}%` }} 
                         />
                     </div>
+                </div>
 
+                {/* Step grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                     {steps.map((step, idx) => {
+                        const StepIcon = step.icon;
                         const isActive = idx === currentStepIndex;
                         const isPassed = idx < currentStepIndex || isCompleted;
-                        
+
                         return (
-                            <div key={idx} className="flex flex-col items-center z-10">
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
-                                    isPassed 
-                                        ? "bg-primary text-primary-foreground" 
-                                        : isActive 
-                                            ? "bg-accent text-accent-foreground ring-2 ring-primary" 
-                                            : "bg-muted text-muted-foreground border border-border"
-                                }`}>
-                                    {isPassed ? <CheckCircle2 className="h-3.5 w-3.5" /> : idx + 1}
+                            <div 
+                                key={idx} 
+                                className={`p-3 rounded-lg border text-left transition-all ${
+                                    isActive 
+                                        ? "bg-primary/10 border-primary text-foreground ring-1 ring-primary/30" 
+                                        : isPassed 
+                                            ? "bg-muted/40 border-border text-foreground" 
+                                            : "bg-card border-border/50 text-muted-foreground opacity-60"
+                                }`}
+                            >
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <StepIcon className={`h-4 w-4 ${isActive ? "text-primary animate-pulse" : isPassed ? "text-emerald-500" : "text-muted-foreground"}`} />
+                                    {isPassed ? (
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                    ) : (
+                                        <span className="text-[10px] font-mono text-muted-foreground">0{idx + 1}</span>
+                                    )}
                                 </div>
-                                <span className={`text-[10px] font-medium mt-1.5 ${
-                                    isActive ? "text-foreground font-semibold" : isPassed ? "text-foreground" : "text-muted-foreground"
-                                }`}>
-                                    {step.label}
-                                </span>
+                                <div className="text-xs font-medium tracking-tight truncate">{step.label}</div>
                             </div>
                         );
                     })}
+                </div>
+
+                {/* Live Action Banner */}
+                <div className="p-3 bg-muted/60 rounded-md border border-border flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 text-foreground font-mono">
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin text-primary" />
+                        <span>{activeStepObj.desc}</span>
+                    </div>
+                    <span className="text-[11px] font-mono text-muted-foreground">Processing in worker thread...</span>
                 </div>
             </CardContent>
         </Card>
@@ -271,7 +302,6 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                 {/* Sidebar Properties */}
                 <div className="space-y-6">
                     <Card className="shadow-none border-border">
-
                         <CardHeader className="p-4 pb-2">
                             <CardTitle className="text-sm font-semibold">Repository Properties</CardTitle>
                         </CardHeader>

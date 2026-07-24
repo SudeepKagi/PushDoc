@@ -98,8 +98,6 @@ export default function App() {
             if (data.success) {
                 // Refresh the jobs list to include the newly queued job
                 await refreshJobs();
-                // Instantly navigate to the logs console so they can watch it run live
-                setPage("logs");
             } else {
                 alert("Failed to queue job: " + (data.message || "Unknown error"));
             }
