@@ -1,45 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card.jsx";
 import { Badge } from "../ui/badge.jsx";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs.jsx";
 import { Accordion, AccordionItem } from "../ui/accordion.jsx";
 import { GithubIcon as Github } from "../ui/githubIcon.jsx";
-import { Zap, FileText, CheckCircle2, HelpCircle } from "lucide-react";
-
-const STEPS = [
-    {
-        num: "01",
-        icon: Github,
-        title: "Install the GitHub App",
-        desc: "Authorize PushDoc on your GitHub organization in one click. Scopes read access to code and write-only access for README commits.",
-        bullets: [
-            "Read access: repository contents",
-            "Write access: README.md commits",
-            "Webhook: push event listener",
-        ],
-    },
-    {
-        num: "02",
-        icon: Zap,
-        title: "Push Code as Usual",
-        desc: "Every git push fires an instant webhook. Analyzers extract Express routes, database models, and components in real time.",
-        bullets: [
-            "Analyzes route endpoints & AST",
-            "Detects Mongoose / Prisma schemas",
-            "Context fed into Gemini / Groq",
-        ],
-    },
-    {
-        num: "03",
-        icon: FileText,
-        title: "README Committed Back",
-        desc: "A clean, structured README is generated and committed directly back to your branch with zero manual effort.",
-        bullets: [
-            "Direct commit back to branch",
-            "Formatted tables & badges",
-            "Never goes out of date",
-        ],
-    },
-];
+import { Zap, FileText, CheckCircle2, HelpCircle, Code2, GitCommit } from "lucide-react";
 
 const FAQS = [
     {
@@ -62,60 +27,85 @@ const FAQS = [
 
 export default function HowItWorks() {
     return (
-        <section className="py-24 bg-muted/30 border-t border-b border-border">
+        <section className="py-24 bg-muted/20 border-t border-border">
             <div className="max-w-7xl mx-auto px-6 space-y-24">
-                {/* How It Works Steps */}
-                <div>
-                    <div className="text-center max-w-2xl mx-auto mb-16">
-                        <Badge variant="outline" className="mb-3 text-xs font-normal rounded-full px-3">
-                            Step-by-Step
+
+                {/* Polar Code & Pipeline Showcase Block */}
+                <div className="max-w-4xl mx-auto space-y-6">
+                    <div className="text-center space-y-3">
+                        <Badge variant="outline" className="text-xs font-normal rounded-full px-3">
+                            Pipeline Mechanics
                         </Badge>
-                        <h2 className="text-3xl font-extrabold tracking-tight text-foreground">
-                            How PushDoc Works
+                        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+                            See PushDoc in action
                         </h2>
-                        <p className="text-sm text-muted-foreground mt-2">
-                            Fully automated documentation pipeline connected directly to your GitHub repository.
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                            Every commit is parsed for route endpoints, schemas, and README updates in real time.
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {STEPS.map((s) => {
-                            const Icon = s.icon;
-                            return (
-                                <Card key={s.num} className="shadow-none border-border bg-card">
-                                    <CardHeader className="p-6 pb-2">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                                                <Icon className="h-4 w-4" />
-                                            </div>
-                                            <span className="font-mono text-xs font-bold text-muted-foreground">{s.num}</span>
-                                        </div>
-                                        <CardTitle className="text-base font-semibold">{s.title}</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-6 pt-2 space-y-4">
-                                        <CardDescription className="text-xs text-muted-foreground leading-relaxed">
-                                            {s.desc}
-                                        </CardDescription>
+                    <Card className="shadow-2xl border-border bg-card overflow-hidden">
+                        <Tabs defaultValue="commit" className="w-full">
+                            <CardHeader className="p-4 pb-3 border-b border-border bg-muted/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex gap-1.5 mr-2">
+                                        <div className="h-3 w-3 rounded-full bg-destructive/60" />
+                                        <div className="h-3 w-3 rounded-full bg-amber-500/60" />
+                                        <div className="h-3 w-3 rounded-full bg-emerald-500/60" />
+                                    </div>
+                                    <span className="text-xs font-mono text-muted-foreground">sudeepkagi/PushDoc</span>
+                                </div>
+                                <TabsList className="bg-muted h-8 p-0.5">
+                                    <TabsTrigger value="commit" className="text-xs px-3 h-7 gap-1.5">
+                                        <GitCommit className="h-3.5 w-3.5" /> 1. Git Push
+                                    </TabsTrigger>
+                                    <TabsTrigger value="ast" className="text-xs px-3 h-7 gap-1.5">
+                                        <Code2 className="h-3.5 w-3.5" /> 2. AST Extraction
+                                    </TabsTrigger>
+                                    <TabsTrigger value="readme" className="text-xs px-3 h-7 gap-1.5">
+                                        <FileText className="h-3.5 w-3.5" /> 3. README Commit
+                                    </TabsTrigger>
+                                </TabsList>
+                            </CardHeader>
 
-                                        <div className="p-3 bg-muted rounded-md space-y-1.5 font-mono text-[11px] text-muted-foreground border border-border">
-                                            {s.bullets.map((b, i) => (
-                                                <div key={i} className="flex items-center gap-1.5">
-                                                    <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                                                    <span>{b}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
-                    </div>
+                            <CardContent className="p-6 font-mono text-xs">
+                                <TabsContent value="commit" className="mt-0 space-y-2">
+                                    <div className="text-muted-foreground">$ git commit -m "feat: add user authentication & login"</div>
+                                    <div className="text-muted-foreground">$ git push origin main</div>
+                                    <div className="text-emerald-500 font-semibold pt-2">
+                                        ✓ Webhook dispatched to api.pushdoc.io (Latency: 6.4ms)
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="ast" className="mt-0 space-y-2">
+                                    <div className="text-primary font-semibold">// AST Fact Extraction Engine (@babel/parser)</div>
+                                    <div className="text-muted-foreground">• Route Detected: POST /auth/login</div>
+                                    <div className="text-muted-foreground">• Route Detected: POST /auth/register</div>
+                                    <div className="text-muted-foreground">• Schema Model: User (email, passwordHash, role)</div>
+                                    <div className="text-emerald-500 font-semibold pt-1">
+                                        ✓ Extraction verified 100% ground-truth deterministic
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="readme" className="mt-0 space-y-3 font-sans text-xs">
+                                    <div className="font-bold text-base border-b border-border pb-2 text-foreground">🖼️ Auth Module</div>
+                                    <p className="text-muted-foreground text-xs leading-relaxed">
+                                        Authentication controller handling user registration and token generation.
+                                    </p>
+                                    <div className="flex items-center gap-2 text-emerald-500 text-xs font-medium pt-1">
+                                        <CheckCircle2 className="h-4 w-4" />
+                                        <span>Directly committed back to repository origin/main</span>
+                                    </div>
+                                </TabsContent>
+                            </CardContent>
+                        </Tabs>
+                    </Card>
                 </div>
 
-                {/* Polar-style FAQ Accordion */}
-                <div className="max-w-3xl mx-auto">
-                    <div className="text-center mb-10">
-                        <Badge variant="outline" className="mb-3 text-xs font-normal gap-1 rounded-full px-3">
+                {/* Polar FAQ Accordion */}
+                <div className="max-w-3xl mx-auto space-y-6">
+                    <div className="text-center space-y-2">
+                        <Badge variant="outline" className="text-xs font-normal gap-1 rounded-full px-3">
                             <HelpCircle className="h-3.5 w-3.5 text-primary" /> FAQ
                         </Badge>
                         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
