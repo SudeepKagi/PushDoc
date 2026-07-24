@@ -2,6 +2,7 @@ import React from "react";
 import Hero from "../components/landing/Hero";
 import Features from "../components/landing/Features";
 import Integrations from "../components/landing/Integrations";
+import FrameworkSwitcher from "../components/landing/FrameworkSwitcher";
 import HowItWorks from "../components/landing/HowItWorks";
 import SecuritySection from "../components/landing/SecuritySection";
 import LandingFooter from "../components/landing/LandingFooter";
@@ -12,6 +13,7 @@ export default function LandingPage({ handleLoginRedirect, setPage }) {
             <Hero handleLoginRedirect={handleLoginRedirect} setPage={setPage} />
             <Features />
             <Integrations />
+            <FrameworkSwitcher />
             <HowItWorks />
             <SecuritySection />
             <LandingFooter handleLoginRedirect={handleLoginRedirect} setPage={setPage} />
