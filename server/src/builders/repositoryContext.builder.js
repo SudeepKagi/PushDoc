@@ -101,26 +101,32 @@ export const buildRepositoryContext = (repository, precalculatedKnowledge) => {
         context += buildFeaturesSection(knowledge.features);
     }
 
-    // 6. Format API OVERVIEW section (backend/fullstack only)
+    // 6. Format DETERMINISTIC AST FACTS section (API calls, process.env, .env.example)
+    if (knowledge.ast) {
+        context += buildAstSection(knowledge.ast);
+    }
+
+    // 7. Format API OVERVIEW section (backend/fullstack only)
     if (knowledge.routes && knowledge.routes.length > 0) {
         context += buildApiOverviewSection(knowledge.routes);
     }
 
-    // 7. Format DATABASE MODELS section (backend/fullstack only)
+    // 8. Format DATABASE MODELS section (backend/fullstack only)
     if (knowledge.models && knowledge.models.length > 0) {
         context += buildModelsSection(knowledge.models);
     }
 
-    // 8. Format CONTROLLERS section (backend/fullstack only)
+    // 9. Format CONTROLLERS section (backend/fullstack only)
     if (knowledge.controllers && knowledge.controllers.length > 0) {
         context += buildControllersSection(knowledge.controllers);
     }
 
-    // 9. Append minimized RAW SOURCE code
+    // 10. Append minimized RAW SOURCE code
     context += buildRawSourceSection(repository.files, projectType);
 
     return context;
 };
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Section Builders
@@ -258,6 +264,46 @@ CAPABILITIES
     }
 
     return section + "\n";
+}
+
+function buildAstSection(ast) {
+    let section = `================================================================================
+DETERMINISTIC AST EXTRACTED FACTS
+================================================================================\n`;
+
+    if (ast.apiCalls && ast.apiCalls.length > 0) {
+        section += `## Extracted Frontend API Call Sites:\n`;
+        for (const call of ast.apiCalls) {
+            section += `- Method: ${call.method} | Client: ${call.client} | URL: \`${call.url}\` (File: ${call.file})\n`;
+        }
+        section += "\n";
+    }
+
+    if (ast.expressRoutes && ast.expressRoutes.length > 0) {
+        section += `## Extracted Express Routes:\n`;
+        for (const route of ast.expressRoutes) {
+            section += `- ${route.method.padEnd(6)} ${route.path} (File: ${route.file})\n`;
+        }
+        section += "\n";
+    }
+
+    if (ast.envVars && ast.envVars.length > 0) {
+        section += `## Environment Variables Referenced in Code (process.env):\n`;
+        for (const envKey of ast.envVars) {
+            section += `- ${envKey}\n`;
+        }
+        section += "\n";
+    }
+
+    if (ast.envFileVars && ast.envFileVars.length > 0) {
+        section += `## Environment Variables Found in .env.example / .env.sample:\n`;
+        for (const envItem of ast.envFileVars) {
+            section += `- ${envItem.key} (File: ${envItem.sourceFile})\n`;
+        }
+        section += "\n";
+    }
+
+    return section;
 }
 
 function buildApiOverviewSection(routes) {

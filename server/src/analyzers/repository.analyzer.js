@@ -3,6 +3,7 @@ import * as routeAnalyzer      from "./route.analyzer.js";
 import * as modelAnalyzer      from "./model.analyzer.js";
 import * as controllerAnalyzer from "./controller.analyzer.js";
 import * as featureAnalyzer    from "./feature.analyzer.js";
+import * as astAnalyzer        from "./ast.analyzer.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Project Type Detection
@@ -51,6 +52,9 @@ export const analyzeRepository = (
 
     const projectType = detectProjectType(repository, packageInfo);
 
+    // Run deterministic AST fact extraction across JS/TS/JSX source files
+    const ast = astAnalyzer.analyzeAst(repository);
+
     // Backend analyzers (routes, models, controllers) produce nothing useful
     // for pure frontend projects — skip them to avoid injecting empty noise
     // into the AI context and misleading the feature analyzer.
@@ -78,6 +82,7 @@ export const analyzeRepository = (
             routes,
             models,
             controllers,
+            ast,
         });
 
     return {
@@ -94,10 +99,12 @@ export const analyzeRepository = (
 
         features,
 
+        ast,
+
         folders: null,
 
         readme: null,
 
     };
 
-};
+};
