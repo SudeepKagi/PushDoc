@@ -16,6 +16,7 @@ export function getRedisOptions() {
     const base = {
         maxRetriesPerRequest: null,   // BullMQ requirement
         enableReadyCheck: false,      // Required for Upstash / cloud Redis
+        keepAlive: 5_000,             // Send TCP keepalive probes every 5s — prevents Upstash proxy from silently dropping idle sockets
         retryStrategy: (times) => Math.min(times * 200, 5_000),
     };
 
@@ -57,9 +58,9 @@ export function createMonitoringConnection() {
 
     conn.on("connect", () => logger.success("Redis Connected"));
     conn.on("error", (err) => {
-        // ECONNRESET is expected when Upstash/cloud Redis drops idle connections.
+        // ECONNRESET / EPIPE are expected when Upstash/cloud Redis drops idle connections.
         // IORedis auto-reconnects — suppress to avoid log spam.
-        if (err.code !== "ECONNRESET") {
+        if (err.code !== "ECONNRESET" && err.code !== "EPIPE") {
             logger.error(`Redis Error: ${err.message}`);
         }
     });
