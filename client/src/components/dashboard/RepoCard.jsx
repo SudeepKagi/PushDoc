@@ -1,70 +1,85 @@
 import React from "react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../ui/card.jsx";
+import { Badge } from "../ui/badge.jsx";
+import { Button } from "../ui/button.jsx";
+import { FolderGit2, ExternalLink, Lock, Unlock, CheckCircle2, PauseCircle } from "lucide-react";
 
-export default function RepoCard({ repo, isActive, onToggleActive }) {
+export default function RepoCard({ repo, isActive, onToggleActive, onViewDetails }) {
     const ownerUpper = (repo.owner || "").toUpperCase();
     const branchUpper = (repo.branch || "MAIN").toUpperCase();
 
     return (
-        <div 
-            className={`bg-white rounded-[24px] p-6 shadow-sm border border-slate-100 hover:shadow-md transition-all flex flex-col justify-between min-h-[220px] cursor-default hover:scale-[1.01] ${
-                isActive ? "ring-2 ring-primary/20" : ""
+        <Card 
+            className={`transition-all duration-200 hover:border-foreground/20 cursor-pointer flex flex-col justify-between ${
+                isActive ? "border-primary/50 shadow-sm" : "opacity-90"
             }`}
+            onClick={onViewDetails}
         >
-            <div className="flex justify-between items-start mb-4">
-                <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                        <span className="material-symbols-outlined text-[24px]">folder</span>
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h3 className="font-headline text-lg font-bold text-on-surface uppercase leading-tight line-clamp-1">{repo.name}</h3>
-                            <span 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    window.open(repo.cloneUrl, "_blank");
-                                }}
-                                className="material-symbols-outlined text-[16px] text-outline cursor-pointer hover:text-primary"
-                            >
-                                open_in_new
-                            </span>
+            <CardHeader className="p-5 pb-3">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-md bg-secondary flex items-center justify-center text-secondary-foreground shrink-0 border border-border">
+                            <FolderGit2 className="h-5 w-5" />
                         </div>
-                        <p className="text-xs text-on-surface-variant font-medium mt-1 line-clamp-1">{repo.fullName}</p>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <CardTitle className="text-base font-semibold tracking-tight text-foreground line-clamp-1">
+                                    {repo.name}
+                                </CardTitle>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(repo.cloneUrl, "_blank");
+                                    }}
+                                >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                </Button>
+                            </div>
+                            <CardDescription className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                                {repo.fullName}
+                            </CardDescription>
+                        </div>
                     </div>
                 </div>
-                <div 
+            </CardHeader>
+
+            <CardContent className="p-5 pt-0">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium mb-4">
+                    <span>{ownerUpper}</span>
+                    <span>•</span>
+                    <span>{branchUpper}</span>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-xs font-normal gap-1">
+                        {repo.private ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                        {repo.private ? "Private" : "Public"}
+                    </Badge>
+
+                    <Badge variant={isActive ? "success" : "secondary"} className="text-xs font-normal gap-1">
+                        {isActive ? <CheckCircle2 className="h-3 w-3" /> : <PauseCircle className="h-3 w-3" />}
+                        {isActive ? "AI Updates Enabled" : "Paused"}
+                    </Badge>
+                </div>
+            </CardContent>
+
+            <CardFooter className="p-5 pt-0 border-t border-border/40 mt-3 pt-3 flex items-center justify-between">
+                <span className="text-xs text-muted-foreground font-medium">Auto-Sync</span>
+                <Button
+                    variant={isActive ? "outline" : "default"}
+                    size="sm"
+                    className="h-7 text-xs font-medium"
                     onClick={(e) => {
                         e.stopPropagation();
                         onToggleActive(repo._id);
                     }}
-                    className="relative inline-flex items-center cursor-pointer"
                 >
-                    <div className={`w-11 h-6 rounded-full transition-colors duration-200 relative ${isActive ? 'bg-primary' : 'bg-slate-200'}`}>
-                        <div className={`absolute top-[2px] left-[2px] bg-white border border-slate-300 rounded-full h-5 w-5 transition-transform duration-205 ${isActive ? 'translate-x-5' : ''}`}></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div className="space-y-4 mt-auto">
-                <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-outline uppercase tracking-wider font-semibold">{ownerUpper}</span>
-                    <span className="w-1 h-1 rounded-full bg-outline/30"></span>
-                    <span className="text-[10px] text-outline uppercase tracking-wider font-semibold">{branchUpper}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
-                        <span className="bg-primary/5 text-primary px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[14px]">{repo.private ? "lock" : "lock_open"}</span>
-                            {repo.private ? "Private" : "Public"}
-                        </span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
-                            isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"
-                        }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-emerald-500" : "bg-slate-400"}`}></span>
-                            {isActive ? "AI updates enabled" : "AI updates disabled"}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
+                    {isActive ? "Disable" : "Enable"}
+                </Button>
+            </CardFooter>
+        </Card>
     );
 }

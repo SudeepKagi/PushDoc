@@ -1,24 +1,35 @@
-import React from "react";
+import * as React from "react";
+import { cva } from "class-variance-authority";
+import { cn } from "../../lib/utils";
 
-export default function Badge({ status }) {
-    const s = status.toUpperCase();
-    let badgeClass = "px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ";
-    
-    if (s === "ACTIVE RUN" || s === "ACTIVE") {
-        badgeClass += "bg-primary text-white";
-    } else if (s === "COMPLETED") {
-        badgeClass += "bg-secondary-container/20 text-secondary";
-    } else if (s === "FAILED") {
-        badgeClass += "bg-error-container/20 text-error";
-    } else if (s === "PRIMARY") {
-        badgeClass += "bg-primary-fixed text-primary text-[10px] py-1";
-    } else if (s === "STANDBY") {
-        badgeClass += "bg-surface-container-highest text-on-surface-variant text-[10px] py-1";
-    } else if (s === "FAILOVER") {
-        badgeClass += "bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] py-1";
-    } else {
-        badgeClass += "bg-surface-container-low text-on-surface-variant";
-    }
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default:
+          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive:
+          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        outline: "text-foreground",
+        success:
+          "border-transparent bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/25",
+        warning:
+          "border-transparent bg-amber-500/15 text-amber-700 dark:text-amber-400 hover:bg-amber-500/25",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+);
 
-    return <span className={badgeClass}>{status}</span>;
+function Badge({ className, variant, ...props }) {
+  return (
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+  );
 }
+
+export { Badge, badgeVariants };

@@ -1,6 +1,10 @@
-import React, { useState } from "react";
-import Card from "../components/ui/Card";
-import Button from "../components/ui/Button";
+import React from "react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card.jsx";
+import { Button } from "../components/ui/button.jsx";
+import { Badge } from "../components/ui/badge.jsx";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs.jsx";
+import { Separator } from "../components/ui/separator.jsx";
+import { ArrowLeft, Play, RefreshCw, CheckCircle2, Clock, FileText, Lock, Unlock, Eye, Sparkles, Layers, Route } from "lucide-react";
 
 function ProgressTracker({ status }) {
     const steps = [
@@ -17,70 +21,56 @@ function ProgressTracker({ status }) {
     const isFailed = status === "FAILED";
 
     return (
-        <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 mb-8">
-            <div className="flex justify-between items-center mb-6">
+        <Card className="mb-6 border-border shadow-none">
+            <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between">
                 <div>
-                    <h4 className="font-bold text-sm text-slate-800">Verification Progress</h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Watch the AI pipeline process your repository</p>
+                    <CardTitle className="text-sm font-semibold tracking-tight">Pipeline Progress</CardTitle>
+                    <CardDescription className="text-xs">Real-time status of repository scanning & AI generation</CardDescription>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                    isFailed 
-                        ? "bg-red-50 text-red-700 border border-red-100" 
-                        : isCompleted
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                            : "bg-blue-50 text-blue-700 border border-blue-100 animate-pulse"
-                }`}>
+                <Badge variant={isFailed ? "destructive" : isCompleted ? "success" : "secondary"}>
                     {status}
-                </span>
-            </div>
-            
-            <div className="relative flex items-center justify-between px-2">
-                {/* Connection line */}
-                <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-1 bg-slate-200 z-0">
-                    <div 
-                        className="h-full bg-primary transition-all duration-500"
-                        style={{ width: isCompleted ? "100%" : `${(Math.max(0, currentStepIndex) / (steps.length - 1)) * 100}%` }}
-                    ></div>
-                </div>
+                </Badge>
+            </CardHeader>
+            <CardContent className="p-4 pt-2">
+                <div className="relative flex items-center justify-between">
+                    <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-0.5 bg-muted -z-0">
+                        <div 
+                            className="h-full bg-primary transition-all duration-500"
+                            style={{ width: isCompleted ? "100%" : `${(Math.max(0, currentStepIndex) / (steps.length - 1)) * 100}%` }}
+                        />
+                    </div>
 
-                {steps.map((step, idx) => {
-                    const isActive = idx === currentStepIndex;
-                    const isPassed = idx < currentStepIndex || isCompleted;
-                    
-                    return (
-                        <div key={idx} className="flex flex-col items-center z-10 relative">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-                                isPassed 
-                                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20 scale-110" 
-                                    : isActive 
-                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-125 ring-4 ring-blue-500/20" 
-                                        : "bg-white border-2 border-slate-200 text-slate-400"
-                            }`}>
-                                <span className="material-symbols-outlined text-[18px]">
-                                    {isPassed ? "check" : 
-                                     idx === 0 ? "hourglass_empty" : 
-                                     idx === 1 ? "download" : 
-                                     idx === 2 ? "troubleshoot" : 
-                                     idx === 3 ? "edit_document" : 
-                                     idx === 4 ? "save" : "cloud_upload"}
+                    {steps.map((step, idx) => {
+                        const isActive = idx === currentStepIndex;
+                        const isPassed = idx < currentStepIndex || isCompleted;
+                        
+                        return (
+                            <div key={idx} className="flex flex-col items-center z-10">
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
+                                    isPassed 
+                                        ? "bg-primary text-primary-foreground" 
+                                        : isActive 
+                                            ? "bg-accent text-accent-foreground ring-2 ring-primary" 
+                                            : "bg-muted text-muted-foreground border border-border"
+                                }`}>
+                                    {isPassed ? <CheckCircle2 className="h-3.5 w-3.5" /> : idx + 1}
+                                </div>
+                                <span className={`text-[10px] font-medium mt-1.5 ${
+                                    isActive ? "text-foreground font-semibold" : isPassed ? "text-foreground" : "text-muted-foreground"
+                                }`}>
+                                    {step.label}
                                 </span>
                             </div>
-                            <span className={`text-[9px] font-bold mt-2.5 uppercase tracking-wider ${
-                                isActive ? "text-blue-600 font-extrabold" : isPassed ? "text-primary" : "text-slate-400"
-                            }`}>
-                                {step.label}
-                            </span>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
+                        );
+                    })}
+                </div>
+            </CardContent>
+        </Card>
     );
 }
 
 function renderMarkdown(rawContent) {
     if (!rawContent) return "";
-    // Normalize line endings
     const content = rawContent.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
     const lines = content.split("\n");
     let html = "";
@@ -89,26 +79,19 @@ function renderMarkdown(rawContent) {
     let inTable = false;
     let tableRows = [];
 
-    // Process inline markdown (bold, italic, images, links, code)
     const inline = (text) => {
         let t = text
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;");
-        // Images/badges first (so alt text isn't link-processed)
         t = t.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
             '<img src="$2" alt="$1" style="display:inline;max-height:24px;margin:2px 3px 0;vertical-align:middle;" loading="lazy"/>');
-        // Links
         t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
-            '<a href="$2" style="color:#0969da;text-decoration:none;" target="_blank" rel="noopener">$1</a>');
-        // Inline code
+            '<a href="$2" class="text-primary underline font-medium" target="_blank" rel="noopener">$1</a>');
         t = t.replace(/`([^`]+)`/g,
-            '<code style="background:#f0f0f0;border-radius:4px;padding:1px 5px;font-size:85%;font-family:\'SFMono-Regular\',Consolas,monospace;border:1px solid #e0e0e0;">$1</code>');
-        // Bold + italic combined
+            '<code class="bg-muted text-foreground px-1.5 py-0.5 rounded text-xs font-mono border border-border">$1</code>');
         t = t.replace(/\*\*\*([^*]+)\*\*\*/g, "<strong><em>$1</em></strong>");
-        // Bold
         t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-        // Italic
         t = t.replace(/\*([^*]+)\*/g, "<em>$1</em>");
         return t;
     };
@@ -117,16 +100,16 @@ function renderMarkdown(rawContent) {
         if (tableRows.length < 2) { tableRows = []; inTable = false; return; }
         const headerCells = tableRows[0]
             .split("|").filter(c => c.trim())
-            .map(c => `<th style="padding:6px 13px;border:1px solid #d1d9e0;font-weight:600;background:#f6f8fa;white-space:nowrap;text-align:left;">${inline(c.trim())}</th>`)
+            .map(c => `<th class="p-2 border border-border font-semibold bg-muted text-left text-xs">${inline(c.trim())}</th>`)
             .join("");
         const bodyHtml = tableRows.slice(2)
             .filter(r => r.trim() && r.includes("|"))
             .map(row =>
                 `<tr>${row.split("|").filter(c => c.trim())
-                    .map(c => `<td style="padding:6px 13px;border:1px solid #d1d9e0;vertical-align:top;">${inline(c.trim())}</td>`)
+                    .map(c => `<td class="p-2 border border-border align-top text-xs">${inline(c.trim())}</td>`)
                     .join("")}</tr>`
             ).join("");
-        html += `<div style="overflow-x:auto;margin:16px 0;"><table style="border-collapse:collapse;min-width:100%;font-size:13px;"><thead><tr>${headerCells}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
+        html += `<div class="overflow-x-auto my-3"><table class="w-full text-xs border-collapse border border-border"><thead><tr>${headerCells}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
         tableRows = []; inTable = false;
     };
 
@@ -134,7 +117,6 @@ function renderMarkdown(rawContent) {
         const line = lines[i];
         const trimmed = line.trim();
 
-        // ── Code fence ──────────────────────────────────────────
         if (trimmed.startsWith("```")) {
             if (inTable) flushTable();
             if (!inCodeBlock) {
@@ -144,14 +126,13 @@ function renderMarkdown(rawContent) {
                 inCodeBlock = false;
                 const escaped = codeLines.join("\n")
                     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                html += `<pre style="background:#f6f8fa;border:1px solid #d1d9e0;border-radius:6px;padding:16px;overflow-x:auto;font-size:12px;line-height:1.6;margin:16px 0;font-family:'SFMono-Regular',Consolas,monospace;white-space:pre;">${escaped}</pre>`;
+                html += `<pre class="bg-muted p-4 rounded-md overflow-x-auto text-xs font-mono border border-border my-3">${escaped}</pre>`;
                 codeLines = [];
             }
             continue;
         }
         if (inCodeBlock) { codeLines.push(line); continue; }
 
-        // ── Table ────────────────────────────────────────────────
         if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
             inTable = true;
             tableRows.push(trimmed);
@@ -159,230 +140,190 @@ function renderMarkdown(rawContent) {
         }
         if (inTable) flushTable();
 
-        // ── Blank line ───────────────────────────────────────────
-        if (!trimmed) { html += `<div style="height:10px;"></div>`; continue; }
+        if (!trimmed) { html += `<div class="h-2"></div>`; continue; }
 
-        // ── Horizontal rule ───────────────────────────────────────
         if (/^-{3,}$/.test(trimmed) || /^\*{3,}$/.test(trimmed) || /^_{3,}$/.test(trimmed)) {
-            html += `<hr style="border:none;border-top:1px solid #d1d9e0;margin:24px 0;"/>`;
+            html += `<hr class="my-4 border-border"/>`;
             continue;
         }
 
-        // ── Headings ─────────────────────────────────────────────
         if (trimmed.startsWith("#### ")) {
-            html += `<h4 style="font-size:1em;font-weight:700;margin:16px 0 8px;color:#1f2328;">${inline(trimmed.slice(5))}</h4>`;
+            html += `<h4 class="text-sm font-semibold my-2 text-foreground">${inline(trimmed.slice(5))}</h4>`;
             continue;
         }
         if (trimmed.startsWith("### ")) {
-            html += `<h3 style="font-size:1.25em;font-weight:700;margin:20px 0 10px;color:#1f2328;padding-bottom:4px;">${inline(trimmed.slice(4))}</h3>`;
+            html += `<h3 class="text-base font-semibold my-3 text-foreground">${inline(trimmed.slice(4))}</h3>`;
             continue;
         }
         if (trimmed.startsWith("## ")) {
-            html += `<h2 style="font-size:1.5em;font-weight:700;border-bottom:1px solid #d1d9e0;padding-bottom:0.3em;margin:24px 0 14px;color:#1f2328;">${inline(trimmed.slice(3))}</h2>`;
+            html += `<h2 class="text-lg font-bold border-b border-border pb-1 my-4 text-foreground">${inline(trimmed.slice(3))}</h2>`;
             continue;
         }
         if (trimmed.startsWith("# ")) {
-            html += `<h1 style="font-size:2em;font-weight:700;border-bottom:1px solid #d1d9e0;padding-bottom:0.3em;margin:24px 0 16px;color:#1f2328;">${inline(trimmed.slice(2))}</h1>`;
+            html += `<h1 class="text-xl font-extrabold border-b border-border pb-1.5 my-4 text-foreground">${inline(trimmed.slice(2))}</h1>`;
             continue;
         }
 
-        // ── Blockquote ───────────────────────────────────────────
         if (trimmed.startsWith("> ")) {
-            html += `<blockquote style="border-left:4px solid #d1d9e0;padding:4px 16px;color:#656d76;margin:12px 0;background:#f9fafb;border-radius:0 4px 4px 0;">${inline(trimmed.slice(2))}</blockquote>`;
+            html += `<blockquote class="border-l-2 border-primary pl-4 text-muted-foreground italic my-2">${inline(trimmed.slice(2))}</blockquote>`;
             continue;
         }
 
-        // ── Ordered list ─────────────────────────────────────────
         const olMatch = trimmed.match(/^(\d+)\.\s+(.+)/);
         if (olMatch) {
-            html += `<div style="display:flex;gap:8px;margin:3px 0 3px 20px;line-height:1.6;"><span style="min-width:20px;color:#1f2328;font-variant-numeric:tabular-nums;">${olMatch[1]}.</span><span style="color:#1f2328;">${inline(olMatch[2])}</span></div>`;
+            html += `<div class="flex gap-2 my-1 text-xs leading-relaxed"><span class="font-mono text-muted-foreground">${olMatch[1]}.</span><span>${inline(olMatch[2])}</span></div>`;
             continue;
         }
 
-        // ── Unordered list ───────────────────────────────────────
         if (/^[-*+] /.test(trimmed)) {
-            const indent = line.search(/\S/);
-            const marginLeft = Math.min(indent, 3) * 12 + 20;
-            html += `<div style="display:flex;gap:8px;margin:3px 0 3px ${marginLeft}px;line-height:1.6;"><span style="min-width:8px;color:#57606a;">•</span><span style="color:#1f2328;">${inline(trimmed.slice(2))}</span></div>`;
+            html += `<div class="flex gap-2 my-1 text-xs leading-relaxed"><span class="text-muted-foreground">•</span><span>${inline(trimmed.slice(2))}</span></div>`;
             continue;
         }
 
-        // ── Regular paragraph ────────────────────────────────────
-        html += `<p style="margin:8px 0;line-height:1.7;color:#1f2328;">${inline(trimmed)}</p>`;
+        html += `<p class="my-2 text-xs leading-relaxed text-foreground">${inline(trimmed)}</p>`;
     }
 
-    // Flush any remaining table
     if (inTable) flushTable();
-
     return html;
-}
-
-function GitHubMarkdownPreview({ content, title, badge, emptyMessage }) {
-    const containerRef = React.useRef(null);
-
-    React.useEffect(() => {
-        if (!containerRef.current) return;
-        if (!content) { containerRef.current.innerHTML = ""; return; }
-        containerRef.current.innerHTML = renderMarkdown(content);
-    }, [content]);
-
-    return (
-        <div className="flex flex-col h-full">
-            <div className="px-4 py-3 border-b border-slate-200 text-[10px] text-slate-600 font-bold uppercase tracking-wider flex justify-between items-center bg-[#f6f8fa]">
-                <span className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                    {title}
-                </span>
-                {badge && (
-                    <span className="text-emerald-600 font-bold text-[9px] bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider border border-emerald-200">{badge}</span>
-                )}
-            </div>
-            <div className="flex-1 overflow-y-auto bg-white">
-                {!content ? (
-                    <div className="text-slate-440 italic py-12 text-center text-sm flex flex-col items-center gap-3">
-                        <span className="text-3xl">📄</span>
-                        {emptyMessage}
-                    </div>
-                ) : (
-                    <div
-                        ref={containerRef}
-                        className="px-8 py-6"
-                        style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif", fontSize: "14px", lineHeight: "1.6", color: "#1f2328", maxWidth: "900px" }}
-                    />
-                )}
-            </div>
-        </div>
-    );
-}
-
-function DiffViewer({ modified = "" }) {
-    return (
-        <Card className="p-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h3 className="font-bold text-lg text-slate-800">Generated Documentation Preview</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">Rendered view of the generated README</p>
-                </div>
-            </div>
-
-            <div className="h-[420px] overflow-hidden border border-slate-200 rounded-2xl shadow-inner">
-                <GitHubMarkdownPreview
-                    content={modified}
-                    title="README.md — Current (GitHub Preview)"
-                    badge="Live in Repo"
-                    emptyMessage="No README generated yet."
-                />
-            </div>
-        </Card>
-    );
 }
 
 export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, jobs = [] }) {
     if (!selectedRepo) return null;
 
-    // Find the latest job for this repository
     const latestJob = jobs.find(j => j.repository?._id === selectedRepo._id);
-
     const isRunning = latestJob && ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(latestJob.status);
 
-    // Dynamic metrics
-    const displayScore = latestJob?.validationScore !== undefined ? latestJob.validationScore : 100;
-    const displayWarnings = latestJob?.validationWarnings || [];
     const displayDuration = latestJob?.duration ? (latestJob.duration / 1000).toFixed(1) + "s" : "N/A";
     const displayLastRun = latestJob?.completedAt 
         ? new Date(latestJob.completedAt).toLocaleString("en-GB", { hour12: false }) 
         : "Never scanned";
 
+    const containerRef = React.useRef(null);
+    React.useEffect(() => {
+        if (!containerRef.current) return;
+        containerRef.current.innerHTML = renderMarkdown(latestJob?.generatedReadme || "");
+    }, [latestJob?.generatedReadme]);
+
     return (
-        <div className="space-y-8 animate-fade">
-            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-6 max-w-7xl mx-auto py-4">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <button
-                        className="flex items-center gap-1.5 text-xs font-bold text-outline hover:text-primary transition-colors mb-2"
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1 px-0 text-xs text-muted-foreground hover:text-foreground h-7 mb-1"
                         onClick={() => setPage("dashboard")}
                     >
-                        <span className="material-symbols-outlined text-[14px]">arrow_back</span>
-                        Back to Dashboard
-                    </button>
-                    <h1 className="font-headline text-3xl font-black text-on-surface">{selectedRepo.name} Details</h1>
-                    <p className="text-sm text-on-surface-variant mt-1">{selectedRepo.fullName}</p>
+                        <ArrowLeft className="h-3.5 w-3.5" />
+                        <span>Back to Repositories</span>
+                    </Button>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-2xl font-bold tracking-tight text-foreground">{selectedRepo.name}</h1>
+                        <Badge variant="outline" className="text-xs font-normal gap-1">
+                            {selectedRepo.private ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                            {selectedRepo.private ? "Private" : "Public"}
+                        </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{selectedRepo.fullName}</p>
                 </div>
                 <Button
-                    variant="primary"
-                    className="flex items-center gap-2 self-start sm:self-center"
+                    size="sm"
+                    className="gap-2 font-medium"
                     onClick={() => triggerManualBuild(selectedRepo._id)}
                     disabled={isRunning}
                 >
-                    <span className="material-symbols-outlined text-sm">{isRunning ? "sync" : "play_circle"}</span>
-                    {isRunning ? "Running Verification..." : "Queue Verification Job"}
+                    {isRunning ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                    <span>{isRunning ? "Running Pipeline..." : "Trigger Manual Scan"}</span>
                 </Button>
-            </header>
+            </div>
 
             {/* Live Progress Tracker */}
             {latestJob && latestJob.status !== "COMPLETED" && latestJob.status !== "FAILED" && (
                 <ProgressTracker status={latestJob.status} />
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Interactive Diff Viewer */}
-                    <DiffViewer 
-                        modified={latestJob?.generatedReadme || ""} 
-                    />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Main Content */}
+                <div className="lg:col-span-2 space-y-6">
+                    <Card className="shadow-none border-border">
+                        <CardHeader className="p-4 pb-3 border-b border-border flex flex-row items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                <CardTitle className="text-sm font-semibold">README.md Preview</CardTitle>
+                            </div>
+                            <Badge variant="secondary" className="text-xs font-normal">GitHub Markdown</Badge>
+                        </CardHeader>
+                        <CardContent className="p-6 h-[500px] overflow-y-auto">
+                            {!latestJob?.generatedReadme ? (
+                                <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
+                                    <FileText className="h-10 w-10 mb-2 opacity-50" />
+                                    <p className="text-sm font-medium">No README generated yet</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Click Trigger Manual Scan above to generate docs.</p>
+                                </div>
+                            ) : (
+                                <div ref={containerRef} className="prose dark:prose-invert max-w-none text-xs" />
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
 
-                {/* Right panel properties */}
-                <div className="space-y-8">
-                    <Card className="p-8">
-                        <div className="mb-6">
-                            <h3 className="font-bold text-lg text-slate-800">Quality Coverage</h3>
-                            <p className="text-xs text-slate-500 mt-0.5">AI-assessed content depth scoring</p>
-                        </div>
-                        <div className="space-y-6">
+                {/* Sidebar Properties */}
+                <div className="space-y-6">
+                    <Card className="shadow-none border-border">
+                        <CardHeader className="p-4 pb-2">
+                            <CardTitle className="text-sm font-semibold">Quality Scan Coverage</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-4">
                             <div>
-                                <div className="flex justify-between text-xs font-semibold mb-2 text-slate-700">
-                                    <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px]">psychology</span> Features Scan Coverage</span>
-                                    <span>{latestJob ? "90%" : "0%"}</span>
+                                <div className="flex justify-between text-xs font-medium mb-1.5">
+                                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                                        <Sparkles className="h-3.5 w-3.5" /> Features Coverage
+                                    </span>
+                                    <span className="font-semibold text-foreground">{latestJob ? "90%" : "0%"}</span>
                                 </div>
-                                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden shadow-inner">
-                                    <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full transition-all duration-700 rounded-full" style={{ width: latestJob ? "90%" : "0%" }}></div>
+                                <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+                                    <div className="bg-primary h-full rounded-full transition-all duration-500" style={{ width: latestJob ? "90%" : "0%" }} />
                                 </div>
                             </div>
                             <div>
-                                <div className="flex justify-between text-xs font-semibold mb-2 text-slate-700">
-                                    <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px]">route</span> Routes &amp; API Scope</span>
-                                    <span>{latestJob ? "85%" : "0%"}</span>
+                                <div className="flex justify-between text-xs font-medium mb-1.5">
+                                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                                        <Route className="h-3.5 w-3.5" /> API Scope
+                                    </span>
+                                    <span className="font-semibold text-foreground">{latestJob ? "85%" : "0%"}</span>
                                 </div>
-                                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden shadow-inner">
-                                    <div className="bg-gradient-to-r from-emerald-400 to-teal-500 h-full transition-all duration-700 rounded-full" style={{ width: latestJob ? "85%" : "0%" }}></div>
+                                <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+                                    <div className="bg-primary/70 h-full rounded-full transition-all duration-500" style={{ width: latestJob ? "85%" : "0%" }} />
                                 </div>
                             </div>
-                        </div>
+                        </CardContent>
                     </Card>
 
-                    <Card className="p-8">
-                        <h3 className="font-bold text-lg mb-6 text-slate-800">Job Properties</h3>
-                        <div className="space-y-4.5 text-xs font-semibold text-slate-600">
-                            <div className="flex justify-between border-b border-slate-50 pb-3">
-                                <span className="text-slate-450 uppercase tracking-wider">Default Branch</span>
-                                <span className="font-mono text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-[11px]">{selectedRepo.branch || "main"}</span>
+                    <Card className="shadow-none border-border">
+                        <CardHeader className="p-4 pb-2">
+                            <CardTitle className="text-sm font-semibold">Repository Properties</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-3 text-xs">
+                            <div className="flex justify-between items-center py-1.5 border-b border-border">
+                                <span className="text-muted-foreground">Default Branch</span>
+                                <Badge variant="secondary" className="font-mono text-xs">{selectedRepo.branch || "main"}</Badge>
                             </div>
-                            <div className="flex justify-between border-b border-slate-50 pb-3">
-                                <span className="text-slate-450 uppercase tracking-wider">Time Taken</span>
-                                <span className="text-slate-800">{displayDuration}</span>
+                            <div className="flex justify-between items-center py-1.5 border-b border-border">
+                                <span className="text-muted-foreground">Last Scanned</span>
+                                <span className="font-medium text-foreground">{displayLastRun}</span>
                             </div>
-                            <div className="flex justify-between border-b border-slate-50 pb-3">
-                                <span className="text-slate-450 uppercase tracking-wider">Last Scanned</span>
-                                <span className="text-slate-800">{displayLastRun}</span>
+                            <div className="flex justify-between items-center py-1.5 border-b border-border">
+                                <span className="text-muted-foreground">Scan Duration</span>
+                                <span className="font-medium text-foreground">{displayDuration}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-slate-450 uppercase tracking-wider">Visibility</span>
-                                <span className="text-slate-800 flex items-center gap-1.5">
-                                    <span className="material-symbols-outlined text-[14px]">{selectedRepo.private ? "lock" : "lock_open"}</span>
-                                    {selectedRepo.private ? "Private" : "Public"}
-                                </span>
+                            <div className="flex justify-between items-center py-1.5">
+                                <span className="text-muted-foreground">Auto-Commit</span>
+                                <Badge variant={selectedRepo.isActive ? "success" : "secondary"}>
+                                    {selectedRepo.isActive ? "Enabled" : "Disabled"}
+                                </Badge>
                             </div>
-                        </div>
+                        </CardContent>
                     </Card>
                 </div>
             </div>

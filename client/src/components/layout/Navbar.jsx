@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from "react";
 import LOGO_BASE64 from "../../logoBase64.js";
+import { Button } from "../ui/button.jsx";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar.jsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu.jsx";
+import { LogOut, LayoutDashboard, Settings } from "lucide-react";
 
 const NAV_LINKS = [
     { label: "Solutions", href: "#features" },
@@ -18,78 +29,84 @@ export default function Navbar({ page, setPage, user, handleLoginRedirect, logou
     const isLanding = page === "landing";
 
     return (
-        <nav style={{
-            position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
-            transition: "all 0.5s ease",
-            background: scrolled ? "rgba(255,255,255,0.85)" : "transparent",
-            backdropFilter: scrolled ? "blur(12px)" : "none",
-            borderBottom: scrolled ? "1px solid rgba(203,213,225,0.5)" : "1px solid transparent",
-            boxShadow: scrolled ? "0 1px 3px rgba(0,0,0,0.04)" : "none",
-        }}>
-            <div style={{ maxWidth: "100%", margin: "0 auto", padding: "0 64px" }}>
-                <div style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    height: scrolled ? "56px" : "72px", transition: "height 0.5s ease",
-                }}>
-                    {/* Logo */}
-                    <button onClick={() => setPage("landing")} style={{
-                        display: "flex", alignItems: "center", gap: "8px",
-                        background: "none", border: "none", cursor: "pointer", padding: 0,
-                    }}>
-                        <img src={LOGO_BASE64} alt="PushDoc" style={{ height: "26px", width: "auto" }} />
-                        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: "17px", color: "#0f172a" }}>
-                            PushDoc
-                        </span>
-                    </button>
+        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+            scrolled ? "bg-background/80 backdrop-blur-md border-b border-border shadow-sm" : "bg-transparent border-b border-transparent"
+        }`}>
+            <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+                {/* Logo */}
+                <button 
+                    onClick={() => setPage(user ? "dashboard" : "landing")}
+                    className="flex items-center gap-2.5 bg-transparent border-none p-0 cursor-pointer focus:outline-none"
+                >
+                    <img src={LOGO_BASE64} alt="PushDoc" className="h-7 w-auto" />
+                    <span className="font-semibold text-lg text-foreground tracking-tight">
+                        PushDoc
+                    </span>
+                </button>
 
-                    {/* Desktop nav — centered like DaemonDoc */}
-                    {isLanding && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "36px" }}>
-                            {NAV_LINKS.map(l => (
-                                <a key={l.label} href={l.href} style={{
-                                    fontSize: "14px", fontWeight: 500, color: "#475569",
-                                    textDecoration: "none", transition: "color 0.2s",
-                                }}
-                                    onMouseEnter={e => e.target.style.color = "#1d4ed8"}
-                                    onMouseLeave={e => e.target.style.color = "#475569"}>
-                                    {l.label}
-                                </a>
-                            ))}
-                        </div>
+                {/* Desktop nav */}
+                {isLanding && (
+                    <nav className="hidden md:flex items-center gap-6">
+                        {NAV_LINKS.map(l => (
+                            <a 
+                                key={l.label} 
+                                href={l.href} 
+                                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                {l.label}
+                            </a>
+                        ))}
+                    </nav>
+                )}
+
+                {/* Actions */}
+                <div className="flex items-center gap-3">
+                    {user && !isLanding ? (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                                    <Avatar className="h-8 w-8">
+                                        {user.avatarUrl ? (
+                                            <AvatarImage src={user.avatarUrl} alt={user.username} />
+                                        ) : null}
+                                        <AvatarFallback>{user.username?.slice(0, 2).toUpperCase() || "US"}</AvatarFallback>
+                                    </Avatar>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56" align="end" forceMount>
+                                <DropdownMenuLabel className="font-normal">
+                                    <div className="flex flex-col space-y-1">
+                                        <p className="text-sm font-medium leading-none">{user.username}</p>
+                                        <p className="text-xs leading-none text-muted-foreground">GitHub Account</p>
+                                    </div>
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => setPage("dashboard")}>
+                                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                                    <span>Dashboard</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setPage("settings")}>
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    <span>Settings</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => { logout(); setPage("landing"); }}>
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    <span>Sign out</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    ) : (
+                        <Button 
+                            onClick={() => setPage("connect")}
+                            size="sm"
+                            className="rounded-full shadow-sm font-medium"
+                        >
+                            Get Started
+                        </Button>
                     )}
-
-                    {/* CTA */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        {user && !isLanding ? (
-                            <>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                    {user.avatarUrl && <img src={user.avatarUrl} alt="" style={{ width: "28px", height: "28px", borderRadius: "50%" }} />}
-                                    <span style={{ fontSize: "13px", color: "#64748b", fontWeight: 500 }}>{user.username}</span>
-                                </div>
-                                <button onClick={() => { logout(); setPage("landing"); }}
-                                    style={{ fontSize: "13px", fontWeight: 500, color: "#64748b", background: "none", border: "none", cursor: "pointer", padding: "6px 12px", borderRadius: "6px" }}
-                                    onMouseEnter={e => e.currentTarget.style.background = "#f1f5f9"}
-                                    onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                                    Sign out
-                                </button>
-                            </>
-                        ) : (
-                            <button onClick={() => setPage("connect")} style={{
-                                background: "#1d4ed8", color: "#fff",
-                                border: "none", borderRadius: "9999px",
-                                padding: "10px 22px", fontSize: "14px", fontWeight: 600,
-                                cursor: "pointer", fontFamily: "'Space Grotesk', sans-serif",
-                                boxShadow: "0 4px 14px rgba(29,78,216,0.3)",
-                                transition: "all 0.2s ease",
-                            }}
-                                onMouseEnter={e => { e.currentTarget.style.background = "#1e40af"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(29,78,216,0.45)"; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = "#1d4ed8"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(29,78,216,0.3)"; }}>
-                                Get Started
-                            </button>
-                        )}
-                    </div>
                 </div>
             </div>
-        </nav>
+        </header>
     );
 }

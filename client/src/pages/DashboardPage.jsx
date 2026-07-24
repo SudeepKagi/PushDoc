@@ -1,6 +1,10 @@
-import React, { useState } from "react";
-import StatsStrip from "../components/dashboard/StatsStrip";
-import RepoGrid from "../components/dashboard/RepoGrid";
+import React, { useState, useEffect } from "react";
+import StatsStrip from "../components/dashboard/StatsStrip.jsx";
+import RepoGrid from "../components/dashboard/RepoGrid.jsx";
+import { Button } from "../components/ui/button.jsx";
+import { Input } from "../components/ui/input.jsx";
+import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs.jsx";
+import { RefreshCw, Terminal, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function DashboardPage({ repos, openDetails, triggerSync, token, syncing, setAppPage, toggleRepository }) {
     const [search, setSearch] = useState("");
@@ -31,7 +35,7 @@ export default function DashboardPage({ repos, openDetails, triggerSync, token, 
     const activeRepos = filteredRepos.filter(r => r.isActive);
     const inactiveRepos = filteredRepos.filter(r => !r.isActive);
 
-    // Pagination (12 repos per page, applying only to inactive repos)
+    // Pagination (12 repos per page)
     const pageSize = 12;
     let displayedRepos = [];
     let totalPages = 1;
@@ -49,45 +53,49 @@ export default function DashboardPage({ repos, openDetails, triggerSync, token, 
         totalPages = 1;
         displayedRepos = activeRepos;
     } else {
-        // filter === "inactive"
         totalPages = Math.max(1, Math.ceil(inactiveRepos.length / pageSize));
         const startIndex = (page - 1) * pageSize;
         displayedRepos = inactiveRepos.slice(startIndex, startIndex + pageSize);
     }
 
     // Reset to page 1 if current page is out of bounds after filtering
-    React.useEffect(() => {
+    useEffect(() => {
         if (page > totalPages) {
             setPage(1);
         }
     }, [filteredRepos.length, totalPages, page]);
 
     return (
-        <div className="space-y-10 animate-fade">
-            {/* Header / Hero Section */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 relative">
-                <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
+        <div className="space-y-8 max-w-7xl mx-auto py-6">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <span className="text-xs font-bold text-primary tracking-widest mb-2 block uppercase">Repository System</span>
-                    <h1 className="font-headline text-4xl md:text-5xl font-extrabold text-on-surface mb-2 uppercase tracking-tight">REPOSITORIES</h1>
-                    <p className="text-base text-on-surface-variant max-w-2xl">Manage AI-powered README updates for your GitHub repositories</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                        Repositories
+                    </h1>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Manage AI-powered README generation and auto-commit preferences.
+                    </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 font-medium"
                         onClick={() => setAppPage("logs")}
-                        className="flex items-center gap-2 px-6 py-3 rounded-full border border-slate-200 text-on-surface-variant font-semibold hover:bg-slate-50 transition-all active:scale-95 text-sm"
                     >
-                        <span className="material-symbols-outlined text-[20px]">terminal</span>
-                        View Logs
-                    </button>
-                    <button
-                        onClick={() => triggerSync(token)}
+                        <Terminal className="h-4 w-4" />
+                        <span>View Logs</span>
+                    </Button>
+                    <Button
+                        size="sm"
                         disabled={syncing}
-                        className="flex items-center gap-2 bg-primary-container text-on-primary-container hover:brightness-110 active:scale-95 transition-all px-6 py-3 rounded-full font-semibold text-sm shadow-sm"
+                        className="gap-2 font-medium shadow-sm"
+                        onClick={() => triggerSync(token)}
                     >
-                        <span className={`material-symbols-outlined text-[20px] ${syncing ? 'animate-spin' : ''}`}>refresh</span>
-                        {syncing ? "Syncing..." : "Refresh list"}
-                    </button>
+                        <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+                        <span>{syncing ? "Syncing..." : "Refresh List"}</span>
+                    </Button>
                 </div>
             </div>
 
@@ -100,94 +108,67 @@ export default function DashboardPage({ repos, openDetails, triggerSync, token, 
             />
 
             {/* Filter and Search Bar Section */}
-            <section className="bg-slate-50 rounded-full p-2 flex flex-col md:flex-row items-center gap-4 border border-slate-100">
-                <div className="flex p-1 bg-white/80 rounded-full w-full md:w-auto shadow-sm border border-slate-100/50">
-                    <button
-                        onClick={() => setFilter("all")}
-                        className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
-                            filter === "all" ? "bg-primary text-on-primary shadow-sm" : "text-on-surface-variant hover:text-primary"
-                        }`}
-                    >
-                        All Repositories
-                    </button>
-                    <button
-                        onClick={() => setFilter("active")}
-                        className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
-                            filter === "active" ? "bg-primary text-on-primary shadow-sm" : "text-on-surface-variant hover:text-primary"
-                        }`}
-                    >
-                        Active
-                    </button>
-                    <button
-                        onClick={() => setFilter("inactive")}
-                        className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
-                            filter === "inactive" ? "bg-primary text-on-primary shadow-sm" : "text-on-surface-variant hover:text-primary"
-                        }`}
-                    >
-                        Inactive
-                    </button>
-                </div>
-                <div className="relative flex-1 w-full">
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
-                    <input
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <Tabs value={filter} onValueChange={setFilter} className="w-full sm:w-auto">
+                    <TabsList>
+                        <TabsTrigger value="all">All Repositories</TabsTrigger>
+                        <TabsTrigger value="active">Active</TabsTrigger>
+                        <TabsTrigger value="inactive">Inactive</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+
+                <div className="relative w-full sm:w-72">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        placeholder="Search repositories..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full bg-white border border-slate-100 rounded-full py-3 pl-12 pr-6 text-sm focus:ring-2 focus:ring-primary/20 placeholder:text-outline transition-all"
-                        placeholder="Search repositories..."
-                        type="text"
+                        className="pl-9 h-9"
                     />
                 </div>
-            </section>
-
-            {/* Repository Grid */}
-            <div className="space-y-6">
-                <RepoGrid
-                    repos={displayedRepos}
-                    onRepoClick={openDetails}
-                    triggerSync={triggerSync}
-                    token={token}
-                    onToggleActive={toggleRepository}
-                />
             </div>
 
+            {/* Repository Grid */}
+            <RepoGrid
+                repos={displayedRepos}
+                onRepoClick={openDetails}
+                triggerSync={triggerSync}
+                token={token}
+                onToggleActive={toggleRepository}
+                syncing={syncing}
+            />
+
             {/* Pagination Footer */}
-            {filteredRepos.length > 0 && (
-                <footer className="mt-12 pt-6 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <p className="text-sm text-on-surface-variant font-medium">
-                        {filteredRepos.length} repos · page {page} of {totalPages}
+            {filteredRepos.length > 0 && totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4 border-t border-border">
+                    <p className="text-xs text-muted-foreground">
+                        Showing page <span className="font-medium text-foreground">{page}</span> of{" "}
+                        <span className="font-medium text-foreground">{totalPages}</span> ({filteredRepos.length} total)
                     </p>
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                        <Button
+                            variant="outline"
+                            size="sm"
                             disabled={page === 1}
-                            className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-                                page === 1 ? "text-slate-400 opacity-50 cursor-not-allowed" : "text-primary hover:bg-primary/5"
-                            }`}
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            className="gap-1 h-8 text-xs"
                         >
-                            ← Prev
-                        </button>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                            <button
-                                key={p}
-                                onClick={() => setPage(p)}
-                                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
-                                    page === p ? "bg-primary text-on-primary shadow-sm" : "hover:bg-slate-100 text-on-surface"
-                                }`}
-                            >
-                                {p}
-                            </button>
-                        ))}
-                        <button
-                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                            <span>Previous</span>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
                             disabled={page === totalPages}
-                            className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-                                page === totalPages ? "text-slate-400 opacity-50 cursor-not-allowed" : "text-primary hover:bg-primary/5"
-                            }`}
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            className="gap-1 h-8 text-xs"
                         >
-                            Next →
-                        </button>
+                            <span>Next</span>
+                            <ChevronRight className="h-3.5 w-3.5" />
+                        </Button>
                     </div>
-                </footer>
+                </div>
             )}
         </div>
     );

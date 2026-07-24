@@ -1,161 +1,104 @@
 import React, { useState } from "react";
-import Button from "../components/ui/Button";
-import Card from "../components/ui/Card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/card.jsx";
+import { Button } from "../components/ui/button.jsx";
+import { Check, RefreshCw } from "lucide-react";
+import { GithubIcon as Github } from "../components/ui/GithubIcon.jsx";
+
+
 
 export default function ConnectPage({ handleLoginRedirect, setPage }) {
     const [connecting, setConnecting] = useState(false);
 
     const handleConnect = () => {
         setConnecting(true);
-        // Small delay so the loading state renders before the redirect
         setTimeout(() => {
             handleLoginRedirect();
         }, 80);
     };
 
     return (
-        <div style={{
-            minHeight: "100vh",
-            background: "#f8fafc",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "24px",
-            position: "relative",
-            overflow: "hidden"
-        }}>
-            {/* SVG grid background */}
-            <div className="hero-grid-bg" style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none" }}>
-                <svg style={{ height: "100%", width: "100%" }} aria-hidden="true">
-                    <defs>
-                        <pattern id="connect-grid" width="60" height="60" patternUnits="userSpaceOnUse">
-                            <path d="M.5 60V.5H60" fill="none" stroke="#3b82f6" strokeWidth="1" />
-                        </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#connect-grid)" />
-                </svg>
-            </div>
-            
-            <div className="reveal active" style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: "480px" }}>
-                <Card className="p-8 border border-outline-variant/30 bg-white/85 backdrop-blur-xl shadow-2xl rounded-3xl">
-                    <div style={{ textAlign: "center", marginBottom: "32px" }}>
-                        <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#eff6ff", border: "1px solid #bfdbfe", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-                            </svg>
-                        </div>
-                        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 800, fontSize: "24px", color: "#0f172a", marginBottom: "8px" }}>
-                            Connect to GitHub
-                        </h1>
-                        <p style={{ fontSize: "14px", color: "#64748b", lineHeight: 1.6 }}>
-                            Authorize PushDoc to sync your repositories and automate README updates.
-                        </p>
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+            <Card className="w-full max-w-md shadow-lg border-border">
+                <CardHeader className="text-center p-6 pb-4">
+                    <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3 border border-primary/20">
+                        <Github className="h-6 w-6" />
                     </div>
+                    <CardTitle className="text-xl font-bold tracking-tight">Connect to GitHub</CardTitle>
+                    <CardDescription className="text-xs text-muted-foreground mt-1">
+                        Authorize PushDoc to sync repositories and automate README generation.
+                    </CardDescription>
+                </CardHeader>
 
-                    <div style={{ borderTop: "1px dashed #e2e8f0", borderBottom: "1px dashed #e2e8f0", padding: "20px 0", marginBottom: "28px" }}>
-                        <p style={{ fontSize: "11px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "16px" }}>Requested Access Scopes</p>
-                        
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", marginBottom: "14px" }}>
-                            <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#eff6ff", border: "1px solid #bfdbfe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: "2px" }}>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
+                <CardContent className="p-6 pt-2 space-y-4">
+                    <div className="space-y-3 border-t border-b border-border py-4">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Requested Scopes</p>
+
+                        <div className="flex items-start gap-3">
+                            <div className="h-5 w-5 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
+                                <Check className="h-3 w-3" />
                             </div>
                             <div>
-                                <p style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a", marginBottom: "2px" }}>Repository Contents (Read)</p>
-                                <p style={{ fontSize: "12px", color: "#64748b", lineHeight: 1.5 }}>To analyze codebase structure, routes, and database models.</p>
+                                <p className="text-xs font-medium text-foreground">Repository Contents (Read)</p>
+                                <p className="text-[11px] text-muted-foreground">To analyze codebase structure, routes, and models.</p>
                             </div>
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", marginBottom: "14px" }}>
-                            <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#eff6ff", border: "1px solid #bfdbfe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: "2px" }}>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
+                        <div className="flex items-start gap-3">
+                            <div className="h-5 w-5 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
+                                <Check className="h-3 w-3" />
                             </div>
                             <div>
-                                <p style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a", marginBottom: "2px" }}>README commits (Write)</p>
-                                <p style={{ fontSize: "12px", color: "#64748b", lineHeight: 1.5 }}>To commit the generated README files directly back to your branch.</p>
+                                <p className="text-xs font-medium text-foreground">README Commits (Write)</p>
+                                <p className="text-[11px] text-muted-foreground">To commit generated README files back to your branch.</p>
                             </div>
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                            <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#eff6ff", border: "1px solid #bfdbfe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: "2px" }}>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
+                        <div className="flex items-start gap-3">
+                            <div className="h-5 w-5 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
+                                <Check className="h-3 w-3" />
                             </div>
                             <div>
-                                <p style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a", marginBottom: "2px" }}>Webhook Events (Listen)</p>
-                                <p style={{ fontSize: "12px", color: "#64748b", lineHeight: 1.5 }}>To capture code pushes automatically and run our documentation worker.</p>
+                                <p className="text-xs font-medium text-foreground">Webhook Events (Listen)</p>
+                                <p className="text-[11px] text-muted-foreground">To capture code pushes automatically.</p>
                             </div>
                         </div>
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                        <button
-                            id="connect-github-btn"
-                            onClick={handleConnect}
-                            disabled={connecting}
-                            style={{
-                                display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
-                                width: "100%", padding: "14px 24px",
-                                background: connecting ? "#3b5fc0" : "#1d4ed8",
-                                color: "#fff", border: "none", borderRadius: "9999px",
-                                fontSize: "15px", fontWeight: 600, cursor: connecting ? "not-allowed" : "pointer",
-                                fontFamily: "'Space Grotesk', sans-serif",
-                                boxShadow: connecting ? "none" : "0 8px 25px rgba(29,78,216,0.35)",
-                                transition: "all 0.2s ease",
-                                opacity: connecting ? 0.85 : 1,
-                            }}
-                        >
-                            {connecting ? (
-                                <>
-                                    {/* Spinner */}
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                                        style={{ animation: "spin 0.8s linear infinite" }}>
-                                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                                    </svg>
-                                    Redirecting to GitHub…
-                                </>
-                            ) : (
-                                <>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
-                                    </svg>
-                                    Connect with GitHub
-                                </>
-                            )}
-                        </button>
+                    {connecting && (
+                        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-md text-xs text-amber-700 dark:text-amber-400">
+                            The server may take 20–50 seconds to wake up on first load. GitHub authorization page will open shortly.
+                        </div>
+                    )}
+                </CardContent>
 
-                        {/* Cold-start notice — visible only after clicking */}
-                        {connecting && (
-                            <div style={{
-                                display: "flex", alignItems: "flex-start", gap: "8px",
-                                padding: "10px 14px", borderRadius: "10px",
-                                background: "#fefce8", border: "1px solid #fde68a",
-                            }}>
-                                <span style={{ fontSize: "14px", flexShrink: 0 }}>⏳</span>
-                                <p style={{ fontSize: "12px", color: "#92400e", lineHeight: 1.5, margin: 0 }}>
-                                    The server may take <strong>20–50 seconds</strong> to wake up on first use. GitHub will open shortly — please don't close this tab.
-                                </p>
-                            </div>
+                <CardFooter className="p-6 pt-0 flex flex-col gap-2">
+                    <Button
+                        className="w-full gap-2 font-medium"
+                        onClick={handleConnect}
+                        disabled={connecting}
+                    >
+                        {connecting ? (
+                            <>
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                <span>Redirecting to GitHub...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Github className="h-4 w-4" />
+                                <span>Authorize PushDoc App</span>
+                            </>
                         )}
-                        
-                        <Button
-                            variant="secondary"
-                            onClick={() => setPage("landing")}
-                            disabled={connecting}
-                            className="w-full"
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                </Card>
-            </div>
-
-            {/* Spinner keyframe */}
-            <style>{`
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-            `}</style>
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="w-full text-xs"
+                        onClick={() => setPage("landing")}
+                        disabled={connecting}
+                    >
+                        Cancel
+                    </Button>
+                </CardFooter>
+            </Card>
         </div>
     );
 }
