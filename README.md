@@ -1,197 +1,219 @@
-# 📄 PushDoc
+🤖 PUSH_DOC is ready!
 
-> PushDoc is a sophisticated GitHub App designed to revolutionize repository documentation by autonomously generating and updating professional `README.md` files using advanced AI. It integrates directly with your GitHub repositories, providing a streamlined workflow for maintaining high-quality, consistent project documentation.
+# 🚀 PushDoc
 
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white) ![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white) ![GitHub App](https://img.shields.io/badge/GitHub_App-181717?style=for-the-badge&logo=github&logoColor=white)
+> PushDoc is a fullstack GitHub App that automates the generation and updating of `README.md` files in your repositories using advanced AI, streamlining your documentation workflow.
+
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white) ![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white) ![GitHub App](https://img.shields.io/badge/GitHub_App-181717?style=for-the-badge&logo=github&logoColor=white) 
 
 ---
 
 ## 📋 Table of Contents
 
 * [✨ Features](#-features)
-* [🛠️ Tech Stack](#️-tech-stack)
+* [🛠️ Tech Stack](#%EF%B8%8F-tech-stack)
 * [📁 Project Structure](#-project-structure)
-* [⚙️ Installation & Setup](#️-installation--setup)
+* [⚙️ Installation & Setup](#%EF%B8%8F-installation--setup)
 * [🔐 Environment Variables](#-environment-variables)
 * [🌐 API Reference](#-api-reference)
-* [🗄️ Database Models](#-database-models)
+* [🗄️ Database Models](#%EF%B8%8F-database-models)
 * [📜 Available Scripts](#-available-scripts)
 
 ---
 
 ## ✨ Features
 
-* **AI-Powered `README.md` Generation:** Automatically generate comprehensive and well-structured `README.md` files for your GitHub repositories using integrated AI models (implied by Gemini and Groq API keys).
-* **Effortless GitHub Integration:** Seamlessly connect PushDoc as a GitHub App to manage installations and securely access your repositories.
-* **Repository Synchronization & Control:** Synchronize your GitHub repositories, activate/deactivate documentation generation for specific projects, and manually trigger updates via a user-friendly interface.
-* **Real-time Job Monitoring:** Track the status of README generation jobs—from queuing and cloning to AI generation, committing, and pushing—with detailed logs, providing full transparency into the process.
-* **Automated Webhook Processing:** React to GitHub events (e.g., pushes) to automatically trigger documentation updates, keeping your `README.md` files always current.
-* **Secure User Authentication:** Authenticate securely using GitHub OAuth, managing user profiles and access tokens for a personalized experience.
-* **Installation & Repository Management:** Maintain a clear overview of your GitHub App installations and associated repositories through a dedicated management system.
+* **AI-Powered README Generation:** Automatically generate professional and context-rich `README.md` files for your repositories using integrated AI models (Gemini, Groq).
+* **GitHub App Integration:** Seamlessly connect with your GitHub account, manage installations, and respond to repository events via webhooks.
+* **Repository Management Dashboard:** A user-friendly web interface to sync, view, and manage your GitHub repositories.
+* **Toggle README Automation:** Activate or deactivate automatic README generation for individual repositories with a simple switch.
+* **Manual Generation Trigger:** Manually initiate the README generation process for any active repository at your command.
+* **Real-time Job Monitoring:** Track the status and progress of all README generation jobs, from queuing to completion or failure, including detailed logs.
+* **Secure GitHub Authentication:** Authenticate users and manage permissions securely through GitHub OAuth.
+* **Webhook Event Handling:** Process GitHub events (like pushes or new installations) to trigger automated README updates.
+* **Robust Job Queuing:** Utilizes a background job queue system (BullMQ) to handle README generation efficiently and reliably.
 
 ---
 
 ## 🛠️ Tech Stack
 
 | Category | Technology | Purpose |
-| :------------------ | :--------------- | :-------------------------------------------- |
+| :---------------- | :------------- | :------------------------------------------------------ |
 | **Backend** | Node.js | JavaScript runtime for server-side logic |
-| | Express.js | Web framework for building RESTful APIs |
-| **Frontend** | React | JavaScript library for building user interfaces |
-| **Database** | MongoDB | NoSQL database for storing application data |
-| **Caching/Queueing**| Redis | In-memory data store for caching and job queues |
-| **Authentication** | JWT | JSON Web Tokens for secure session management |
-| | GitHub OAuth | User authentication and authorization |
-| **AI Integration** | Google Gemini, Groq| Language Model Integration for Content Generation |
-| **Platform** | GitHub App | Integration with GitHub for repository access and webhooks |
+| **Backend** | Express.js | Web framework for building the RESTful API |
+| **Database** | MongoDB | NoSQL database for storing user, repository, and job data |
+| **Caching/Queue** | Redis | In-memory data store for job queueing and session management |
+| **Job Queue** | BullMQ | Robust job queue for managing background README generation tasks |
+| **AI APIs** | Gemini API | AI model for generating `README.md` content |
+| **AI APIs** | Groq API | AI model for generating `README.md` content |
+| **Authentication**| JWT | Secure token-based user authentication |
+| **Frontend** | React | JavaScript library for building interactive user interfaces |
+| **Frontend** | Vite | Fast build tool for a modern development experience |
+| **Styling** | Tailwind CSS | Utility-first CSS framework for rapid UI development |
+| **Package Mgmt** | npm | Package manager for JavaScript dependencies |
+| **Version Control**| Git | Distributed version control system |
 
 ---
 
 ## 📁 Project Structure
 
 ```
-.
-├── client/ # React frontend application
+pushdoc/
+├── client/ # React.js frontend application
+│ ├── index.html # Main HTML entry point
 │ ├── package-lock.json
-│ ├── package.json
-│ └── src # Frontend source code
-├── server/ # Node.js/Express backend application
-│ ├── .env.example # Example environment variables for the server
-│ ├── nodemon.json # Configuration for Nodemon development server
+│ ├── package.json # Frontend dependencies and scripts
+│ ├── src # Frontend source code (components, utils, etc.)
+│ ├── tailwind.config.js # Tailwind CSS configuration
+│ └── vite.config.js # Vite build tool configuration
+├── server/ # Node.js/Express.js backend application
+│ ├── .env.example # Example environment variables for the backend
+│ ├── nodemon.json # Configuration for nodemon development server
 │ ├── package-lock.json
-│ ├── package.json
-│ └── src # Backend source code (controllers, routes, models)
+│ ├── package.json # Backend dependencies and scripts
+│ ├── server.js # Main backend entry point
+│ └── src # Backend source code
+│ ├── app.js # Express application setup and middleware
+│ ├── controllers/ # HTTP request handlers and business logic
+│ ├── models/ # Mongoose schemas for MongoDB database
+│ └── routes/ # API endpoint definitions and routing logic
 ├── README.md # Project README file
 ├── package-lock.json
-└── package.json
+└── package.json # Root project dependencies (if any)
 ```
 
 ---
 
 ## ⚙️ Installation & Setup
 
-To get PushDoc up and running, follow these steps:
+To get PushDoc up and running on your local machine, follow these steps:
 
-1. **Clone the repository:**
+1. **Clone the Repository:**
  ```bash
- git clone https://github.com/your-org/pushdoc.git
+ git clone https://github.com/your-username/pushdoc.git
  cd pushdoc
  ```
 
-2. **Set up the Backend:**
- Navigate to the `server` directory, install dependencies, and create your environment file.
+2. **Install Dependencies:**
+
+ * **Root Dependencies:**
+ ```bash
+ npm install
+ ```
+ * **Backend Dependencies:**
  ```bash
  cd server
  npm install
- cp .env.example .env
+ cd ..
  ```
- Edit the `.env` file with your specific configurations (see Environment Variables section).
-
-3. **Set up the Frontend:**
- Navigate to the `client` directory and install dependencies.
+ * **Frontend Dependencies:**
  ```bash
- cd ../client
+ cd client
  npm install
+ cd ..
  ```
- The frontend expects `BACKEND_URL` to be configured in its environment (e.g., in a `.env` file or directly in the build process if using Vite/CRA, though not explicitly shown in context, it's inferred from client API calls).
+
+3. **Configure Environment Variables:**
+
+ * Navigate to the `server/` directory and create a `.env` file by copying the example:
+ ```bash
+ cp server/.env.example server/.env
+ ```
+ * Fill in the necessary values in `server/.env`. Refer to the [Environment Variables](#-environment-variables) section for details.
+ * Ensure your `FRONTEND_URL` and `BACKEND_URL` are correctly set for inter-application communication.
 
 4. **Start the Backend Server:**
- From the `server` directory:
  ```bash
- npm run dev
- # Or, if 'dev' script is not defined, you might use:
- # nodemon server.js
- # or
- # node server.js
+ cd server
+ node server.js
+ # Or if using a start script: npm start
+ cd ..
  ```
- The server will typically run on the port specified in your `.env` (default is likely 5000 or 3000).
 
-5. **Start the Frontend Application:**
- From the `client` directory:
+5. **Start the Frontend Development Server:**
  ```bash
+ cd client
  npm run dev
- # Or, if 'dev' script is not defined, you might use:
- # npm start
+ cd ..
  ```
- The client application will typically open in your browser at `http://localhost:5173` (common for Vite) or `http://localhost:3000`.
+ The frontend application should now be accessible, typically at `http://localhost:5173`.
 
 ---
 
 ## 🔐 Environment Variables
 
-Before running the application, create a `.env` file in the `server/` directory based on `server/.env.example` and populate it with the required values.
+PushDoc requires the following environment variables for both the backend and frontend (via `BACKEND_URL` in the frontend). These should be defined in `server/.env`.
 
 | Variable | Required | Description |
-| :------------------------ | :------- | :------------------------------------------------------------------ |
-| `NODE_ENV` | Yes | Environment mode (e.g., `development`, `production`) |
-| `PORT` | Yes | Port for the backend server to listen on |
-| `CORS_ORIGIN` | Yes | Origin URL allowed for CORS requests (e.g., your frontend URL) |
-| `MONGODB_URI` | Yes | Connection URI for your MongoDB database |
-| `REDIS_HOST` | Yes | Hostname for the Redis server |
-| `REDIS_PORT` | Yes | Port for the Redis server |
-| `GITHUB_CLIENT_ID` | Yes | GitHub OAuth App Client ID |
-| `GITHUB_CLIENT_SECRET` | Yes | GitHub OAuth App Client Secret |
-| `GITHUB_REDIRECT_URI` | Yes | Callback URL after GitHub OAuth authentication |
-| `GITHUB_APP_ID` | Yes | Your GitHub App's ID |
-| `GITHUB_APP_NAME` | Yes | Name of your GitHub App |
-| `GITHUB_WEBHOOK_SECRET` | Yes | Secret token for validating GitHub webhooks |
-| `JWT_SECRET` | Yes | Secret key for signing and verifying JSON Web Tokens |
-| `GEMINI_API_KEY_1` | No | API Key for Google Gemini (AI generation) |
-| `GEMINI_API_KEY_2` | No | Secondary API Key for Google Gemini |
-| `GEMINI_API_KEY_3` | No | Tertiary API Key for Google Gemini |
-| `GROQ_API_KEY_1` | No | API Key for Groq (AI generation) |
-| `GROQ_API_KEY_2` | No | Secondary API Key for Groq |
-| `WORKSPACE_ROOT_PATH` | No | Root path for temporary workspace directories (if applicable) |
+| :---------------------------- | :------- | :------------------------------------------------------------- |
+| `NODE_ENV` | No | Node.js environment (e.g., `development`, `production`). |
+| `PORT` | No | Port for the backend server to listen on (default: `3000`). |
+| `CORS_ORIGIN` | Yes | URL of the frontend application for CORS. |
+| `MONGODB_URI` | Yes | Connection string for your MongoDB database. |
+| `REDIS_HOST` | Yes | Hostname for your Redis instance. |
+| `REDIS_PORT` | Yes | Port for your Redis instance. |
+| `GITHUB_CLIENT_ID` | Yes | GitHub OAuth App Client ID. |
+| `GITHUB_CLIENT_SECRET` | Yes | GitHub OAuth App Client Secret. |
+| `GITHUB_REDIRECT_URI` | Yes | Redirect URI configured for your GitHub OAuth App. |
+| `GITHUB_APP_ID` | Yes | Your GitHub App ID. |
+| `GITHUB_APP_NAME` | Yes | Name of your GitHub App. |
+| `GITHUB_WEBHOOK_SECRET` | Yes | Secret for verifying GitHub webhook payloads. |
+| `JWT_SECRET` | Yes | Secret key for signing and verifying JWTs. |
+| `GEMINI_API_KEY_1` | Yes | API key for Gemini AI service (for README generation). |
+| `GEMINI_API_KEY_2` | Yes | Secondary API key for Gemini AI service. |
+| `GEMINI_API_KEY_3` | Yes | Tertiary API key for Gemini AI service. |
+| `GROQ_API_KEY_1` | Yes | API key for Groq AI service (for README generation). |
+| `GROQ_API_KEY_2` | Yes | Secondary API key for Groq AI service. |
+| `WORKSPACE_ROOT_PATH` | No | Root path for temporary workspace directories. |
 
 ---
 
 ## 🌐 API Reference
 
-The PushDoc backend exposes the following API endpoints:
+The PushDoc backend provides a comprehensive API to manage GitHub integrations, user authentication, and README generation jobs. All authenticated routes require a valid JWT.
 
 | Method | Endpoint | Auth | Description |
-| :----- | :-------------------------- | :------ | :-------------------------------------------------------------- |
-| `GET` | `/` | No | Health check endpoint, returns API status and Redis connection. |
-| `GET` | `/auth/github/login` | No | Initiates GitHub OAuth login flow. |
-| `GET` | `/auth/github/callback` | No | Callback URL for GitHub OAuth after user authentication. |
-| `GET` | `/github/app` | Required| Retrieves details about the installed GitHub App. |
-| `GET` | `/github/install` | Required| Initiates GitHub App installation flow. |
-| `GET` | `/github/install/callback` | No | Callback URL after GitHub App installation. |
-| `GET` | `/github/repositories/sync` | Required| Syncs the user's GitHub repositories with the PushDoc system. |
-| `GET` | `/github/jobs` | Required| Retrieves a list of all documentation generation jobs. |
-| `GET` | `/github/jobs/:jobId/logs` | Required| Retrieves detailed logs for a specific job. |
-| `POST` | `/github/repositories/:repoId/trigger`| Required| Manually triggers a README generation job for a repository. |
-| `PATCH`| `/github/repositories/:repoId/toggle` | Required| Toggles the active status of a repository for auto-generation. |
-| `POST` | `/webhooks/github` | No | Receives and processes GitHub webhook events. |
+| :----- | :---------------------------- | :--- | :--------------------------------------------------------- |
+| `GET` | `/github/login` | No | Initiates the GitHub OAuth login flow. |
+| `GET` | `/github/callback` | No | Handles the callback from GitHub OAuth after user authentication. |
+| `GET` | `/app` | Yes | Retrieves details about the installed GitHub App. |
+| `GET` | `/install` | Yes | Redirects to GitHub for installing or configuring the GitHub App. |
+| `GET` | `/install/callback` | No | Handles the callback after a GitHub App installation. |
+| `GET` | `/repositories/sync` | Yes | Synchronizes the user's GitHub repositories with the application database. |
+| `GET` | `/jobs` | Yes | Fetches a list of all README generation jobs for the authenticated user. |
+| `GET` | `/jobs/:jobId/logs` | Yes | Retrieves the detailed logs for a specific README generation job. |
+| `POST` | `/repositories/:repoId/trigger` | Yes | Manually triggers a new README generation job for the specified repository. |
+| `PATCH`| `/repositories/:repoId/toggle`| Yes | Activates or deactivates PushDoc's README generation for a specific repository. |
+| `GET` | `/` | No | Provides a basic health check for the API and Redis connection status. |
+| `POST` | `/github` | No | Endpoint for receiving and processing GitHub webhook events (e.g., `push`, `installation`). |
 
 ---
 
 ## 🗄️ Database Models
 
-PushDoc uses MongoDB to store and manage various entities:
+PushDoc utilizes MongoDB to persist critical application data. Here's an overview of the main models:
 
 | Model | Key Fields | Description |
-| :---------------- | :-------------------------------------------- | :------------------------------------------------------------------- |
-| **Installation** | `installationId`, `user`, `accountLogin` | Represents a GitHub App installation on a user's account or organization. |
-| **InstallationState**| `state`, `user`, `expiresAt` | Stores temporary state during the GitHub App installation process. |
-| **Job** | `repository`, `bullJobId`, `commitSha`, `status`| Tracks the lifecycle and status of a README generation task. |
-| **Repository** | `githubId`, `installation`, `fullName`, `isActive`| Stores details about a GitHub repository integrated with PushDoc. |
-| **User** | `githubId`, `username`, `email`, `githubAccessToken`| Stores user profile information and GitHub authentication details. |
+| :-------------- | :--------------------- | :------------------------------------------------------------ |
+| **Installation** | `installationId`, `user` | Stores details about a GitHub App installation for a user or organization. |
+| **InstallationState** | `state`, `user` | Temporarily holds state during the GitHub App installation process. |
+| **Job** | `repository`, `bullJobId`, `commitSha`, `status` | Tracks the lifecycle and results of each README generation job. |
+| **Repository** | `githubId`, `installation`, `name`, `isActive` | Manages information about GitHub repositories integrated with PushDoc. |
+| **User** | `githubId`, `username`, `email`, `githubAccessToken` | Stores user profiles, primarily authenticated via GitHub. |
 
 ---
 
 ## 📜 Available Scripts
 
-The project includes standard scripts for development and building.
+This project uses standard npm commands for development and execution.
 
-**Server (`server/` directory):**
+* **Backend (in `server/` directory):**
+ * `node server.js`: Starts the backend server.
+ * You might find additional scripts like `npm start` or `npm run dev` if defined in `server/package.json`.
 
-* `npm install`: Installs all backend dependencies.
-* `npm run dev` (Inferred): Starts the Node.js server using Nodemon for automatic restarts during development.
-* `node server.js` (Inferred): Starts the production Node.js server.
+* **Frontend (in `client/` directory):**
+ * `npm run dev`: Starts the Vite development server for the frontend.
+ * `npm run build`: Builds the frontend for production deployment.
 
-**Client (`client/` directory):**
-
-* `npm install`: Installs all frontend dependencies.
-* `npm run dev` (Inferred): Starts the development server for the React frontend, typically with hot-reloading.
-* `npm run build` (Inferred): Creates a production-ready build of the React application.
+* **Root:**
+ * `npm install`: Installs dependencies for the entire monorepo structure.
