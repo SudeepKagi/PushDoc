@@ -221,8 +221,19 @@ function renderMarkdown(rawContent) {
 export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, jobs = [] }) {
     if (!selectedRepo) return null;
 
+    const [isTriggering, setIsTriggering] = React.useState(false);
+
     const latestJob = jobs.find(j => j.repository?._id === selectedRepo._id);
-    const isRunning = latestJob && ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(latestJob.status);
+    const isRunning = isTriggering || (latestJob && ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(latestJob.status));
+
+    const handleManualTrigger = async () => {
+        setIsTriggering(true);
+        try {
+            await triggerManualBuild(selectedRepo._id);
+        } finally {
+            setTimeout(() => setIsTriggering(false), 3000);
+        }
+    };
 
     const displayDuration = latestJob?.duration ? (latestJob.duration / 1000).toFixed(1) + "s" : "N/A";
     const displayLastRun = latestJob?.completedAt 
@@ -234,6 +245,8 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
         if (!containerRef.current) return;
         containerRef.current.innerHTML = renderMarkdown(latestJob?.generatedReadme || "");
     }, [latestJob?.generatedReadme]);
+
+    const activeStatus = isTriggering ? "QUEUED" : latestJob?.status;
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto py-4">
@@ -261,17 +274,17 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                 <Button
                     size="sm"
                     className="gap-2 font-medium"
-                    onClick={() => triggerManualBuild(selectedRepo._id)}
+                    onClick={handleManualTrigger}
                     disabled={isRunning}
                 >
-                    {isRunning ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                    {isRunning ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Play className="h-4 w-4" />}
                     <span>{isRunning ? "Running Pipeline..." : "Trigger Manual Scan"}</span>
                 </Button>
             </div>
 
             {/* Live Progress Tracker */}
-            {latestJob && latestJob.status !== "COMPLETED" && latestJob.status !== "FAILED" && (
-                <ProgressTracker status={latestJob.status} />
+            {(isTriggering || (latestJob && latestJob.status !== "COMPLETED" && latestJob.status !== "FAILED")) && (
+                <ProgressTracker status={activeStatus || "QUEUED"} />
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
