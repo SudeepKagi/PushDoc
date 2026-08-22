@@ -4,10 +4,10 @@ import rateLimit from "express-rate-limit";
 import cors from "cors";
 import { config } from "./config/app.config.js";
 
-import indexRouter from "./routes/index.js";
-import githubRouter from "./routes/github.js";
-import authRouter from "./routes/auth.js";
-import webhookRouter from "./routes/webhook.js";
+import indexRouter from "./routes/index.route.js";
+import githubRouter from "./routes/github.route.js";
+import authRouter from "./routes/auth.route.js";
+import webhookRouter from "./routes/webhook.route.js";
 
 
 const app = express();

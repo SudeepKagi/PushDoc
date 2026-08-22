@@ -15,24 +15,29 @@ import * as logger from "../services/logger.service.js";
 export function getRedisOptions() {
     const base = {
         maxRetriesPerRequest: null,   // BullMQ requirement
-        enableReadyCheck: false,      // Required for Upstash / cloud Redis
-        keepAlive: 5_000,             // Send TCP keepalive probes every 5s — prevents Upstash proxy from silently dropping idle sockets
+        enableReadyCheck: false,      // Required for cloud Redis
+        keepAlive: 30_000,            // TCP keepalive probes every 30s
         retryStrategy: (times) => Math.min(times * 200, 5_000),
     };
 
     if (config.redis.url) {
         try {
             const parsed = new URL(config.redis.url);
-            return {
+            const isTls = parsed.protocol === "rediss:";
+            const options = {
                 ...base,
                 host: parsed.hostname,
                 port: parseInt(parsed.port || "6379", 10),
-                password: parsed.password || undefined,
-                // Always enable TLS for URL-based connections (Upstash requires it
-                // on all endpoints regardless of the redis:// vs rediss:// scheme).
-                // A missing tls: {} is the most common cause of sub-1ms closes.
-                tls: { rejectUnauthorized: false },
+                username: parsed.username ? decodeURIComponent(parsed.username) : undefined,
+                password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
             };
+
+            // Enable TLS only if using rediss:// protocol (e.g. Upstash or TLS-enabled cloud instances)
+            if (isTls) {
+                options.tls = { rejectUnauthorized: false };
+            }
+
+            return options;
         } catch {
             // Fallback: pass URL string directly (older ioredis versions)
             return { ...base };

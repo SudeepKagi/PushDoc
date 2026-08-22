@@ -261,6 +261,9 @@ const readmeWorker = new Worker(
 
     {
         connection: getRedisOptions(),   // Raw options — BullMQ manages connections internally
+        drainDelay: 60,                  // Poll every 60s when queue is empty instead of aggressive polling
+        stalledInterval: 300_000,        // Check stalled jobs every 5 minutes (default 30s)
+        lockDuration: 300_000,           // 5-minute job lock duration
     }
 );
 
