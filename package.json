@@ -1,15 +1,16 @@
 {
   "name": "pushdoc",
   "version": "1.0.0",
-  "description": "��#\u0000 \u0000P\u0000u\u0000s\u0000h\u0000D\u0000o\u0000c\u0000\r\u0000 \u0000",
+  "description": "PushDoc — Autonomous AI-powered README generation engine for GitHub repositories",
   "main": "index.js",
   "directories": {
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm test --prefix server",
     "build:client": "npm run build --prefix client",
     "start:server": "npm start --prefix server",
+    "start:worker": "npm run worker --prefix server",
     "build": "npm run build:client",
     "start": "npm run start:server"
   },
@@ -17,8 +18,17 @@
     "type": "git",
     "url": "git+https://github.com/SudeepKagi/PushDoc.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "github-app",
+    "ai",
+    "readme-generator",
+    "ast-analysis",
+    "gemini",
+    "groq",
+    "bullmq",
+    "rag"
+  ],
+  "author": "Sudeep Kagi",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {

@@ -40,7 +40,9 @@ export const config = {
         groqModel: "llama-3.3-70b-versatile",
     },
     cors: {
-        origin: process.env.CORS_ORIGIN || "http://localhost:1234",
+        origin: process.env.CORS_ORIGIN
+            ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+            : ["http://localhost:1234", "http://localhost:5173", "http://localhost:3000"],
     },
     frontend: {
         url: process.env.FRONTEND_URL || "http://localhost:1234",

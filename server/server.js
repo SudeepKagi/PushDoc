@@ -4,10 +4,14 @@ import connectDB from "./src/config/database.js";
 import { config, validateConfig } from "./src/config/app.config.js";
 import * as logger from "./src/services/logger.service.js";
 import { purgeStaleWorkspaces } from "./src/services/workspace.service.js";
-// Worker process is started separately via `npm run worker`.
-// Do NOT import it here — the web and worker processes must be independent.
-
 dotenv.config();
+ 
+// Support embedded worker for single-instance cloud deployments (e.g. Render free tier)
+if (process.env.EMBEDDED_WORKER === "true" || process.env.START_WORKER === "true") {
+    import("./src/workers/readme.worker.js")
+        .then(() => logger.info("Embedded README worker initialized in-process"))
+        .catch(err => logger.error(`Failed to start embedded worker: ${err.message}`));
+}
 
 // Validate environment variables before initializing the server
 try {

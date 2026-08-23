@@ -1,0 +1,51 @@
+services:
+  # ── 1. PushDoc Web API Service ──────────────────────────────────────────────
+  - type: web
+    name: pushdoc-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install --prefix server
+    startCommand: npm start --prefix server
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: EMBEDDED_WORKER
+        value: "true"
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: GITHUB_APP_ID
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_WEBHOOK_SECRET
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+    healthCheckPath: /
+
+  # ── 2. PushDoc Frontend Static Site ─────────────────────────────────────────
+  - type: web
+    name: pushdoc-client
+    runtime: static
+    plan: free
+    region: oregon
+    buildCommand: npm install --prefix client && npm run build --prefix client
+    staticPublishPath: client/dist
+    envVars:
+      - key: VITE_BACKEND_URL
+        value: https://pushdoc-api.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -17,7 +17,27 @@ const app = express();
 app.set("trust proxy", 1);
 
 app.use(cors({
-    origin: config.cors.origin,
+    origin: (origin, callback) => {
+        // Allow requests with no origin (e.g. mobile apps, curl, server-to-server webhooks)
+        if (!origin) return callback(null, true);
+
+        const allowed = Array.isArray(config.cors.origin) ? config.cors.origin : [config.cors.origin];
+
+        // Allow any specified origin, wildcard, or standard Vercel/Render frontend origins
+        if (
+            allowed.includes("*") ||
+            allowed.includes(origin) ||
+            origin.includes("localhost") ||
+            origin.includes("127.0.0.1") ||
+            origin.endsWith(".vercel.app") ||
+            origin.endsWith(".onrender.com")
+        ) {
+            return callback(null, true);
+        }
+
+        // Allow by default while reflecting request origin for credentials
+        return callback(null, true);
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true

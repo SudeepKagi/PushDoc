@@ -1,7 +1,8 @@
 export const BACKEND_URL = 
     (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_BACKEND_URL) ||
-    (typeof process !== "undefined" && process.env && process.env.BACKEND_URL) ||
-    "https://pushdoc-api.onrender.com";
+    (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+        ? "http://localhost:3000"
+        : "https://pushdoc-api.onrender.com");
 
 export const INITIAL_LOGS = [
     { time: "14:02:01", type: "INFO", text: "Initializing PushDoc Worker v2.4.0..." },
