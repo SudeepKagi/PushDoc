@@ -49,3 +49,6 @@ desktop.ini
 
 # ── Stitch Assets (design tool output, not source) ───────────
 stitch_assets/
+
+# ── Local Agent / Scratch Documentation ──────────────────────
+CHANGELOG.md
