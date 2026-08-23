@@ -73,15 +73,18 @@ export default function App() {
     });
     const [hasUnsavedSettings, setHasUnsavedSettings] = useState(false);
 
-    // AI Provider state
-    const [geminiKeyLabel, setGeminiKeyLabel] = useState("");
-    const [geminiKey, setGeminiKey] = useState("********************************");
+    // AI Provider & BYOK State (persisted securely in user's browser sandbox)
+    const [geminiKeyLabel, setGeminiKeyLabel] = useState(() => localStorage.getItem("pushdoc_byok_gemini_label") || "");
+    const [geminiKey, setGeminiKey] = useState(() => localStorage.getItem("pushdoc_byok_gemini_key") || "");
     const [geminiKeyVisible, setGeminiKeyVisible] = useState(false);
-    const [groqKeyLabel, setGroqKeyLabel] = useState("");
-    const [groqKey, setGroqKey] = useState("");
+    const [isGeminiCustom, setIsGeminiCustom] = useState(() => !!localStorage.getItem("pushdoc_byok_gemini_key"));
+    const [geminiKeyStatus, setGeminiKeyStatus] = useState(() => localStorage.getItem("pushdoc_byok_gemini_key") ? "Custom key active and ready for routing." : "");
+
+    const [groqKeyLabel, setGroqKeyLabel] = useState(() => localStorage.getItem("pushdoc_byok_groq_label") || "");
+    const [groqKey, setGroqKey] = useState(() => localStorage.getItem("pushdoc_byok_groq_key") || "");
     const [groqKeyVisible, setGroqKeyVisible] = useState(false);
-    const [geminiKeyStatus, setGeminiKeyStatus] = useState("Key validated and ready for routing.");
-    const [groqKeyStatus, setGroqKeyStatus] = useState("Invalid token format. Please check your credentials.");
+    const [isGroqCustom, setIsGroqCustom] = useState(() => !!localStorage.getItem("pushdoc_byok_groq_key"));
+    const [groqKeyStatus, setGroqKeyStatus] = useState(() => localStorage.getItem("pushdoc_byok_groq_key") ? "Custom key active and ready for routing." : "");
 
     // Handlers
     const openDetails = (repo) => {
@@ -123,25 +126,47 @@ export default function App() {
     };
 
     const handleSaveGeminiKey = () => {
-        if (!geminiKeyLabel || !geminiKey) {
-            alert("Please fill in both label and API token.");
+        if (!geminiKey) {
+            alert("Please enter a valid Gemini API key.");
             return;
         }
-        setGeminiKeyStatus("Key validated and ready for routing.");
-        alert("Gemini key settings saved!");
+        localStorage.setItem("pushdoc_byok_gemini_key", geminiKey);
+        if (geminiKeyLabel) localStorage.setItem("pushdoc_byok_gemini_label", geminiKeyLabel);
+        setIsGeminiCustom(true);
+        setGeminiKeyStatus("Custom Gemini key saved securely in local browser storage.");
+        alert("Gemini custom key saved!");
+    };
+
+    const handleClearGeminiKey = () => {
+        localStorage.removeItem("pushdoc_byok_gemini_key");
+        localStorage.removeItem("pushdoc_byok_gemini_label");
+        setGeminiKey("");
+        setGeminiKeyLabel("");
+        setIsGeminiCustom(false);
+        setGeminiKeyStatus("");
+        alert("Custom Gemini key cleared. Using Platform Managed Key.");
     };
 
     const handleSaveGroqKey = () => {
-        if (!groqKeyLabel || !groqKey) {
-            alert("Please fill in both label and API token.");
+        if (!groqKey) {
+            alert("Please enter a valid Groq API key.");
             return;
         }
-        if (groqKey.length < 10) {
-            setGroqKeyStatus("Invalid token format. Please check your credentials.");
-        } else {
-            setGroqKeyStatus("Key validated and ready for routing.");
-        }
-        alert("Groq key settings saved!");
+        localStorage.setItem("pushdoc_byok_groq_key", groqKey);
+        if (groqKeyLabel) localStorage.setItem("pushdoc_byok_groq_label", groqKeyLabel);
+        setIsGroqCustom(true);
+        setGroqKeyStatus("Custom Groq key saved securely in local browser storage.");
+        alert("Groq custom key saved!");
+    };
+
+    const handleClearGroqKey = () => {
+        localStorage.removeItem("pushdoc_byok_groq_key");
+        localStorage.removeItem("pushdoc_byok_groq_label");
+        setGroqKey("");
+        setGroqKeyLabel("");
+        setIsGroqCustom(false);
+        setGroqKeyStatus("");
+        alert("Custom Groq key cleared. Using Platform Managed Key.");
     };
 
     const isAppPage = page !== "landing" && page !== "onboarding" && page !== "connect";
@@ -256,6 +281,10 @@ export default function App() {
                                 groqKeyStatus={groqKeyStatus}
                                 handleSaveGeminiKey={handleSaveGeminiKey}
                                 handleSaveGroqKey={handleSaveGroqKey}
+                                handleClearGeminiKey={handleClearGeminiKey}
+                                handleClearGroqKey={handleClearGroqKey}
+                                isGeminiCustom={isGeminiCustom}
+                                isGroqCustom={isGroqCustom}
                             />
                         )}
                     </main>
