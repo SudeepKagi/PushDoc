@@ -2,8 +2,9 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card.jsx";
 import { Badge } from "../components/ui/badge.jsx";
 import { Button } from "../components/ui/button.jsx";
+import { Skeleton } from "../components/ui/skeleton.jsx";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "../components/ui/table.jsx";
-import { ArrowLeft, Terminal, CheckCircle2, AlertCircle, Clock, GitCommit } from "lucide-react";
+import { ArrowLeft, Terminal, CheckCircle2, AlertCircle, Clock, GitCommit, RefreshCw } from "lucide-react";
 
 export default function BuildLogsPage({
     jobs = [],
@@ -72,8 +73,18 @@ export default function BuildLogsPage({
                     <CardDescription className="text-xs text-text-secondary">History of triggered README generation jobs</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
-                    {loadingJobs ? (
-                        <div className="p-8 text-center text-xs font-mono text-text-secondary">Loading build history...</div>
+                    {loadingJobs && jobs.length === 0 ? (
+                        <div className="p-4 space-y-3 animate-pulse">
+                            {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="flex items-center justify-between gap-4 py-2 border-b border-border last:border-0">
+                                    <Skeleton className="h-4 w-24 bg-surface-raised" />
+                                    <Skeleton className="h-4 w-40 bg-surface-raised" />
+                                    <Skeleton className="h-4 w-16 bg-surface-raised" />
+                                    <Skeleton className="h-5 w-20 rounded-[4px] bg-surface-raised" />
+                                    <Skeleton className="h-4 w-12 bg-surface-raised" />
+                                </div>
+                            ))}
+                        </div>
                     ) : jobs.length === 0 ? (
                         <div className="p-8 text-center text-xs font-mono text-text-secondary">No build runs recorded yet.</div>
                     ) : (
@@ -92,6 +103,7 @@ export default function BuildLogsPage({
                                     const isCompleted = job.status === "COMPLETED";
                                     const isFailed = job.status === "FAILED";
                                     const isSelected = activeBuildIndex === idx;
+                                    const isInProgress = ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(job.status);
 
                                     return (
                                         <TableRow
@@ -112,14 +124,20 @@ export default function BuildLogsPage({
                                                 {job.branch || "main"}
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant={isCompleted ? "success" : isFailed ? "destructive" : "secondary"} className="text-xs font-mono">
-                                                    {job.status}
+                                                <Badge 
+                                                    variant={isCompleted ? "success" : isFailed ? "destructive" : "secondary"} 
+                                                    className="text-xs font-mono gap-1.5"
+                                                >
+                                                    {isInProgress && (
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+                                                    )}
+                                                    <span>{job.status}</span>
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-xs text-text-secondary font-mono">
                                                 <div className="flex items-center gap-1">
                                                     <Clock className="h-3 w-3" />
-                                                    <span>{job.duration ? (job.duration / 1000).toFixed(1) + "s" : "N/A"}</span>
+                                                    <span>{job.duration ? (job.duration / 1000).toFixed(1) + "s" : isInProgress ? "Running..." : "N/A"}</span>
                                                 </div>
                                             </TableCell>
                                         </TableRow>

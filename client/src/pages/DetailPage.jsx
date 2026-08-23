@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card.jsx";
 import { Button } from "../components/ui/button.jsx";
 import { Badge } from "../components/ui/badge.jsx";
+import { Skeleton } from "../components/ui/skeleton.jsx";
 import { 
     ArrowLeft, Play, RefreshCw, CheckCircle2, Clock, FileText, 
     Lock, Unlock, Sparkles, Terminal, Code2, GitCommit, 
@@ -55,7 +56,7 @@ function CommitGraphStatus({ status }) {
                             <div 
                                 className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${
                                     isCurrent 
-                                        ? "bg-accent border-2 border-accent shadow-[0_0_0_4px_rgba(79,191,174,0.25)]" 
+                                        ? "bg-accent border-2 border-accent shadow-[0_0_0_4px_rgba(79,191,174,0.25)] animate-pulse" 
                                         : isPassed 
                                             ? "bg-accent border-2 border-accent" 
                                             : "bg-surface border-2 border-text-muted"
@@ -278,15 +279,23 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
     const [activeTab, setActiveTab] = useState("preview");
     const [copied, setCopied] = useState(false);
 
-    const latestJob = jobs.find(j => j.repository?._id === selectedRepo._id);
+    // Robust ID matching between populated object and string ID
+    const latestJob = jobs.find(j => {
+        const jRepoId = j.repository?._id?.toString() || j.repository?.toString();
+        const sRepoId = selectedRepo?._id?.toString();
+        return jRepoId === sRepoId;
+    });
+
     const isRunning = isTriggering || (latestJob && ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(latestJob.status));
 
     const handleManualTrigger = async () => {
         setIsTriggering(true);
         try {
             await triggerManualBuild(selectedRepo._id);
+        } catch (err) {
+            console.error("Trigger manual build error:", err);
         } finally {
-            setTimeout(() => setIsTriggering(false), 3000);
+            setTimeout(() => setIsTriggering(false), 2000);
         }
     };
 
@@ -352,7 +361,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                         disabled={isRunning}
                     >
                         {isRunning ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-                        <span>{isRunning ? "Running..." : "Trigger Scan"}</span>
+                        <span>{isRunning ? "Running Scan..." : "Trigger Scan"}</span>
                     </Button>
                 </div>
             </div>
@@ -404,13 +413,37 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                                 </button>
                             </div>
 
-                            <Badge variant="secondary" className="text-xs font-mono hidden sm:inline-flex">
-                                GitHub Markdown
-                            </Badge>
+                            {isRunning ? (
+                                <Badge variant="accent" className="text-xs font-mono gap-1.5">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+                                    <span>Scanning in progress</span>
+                                </Badge>
+                            ) : (
+                                <Badge variant="secondary" className="text-xs font-mono hidden sm:inline-flex">
+                                    GitHub Markdown
+                                </Badge>
+                            )}
                         </CardHeader>
 
                         <CardContent className="p-4">
-                            {!latestJob?.generatedReadme ? (
+                            {isRunning && !latestJob?.generatedReadme ? (
+                                <div className="h-[400px] flex flex-col justify-center space-y-4 p-6 animate-pulse">
+                                    <div className="flex items-center gap-2">
+                                        <Skeleton className="h-6 w-1/3 bg-surface-raised" />
+                                        <Skeleton className="h-5 w-16 rounded-[4px] bg-surface-raised" />
+                                    </div>
+                                    <Skeleton className="h-4 w-full bg-surface-raised" />
+                                    <Skeleton className="h-4 w-5/6 bg-surface-raised" />
+                                    <div className="space-y-2 pt-4">
+                                        <Skeleton className="h-5 w-1/4 bg-surface-raised" />
+                                        <Skeleton className="h-16 w-full rounded-[6px] bg-surface-raised" />
+                                    </div>
+                                    <div className="space-y-2 pt-2">
+                                        <Skeleton className="h-5 w-1/3 bg-surface-raised" />
+                                        <Skeleton className="h-4 w-3/4 bg-surface-raised" />
+                                    </div>
+                                </div>
+                            ) : !latestJob?.generatedReadme ? (
                                 <div className="h-[400px] flex flex-col items-center justify-center text-center text-text-secondary">
                                     <FileText className="h-8 w-8 mb-2 opacity-40 text-text-muted" />
                                     <p className="text-xs font-medium text-text-primary">No README generated yet</p>

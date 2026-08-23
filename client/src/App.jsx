@@ -95,15 +95,21 @@ export default function App() {
 
     const triggerManualBuild = async (repoId) => {
         try {
-            if (!token) return;
+            if (!token) {
+                alert("Please log in with GitHub to trigger repository documentation builds.");
+                return { success: false };
+            }
             const data = await apiTriggerManualBuild(repoId, token);
             if (data.success) {
                 await refreshJobs();
+                return data;
             } else {
                 alert("Failed to queue job: " + (data.message || "Unknown error"));
+                return data;
             }
         } catch (err) {
             alert("Error triggering build: " + err.message);
+            return { success: false, error: err.message };
         }
     };
 

@@ -277,18 +277,29 @@ export const triggerManualBuild = async (req, res) => {
             });
         }
 
-        if (repository.installation._id.toString() !== installation._id.toString()) {
+        const repoInstId = repository.installation?._id?.toString() || repository.installation?.toString();
+        const userInstId = installation._id.toString();
+
+        if (repoInstId && userInstId && repoInstId !== userInstId) {
             return res.status(403).json({
                 success: false,
                 message: "Unauthorized: You do not have permission to trigger verification for this repository"
             });
         }
 
-        const { branch, commitSha } = await githubService.getRepositoryDefaultBranchAndCommit(
-            installation.installationId,
-            repository.owner,
-            repository.name
-        );
+        let branch = `refs/heads/${repository.branch || "main"}`;
+        let commitSha = "HEAD";
+        try {
+            const details = await githubService.getRepositoryDefaultBranchAndCommit(
+                installation.installationId,
+                repository.owner,
+                repository.name
+            );
+            if (details.branch) branch = details.branch;
+            if (details.commitSha) commitSha = details.commitSha;
+        } catch (ghErr) {
+            logger.warn(`Could not query GitHub for branch/commit (${ghErr.message}), falling back to ${branch}@HEAD`);
+        }
 
         const job = await readmeQueue.add(
             "generate-readme",
@@ -314,6 +325,7 @@ export const triggerManualBuild = async (req, res) => {
             jobId: job.id,
         });
     } catch (error) {
+        logger.error(`Manual trigger failed: ${error.message}`);
         return res.status(500).json({
             success: false,
             message: error.message
@@ -340,7 +352,10 @@ export const toggleRepository = async (req, res) => {
             });
         }
 
-        if (repository.installation._id.toString() !== installation._id.toString()) {
+        const repoInstId = repository.installation?._id?.toString() || repository.installation?.toString();
+        const userInstId = installation._id.toString();
+
+        if (repoInstId && userInstId && repoInstId !== userInstId) {
             return res.status(403).json({
                 success: false,
                 message: "Unauthorized: You do not have permission to toggle this repository"
@@ -358,11 +373,19 @@ export const toggleRepository = async (req, res) => {
             const jobCount = await jobService.getJobCountForRepository(repository._id);
             if (jobCount === 0) {
                 try {
-                    const { branch, commitSha } = await githubService.getRepositoryDefaultBranchAndCommit(
-                        installation.installationId,
-                        repository.owner,
-                        repository.name
-                    );
+                    let branch = `refs/heads/${repository.branch || "main"}`;
+                    let commitSha = "HEAD";
+                    try {
+                        const details = await githubService.getRepositoryDefaultBranchAndCommit(
+                            installation.installationId,
+                            repository.owner,
+                            repository.name
+                        );
+                        if (details.branch) branch = details.branch;
+                        if (details.commitSha) commitSha = details.commitSha;
+                    } catch (ghErr) {
+                        logger.warn(`Could not query GitHub default branch (${ghErr.message}), falling back to ${branch}@HEAD`);
+                    }
 
                     const job = await readmeQueue.add(
                         "generate-readme",
