@@ -3,57 +3,95 @@ module.exports = {
   darkMode: ["class"],
   content: [
     "./src/**/*.{html,js,jsx,ts,tsx}",
+    "./index.html",
   ],
   theme: {
-    container: {
-      center: true,
-      padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
-    },
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
+        bg: "var(--bg)",
+        surface: "var(--surface)",
+        "surface-raised": "var(--surface-raised)",
+        border: "var(--border)",
+        "text-primary": "var(--text-primary)",
+        "text-secondary": "var(--text-secondary)",
+        "text-muted": "var(--text-muted)",
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "var(--accent)",
+          hover: "var(--accent-hover)",
+        },
+        success: "var(--success)",
+        danger: "var(--danger)",
+        warning: "var(--warning)",
+
+        // Standard shadcn semantic aliases mapped to exact spec tokens
+        background: "var(--bg)",
+        foreground: "var(--text-primary)",
+        card: {
+          DEFAULT: "var(--surface)",
+          foreground: "var(--text-primary)",
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: "var(--surface-raised)",
+          foreground: "var(--text-primary)",
         },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+        primary: {
+          DEFAULT: "var(--accent)",
+          foreground: "#FFFFFF",
         },
+        secondary: {
+          DEFAULT: "var(--surface-raised)",
+          foreground: "var(--text-primary)",
+        },
+        muted: {
+          DEFAULT: "var(--surface-raised)",
+          foreground: "var(--text-secondary)",
+        },
+        destructive: {
+          DEFAULT: "var(--danger)",
+          foreground: "#FFFFFF",
+        },
+        input: "var(--border)",
+        ring: "var(--accent)",
+      },
+      fontFamily: {
+        sans: ["'IBM Plex Sans'", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["'IBM Plex Mono'", "monospace"],
+      },
+      fontSize: {
+        xs: ["12px", { lineHeight: "16px" }],
+        sm: ["14px", { lineHeight: "20px" }],
+        base: ["16px", { lineHeight: "24px" }],
+        lg: ["20px", { lineHeight: "28px" }],
+        xl: ["28px", { lineHeight: "36px" }],
+        "2xl": ["36px", { lineHeight: "44px" }],
+      },
+      spacing: {
+        0: "0px",
+        1: "4px",
+        2: "8px",
+        3: "12px",
+        4: "16px",
+        6: "24px",
+        8: "32px",
+        12: "48px",
+        16: "64px",
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        none: "0px",
+        sm: "4px",
+        DEFAULT: "6px",
+        md: "6px",
+        lg: "6px",
+        full: "9999px",
+      },
+      boxShadow: {
+        DEFAULT: "var(--shadow)",
+        sm: "var(--shadow)",
+        md: "var(--shadow)",
+        lg: "var(--shadow)",
+        none: "none",
       },
     },
   },
   plugins: [],
-}
+};

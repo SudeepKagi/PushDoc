@@ -12,9 +12,9 @@ export default function Sidebar({ page, setPage }) {
     ];
 
     return (
-        <aside className="w-64 border-r border-border bg-card/50 backdrop-blur-sm flex flex-col justify-between p-4 h-[calc(100vh-4rem)] sticky top-16 shrink-0">
+        <aside className="w-60 border-r border-border bg-surface-raised flex flex-col justify-between p-4 h-[calc(100vh-3.5rem)] sticky top-14 shrink-0 font-sans">
             <div className="space-y-4">
-                <div className="px-3 py-1 text-xs font-semibold text-muted-foreground tracking-wider uppercase">
+                <div className="px-2 py-1 text-xs font-mono font-medium text-text-muted uppercase tracking-wider">
                     Control Center
                 </div>
                 <nav className="space-y-1">
@@ -24,12 +24,12 @@ export default function Sidebar({ page, setPage }) {
                             <Button
                                 key={key}
                                 variant={isActive ? "secondary" : "ghost"}
-                                className={`w-full justify-start gap-3 h-10 font-medium ${
-                                    isActive ? "bg-secondary text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"
+                                className={`w-full justify-start gap-2.5 h-8 px-2.5 rounded-[6px] text-xs font-medium transition-colors ${
+                                    isActive ? "bg-surface text-text-primary font-semibold" : "text-text-secondary hover:text-text-primary hover:bg-surface/60"
                                 }`}
                                 onClick={() => setPage(key)}
                             >
-                                <Icon className="h-4 w-4" />
+                                <Icon className={`h-3.5 w-3.5 ${isActive ? "text-accent" : "text-text-muted"}`} />
                                 <span>{label}</span>
                             </Button>
                         );
@@ -41,10 +41,10 @@ export default function Sidebar({ page, setPage }) {
                 <Separator />
                 <Button
                     variant="ghost"
-                    className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive h-9"
+                    className="w-full justify-start gap-2.5 text-text-muted hover:text-danger hover:bg-surface/60 h-8 px-2.5 rounded-[6px] text-xs"
                     onClick={() => setPage("landing")}
                 >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="h-3.5 w-3.5" />
                     <span>Exit to Landing</span>
                 </Button>
             </div>

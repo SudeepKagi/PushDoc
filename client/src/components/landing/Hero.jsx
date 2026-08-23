@@ -14,17 +14,17 @@ const AUTHKIT_WIDGET_TABS = [
         desc: "Deterministically parses URL parameters, HTTP verbs, and controller middleware directly from code AST.",
         renderPreview: () => (
             <div className="space-y-3 font-mono text-xs">
-                <div className="flex items-center justify-between text-muted-foreground border-b border-border pb-2">
+                <div className="flex items-center justify-between text-text-secondary border-b border-border pb-2">
                     <span>Parsed AST Route Endpoint</span>
-                    <span className="text-emerald-500 font-semibold">GET /api/v1/users/:id</span>
+                    <span className="text-success font-semibold">GET /api/v1/users/:id</span>
                 </div>
-                <div className="p-3 bg-muted/40 rounded-md border border-border space-y-1.5 text-[11px]">
-                    <div className="text-primary font-semibold">// Controller Handler</div>
-                    <div className="text-foreground">Controller: getUserByIdHandler</div>
-                    <div className="text-muted-foreground">Middleware: [authenticateToken, checkRateLimit]</div>
-                    <div className="text-muted-foreground">URL Params: id (string, required)</div>
+                <div className="p-3 bg-surface-raised rounded-[6px] space-y-1.5 text-xs">
+                    <div className="text-accent font-semibold">// Controller Handler</div>
+                    <div className="text-text-primary">Controller: getUserByIdHandler</div>
+                    <div className="text-text-secondary">Middleware: [authenticateToken, checkRateLimit]</div>
+                    <div className="text-text-secondary">URL Params: id (string, required)</div>
                 </div>
-                <div className="flex items-center gap-2 text-emerald-500 text-[11px] font-sans font-medium">
+                <div className="flex items-center gap-2 text-success text-xs font-sans font-medium">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     <span>Extracted with 100% ground-truth accuracy from @babel/parser</span>
                 </div>
@@ -39,22 +39,22 @@ const AUTHKIT_WIDGET_TABS = [
         desc: "Extracts database schema fields, field validation rules, and relational definitions automatically.",
         renderPreview: () => (
             <div className="space-y-3 font-mono text-xs">
-                <div className="flex items-center justify-between text-muted-foreground border-b border-border pb-2">
+                <div className="flex items-center justify-between text-text-secondary border-b border-border pb-2">
                     <span>Target Schema</span>
-                    <span className="text-primary font-semibold">UserSchema (Mongoose)</span>
+                    <span className="text-accent font-semibold">UserSchema (Mongoose)</span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div className="p-2.5 bg-muted/40 rounded border border-border">
-                        <span className="text-foreground font-semibold">email:</span> <span className="text-muted-foreground">String (Required, Unique)</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <div className="p-2.5 bg-surface-raised rounded-[6px]">
+                        <span className="text-text-primary font-semibold">email:</span> <span className="text-text-secondary">String (Required, Unique)</span>
                     </div>
-                    <div className="p-2.5 bg-muted/40 rounded border border-border">
-                        <span className="text-foreground font-semibold">role:</span> <span className="text-muted-foreground">Enum ["admin", "user"]</span>
+                    <div className="p-2.5 bg-surface-raised rounded-[6px]">
+                        <span className="text-text-primary font-semibold">role:</span> <span className="text-text-secondary">Enum ["admin", "user"]</span>
                     </div>
-                    <div className="p-2.5 bg-muted/40 rounded border border-border">
-                        <span className="text-foreground font-semibold">passwordHash:</span> <span className="text-muted-foreground">String (Select: false)</span>
+                    <div className="p-2.5 bg-surface-raised rounded-[6px]">
+                        <span className="text-text-primary font-semibold">passwordHash:</span> <span className="text-text-secondary">String (Select: false)</span>
                     </div>
-                    <div className="p-2.5 bg-muted/40 rounded border border-border">
-                        <span className="text-foreground font-semibold">createdAt:</span> <span className="text-muted-foreground">Date (Default: Date.now)</span>
+                    <div className="p-2.5 bg-surface-raised rounded-[6px]">
+                        <span className="text-text-primary font-semibold">createdAt:</span> <span className="text-text-secondary">Date (Default: Date.now)</span>
                     </div>
                 </div>
             </div>
@@ -69,15 +69,15 @@ const AUTHKIT_WIDGET_TABS = [
         renderPreview: () => (
             <div className="space-y-3 font-sans text-xs">
                 <div className="flex items-center justify-between border-b border-border pb-2">
-                    <span className="font-bold text-foreground"># API Reference & Documentation</span>
-                    <Badge variant="secondary" className="font-mono text-[10px]">README.md</Badge>
+                    <span className="font-semibold text-text-primary"># API Reference & Documentation</span>
+                    <Badge variant="secondary" className="font-mono text-xs">README.md</Badge>
                 </div>
-                <p className="text-muted-foreground text-xs leading-relaxed">
-                    Automated documentation generated by PushDoc AI engine based on commit <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-[10px]">#7dfae20</code>.
+                <p className="text-text-secondary text-xs leading-relaxed">
+                    Automated documentation generated by PushDoc AI engine based on commit <code className="bg-surface-raised px-1.5 py-0.5 rounded-[4px] font-mono text-xs text-text-primary">#7dfae20</code>.
                 </p>
-                <div className="p-3 bg-muted/30 rounded border border-border space-y-1 text-[11px] font-mono">
-                    <div className="text-emerald-500 font-semibold">✓ Committed to origin/main</div>
-                    <div className="text-muted-foreground">Author: PushDoc Bot &lt;bot@pushdoc.io&gt;</div>
+                <div className="p-3 bg-surface-raised rounded-[6px] space-y-1 text-xs font-mono">
+                    <div className="text-success font-semibold">✓ Committed to origin/main</div>
+                    <div className="text-text-secondary">Author: PushDoc Bot &lt;bot@pushdoc.io&gt;</div>
                 </div>
             </div>
         ),
@@ -90,12 +90,12 @@ const AUTHKIT_WIDGET_TABS = [
         desc: "Audits package.json dependencies to generate confirmed Shields.io tech badges without dead links.",
         renderPreview: () => (
             <div className="space-y-3 font-sans text-xs">
-                <div className="text-muted-foreground text-xs">Verified Repository Tech Badges:</div>
+                <div className="text-text-secondary text-xs">Verified Repository Tech Badges:</div>
                 <div className="flex flex-wrap gap-2 pt-1">
-                    <span className="px-2.5 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded font-mono text-[11px]">Express v4.19</span>
-                    <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded font-mono text-[11px]">Node.js v20</span>
-                    <span className="px-2.5 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/30 rounded font-mono text-[11px]">MongoDB v6.0</span>
-                    <span className="px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded font-mono text-[11px]">Shields.io Verified</span>
+                    <Badge variant="accent" className="font-mono text-xs">Express v4.19</Badge>
+                    <Badge variant="success" className="font-mono text-xs">Node.js v20</Badge>
+                    <Badge variant="secondary" className="font-mono text-xs">MongoDB v6.0</Badge>
+                    <Badge variant="warning" className="font-mono text-xs">Shields.io Verified</Badge>
                 </div>
             </div>
         ),
@@ -115,71 +115,61 @@ export default function Hero({ handleLoginRedirect, setPage }) {
     };
 
     return (
-        <section className="relative pt-36 pb-28 overflow-hidden bg-background text-foreground">
-            {/* AuthKit Ambient Motion Glow */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-gradient-to-b from-primary/15 via-primary/5 to-transparent blur-[140px] pointer-events-none -z-0" />
-
-            <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
-                {/* AuthKit Announcement pill */}
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border bg-card/70 backdrop-blur-md text-xs mb-8 shadow-sm transition-transform hover:scale-105">
-                    <Sparkles className="h-3.5 w-3.5 text-primary animate-spin" />
-                    <span className="text-foreground font-semibold">Introducing PushDoc 2.0</span>
-                    <span className="text-muted-foreground font-normal">• The Developer Documentation Platform</span>
+        <section className="relative pt-24 pb-16 bg-bg text-text-primary font-sans">
+            <div className="max-w-5xl mx-auto px-6 text-center space-y-6">
+                {/* Announcement chip */}
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[4px] bg-surface-raised text-xs font-mono">
+                    <span className="h-2 w-2 rounded-full bg-accent" />
+                    <span className="text-text-primary font-medium">PushDoc 2.0</span>
+                    <span className="text-text-muted">• Automated Documentation Engine</span>
                 </div>
 
-                {/* Exact Headline Copy Requested */}
-                <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight text-foreground max-w-5xl mx-auto leading-[1.04] text-balance">
-                    Your Codebase.<br />
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-foreground via-muted-foreground to-foreground/60">
-                        Documented on Every Commit.
-                    </span>
+                {/* Headline: IBM Plex Sans 600, 36px scale */}
+                <h1 className="text-2xl sm:text-2xl font-semibold tracking-tight text-text-primary max-w-3xl mx-auto leading-tight">
+                    Your Codebase. Documented on Every Commit.
                 </h1>
 
                 {/* Subtitle */}
-                <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mt-7 leading-relaxed text-balance font-normal">
+                <p className="text-sm sm:text-base text-text-secondary max-w-xl mx-auto leading-relaxed">
                     An AI-powered documentation engine that parses raw AST facts into clean, production-ready READMEs directly from Git.
                 </p>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-9">
+                {/* Action Controls */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                     <Button 
                         size="lg" 
                         onClick={() => setPage("connect")}
-                        className="gap-2.5 font-semibold rounded-full px-8 h-12 text-sm bg-foreground text-background hover:bg-foreground/90 shadow-xl transition-all transform hover:-translate-y-0.5"
+                        className="gap-2 font-medium rounded-[6px] px-6 h-10 text-sm"
                     >
                         <Github className="h-4 w-4" />
                         <span>Connect Repository</span>
                         <ArrowRight className="h-4 w-4" />
                     </Button>
 
-                    <div className="flex items-center gap-3 bg-card/80 border border-border/80 backdrop-blur-md rounded-full px-5 h-12 font-mono text-xs text-foreground shadow-sm hover:border-primary/50 transition-all">
-                        <span className="text-primary">$</span>
-                        <span className="tracking-tight">npx pushdoc@latest sync</span>
+                    <div className="flex items-center gap-2 bg-surface-raised rounded-[6px] px-4 h-10 font-mono text-xs text-text-primary">
+                        <span className="text-accent">$</span>
+                        <span>npx pushdoc@latest sync</span>
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors"
+                            className="h-6 w-6 text-text-muted hover:text-text-primary ml-1"
                             onClick={handleCopy}
                         >
-                            {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                            {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
                         </Button>
                     </div>
                 </div>
 
-                {/* AuthKit Style Interactive Live Canvas Widget Component */}
-                <div className="mt-16 max-w-4xl mx-auto text-left">
-                    <Card className="shadow-2xl border-border bg-card overflow-hidden rounded-2xl">
-                        <div className="p-4 border-b border-border bg-muted/40 flex flex-wrap items-center justify-between gap-3">
+                {/* Interactive Live Canvas Widget */}
+                <div className="mt-12 text-left">
+                    <Card className="bg-surface rounded-[6px] overflow-hidden">
+                        <div className="p-3 border-b border-border bg-surface-raised flex flex-wrap items-center justify-between gap-3">
                             <div className="flex items-center gap-2">
-                                <div className="flex gap-1.5 mr-2">
-                                    <div className="h-3 w-3 rounded-full bg-destructive/60" />
-                                    <div className="h-3 w-3 rounded-full bg-amber-500/60" />
-                                    <div className="h-3 w-3 rounded-full bg-emerald-500/60" />
-                                </div>
-                                <span className="text-xs font-mono text-muted-foreground">Interactive Engine Canvas</span>
+                                <span className="h-2 w-2 rounded-full bg-accent" />
+                                <span className="text-xs font-mono font-medium text-text-secondary">AST Engine Inspector</span>
                             </div>
 
-                            <div className="flex flex-wrap gap-1.5">
+                            <div className="flex flex-wrap gap-1">
                                 {AUTHKIT_WIDGET_TABS.map((tab) => {
                                     const TabIcon = tab.icon;
                                     const isActive = tab.id === activeTabId;
@@ -188,7 +178,7 @@ export default function Hero({ handleLoginRedirect, setPage }) {
                                             key={tab.id}
                                             variant={isActive ? "secondary" : "ghost"}
                                             size="sm"
-                                            className={`text-xs h-7 px-3 gap-1.5 ${isActive ? "font-semibold shadow-sm" : "text-muted-foreground"}`}
+                                            className={`text-xs h-6 px-2.5 rounded-[4px] gap-1.5 ${isActive ? "bg-surface text-text-primary font-semibold" : "text-text-secondary"}`}
                                             onClick={() => setActiveTabId(tab.id)}
                                         >
                                             <TabIcon className="h-3.5 w-3.5" />
@@ -199,52 +189,52 @@ export default function Hero({ handleLoginRedirect, setPage }) {
                             </div>
                         </div>
 
-                        <CardContent className="p-6 space-y-4">
-                            <div className="space-y-1">
-                                <h3 className="text-sm font-bold text-foreground">{activeTab.title}</h3>
-                                <p className="text-xs text-muted-foreground leading-relaxed">{activeTab.desc}</p>
+                        <CardContent className="p-4 space-y-3">
+                            <div className="space-y-0.5">
+                                <h3 className="text-xs font-semibold text-text-primary font-sans">{activeTab.title}</h3>
+                                <p className="text-xs text-text-secondary font-sans leading-relaxed">{activeTab.desc}</p>
                             </div>
 
-                            <div className="p-4 bg-muted/20 rounded-xl border border-border/80 transition-all duration-300">
+                            <div className="p-3 bg-bg rounded-[6px] transition-all">
                                 {activeTab.renderPreview()}
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* AuthKit 3-Bento Card Showcase Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mt-16 text-left">
-                    <Card className="bg-card/60 border-border/80 shadow-none hover:border-primary/40 transition-all duration-300 transform hover:-translate-y-1 group rounded-xl">
-                        <CardContent className="p-6">
-                            <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-foreground mb-4 border border-border group-hover:border-primary/50 group-hover:bg-primary/10 transition-all">
-                                <Webhook className="h-5 w-5" />
+                {/* 3-Bento Feature Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 text-left">
+                    <Card className="bg-surface-raised rounded-[6px]">
+                        <CardContent className="p-4 space-y-2">
+                            <div className="h-8 w-8 rounded-[4px] bg-surface flex items-center justify-center text-text-primary mb-2">
+                                <Webhook className="h-4 w-4 text-accent" />
                             </div>
-                            <h3 className="text-base font-bold text-foreground">Zero-Config Webhooks</h3>
-                            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                            <h3 className="text-sm font-semibold text-text-primary font-sans">Zero-Config Webhooks</h3>
+                            <p className="text-xs text-text-secondary leading-relaxed font-sans">
                                 Fires automatically on git push events with sub-7ms payload parsing and HMAC cryptographic verification.
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-card/60 border-border/80 shadow-none hover:border-primary/40 transition-all duration-300 transform hover:-translate-y-1 group rounded-xl">
-                        <CardContent className="p-6">
-                            <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-foreground mb-4 border border-border group-hover:border-primary/50 group-hover:bg-primary/10 transition-all">
-                                <Code2 className="h-5 w-5" />
+                    <Card className="bg-surface-raised rounded-[6px]">
+                        <CardContent className="p-4 space-y-2">
+                            <div className="h-8 w-8 rounded-[4px] bg-surface flex items-center justify-center text-text-primary mb-2">
+                                <Code2 className="h-4 w-4 text-accent" />
                             </div>
-                            <h3 className="text-base font-bold text-foreground">AST Fact Extraction</h3>
-                            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                            <h3 className="text-sm font-semibold text-text-primary font-sans">AST Fact Extraction</h3>
+                            <p className="text-xs text-text-secondary leading-relaxed font-sans">
                                 Deterministically parses Express routes, Mongoose schemas, and APIs before AI prompt synthesis to prevent hallucinations.
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-card/60 border-border/80 shadow-none hover:border-primary/40 transition-all duration-300 transform hover:-translate-y-1 group rounded-xl">
-                        <CardContent className="p-6">
-                            <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-foreground mb-4 border border-border group-hover:border-primary/50 group-hover:bg-primary/10 transition-all">
-                                <GitCommit className="h-5 w-5" />
+                    <Card className="bg-surface-raised rounded-[6px]">
+                        <CardContent className="p-4 space-y-2">
+                            <div className="h-8 w-8 rounded-[4px] bg-surface flex items-center justify-center text-text-primary mb-2">
+                                <GitCommit className="h-4 w-4 text-accent" />
                             </div>
-                            <h3 className="text-base font-bold text-foreground">Auto README Sync</h3>
-                            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                            <h3 className="text-sm font-semibold text-text-primary font-sans">Auto README Sync</h3>
+                            <p className="text-xs text-text-secondary leading-relaxed font-sans">
                                 Commits clean, structured README markdown directly back to your default branch or pull request automatically.
                             </p>
                         </CardContent>

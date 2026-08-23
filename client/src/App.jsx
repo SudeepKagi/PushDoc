@@ -4,7 +4,6 @@ import useGitHub from "./hooks/useGitHub";
 import useLiveLogs from "./hooks/useLiveLogs";
 import { triggerManualBuild as apiTriggerManualBuild } from "./utils/api";
 
-
 import Navbar from "./components/layout/Navbar";
 import Sidebar from "./components/layout/Sidebar";
 
@@ -96,7 +95,6 @@ export default function App() {
             if (!token) return;
             const data = await apiTriggerManualBuild(repoId, token);
             if (data.success) {
-                // Refresh the jobs list to include the newly queued job
                 await refreshJobs();
             } else {
                 alert("Failed to queue job: " + (data.message || "Unknown error"));
@@ -105,7 +103,6 @@ export default function App() {
             alert("Error triggering build: " + err.message);
         }
     };
-
 
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);
@@ -150,21 +147,13 @@ export default function App() {
     const isAppPage = page !== "landing" && page !== "onboarding" && page !== "connect";
 
     return (
-        <div className="min-h-screen bg-background text-foreground">
-
-
-            {/* Global error toast */}
+        <div className="min-h-screen bg-bg text-text-primary font-sans">
+            {/* Global error banner */}
             {syncError && (
-                <div style={{
-                    position: "fixed", top: "72px", left: "50%", transform: "translateX(-50%)",
-                    zIndex: 9999, background: "#fef2f2", border: "1px solid #fca5a5",
-                    borderRadius: "10px", padding: "12px 20px", display: "flex",
-                    alignItems: "center", gap: "12px", boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-                    minWidth: "320px", maxWidth: "560px"
-                }}>
-                    <span style={{ color: "#dc2626", fontSize: "18px" }}>⚠</span>
-                    <span style={{ color: "#991b1b", fontSize: "14px", flex: 1 }}>{syncError}</span>
-                    <button onClick={clearError} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: "18px", lineHeight: 1 }}>×</button>
+                <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-danger/15 text-danger border border-danger/30 rounded-[6px] px-4 py-2 flex items-center gap-3 text-xs font-mono shadow-md min-w-[320px] max-w-lg">
+                    <span className="font-semibold">!</span>
+                    <span className="flex-1">{syncError}</span>
+                    <button onClick={clearError} className="text-danger hover:opacity-80 font-bold ml-2">×</button>
                 </div>
             )}
 
@@ -176,9 +165,9 @@ export default function App() {
                 logout={logout}
             />
 
-            {/* Landing or Onboarding Pages */}
+            {/* Landing, Connect & Onboarding Pages */}
             {!isAppPage && (
-                <>
+                <main className="pt-14">
                     {page === "landing" && (
                         <LandingPage handleLoginRedirect={handleLoginRedirect} setPage={setPage} />
                     )}
@@ -188,46 +177,89 @@ export default function App() {
                     {page === "onboarding" && (
                         <OnboardingPage handleLoginRedirect={handleLoginRedirect} setPage={setPage} />
                     )}
-                </>
+                </main>
             )}
 
-            {/* App Pages (Dashboard, Logs) */}
+            {/* Authenticated App Pages */}
             {isAppPage && (
-                <main className="max-w-full mx-auto px-6 md:px-16 pt-28 pb-24 relative z-10">
-                    {page === "dashboard" && (
-                        <DashboardPage
-                            repos={repos}
-                            openDetails={openDetails}
-                            triggerSync={triggerSync}
-                            token={token}
-                            syncing={syncing}
-                            setAppPage={setPage}
-                            toggleRepository={toggleRepository}
-                        />
-                    )}
-                    {page === "detail" && (
-                        <DetailPage
-                            selectedRepo={selectedRepo}
-                            setPage={setPage}
-                            triggerManualBuild={triggerManualBuild}
-                            jobs={jobs}
-                        />
-                    )}
-                    {page === "logs" && (
-                        <BuildLogsPage
-                            jobs={jobs}
-                            loadingJobs={loadingJobs}
-                            activeBuildIndex={activeBuildIndex}
-                            setActiveBuildIndex={setActiveBuildIndex}
-                            logsSearchQuery={logsSearchQuery}
-                            setLogsSearchQuery={setLogsSearchQuery}
-                            liveLogs={liveLogs}
-                            logsContainerRef={logsContainerRef}
-                            rerunJob={rerunJob}
-                            setPage={setPage}
-                        />
-                    )}
-                </main>
+                <div className="flex pt-14 min-h-[calc(100vh-3.5rem)]">
+                    <Sidebar page={page} setPage={setPage} />
+                    <main className="flex-1 p-6 md:p-8 overflow-y-auto max-w-full">
+                        {page === "dashboard" && (
+                            <DashboardPage
+                                repos={repos}
+                                openDetails={openDetails}
+                                triggerSync={triggerSync}
+                                token={token}
+                                syncing={syncing}
+                                setAppPage={setPage}
+                                toggleRepository={toggleRepository}
+                            />
+                        )}
+                        {page === "detail" && (
+                            <DetailPage
+                                selectedRepo={selectedRepo}
+                                setPage={setPage}
+                                triggerManualBuild={triggerManualBuild}
+                                jobs={jobs}
+                            />
+                        )}
+                        {page === "settings" && (
+                            <SettingsPage
+                                selectedRepo={selectedRepo}
+                                repos={repos}
+                                openDetails={openDetails}
+                                webhookSecretVisible={webhookSecretVisible}
+                                setWebhookSecretVisible={setWebhookSecretVisible}
+                                settingsBranch={settingsBranch}
+                                setSettingsBranch={setSettingsBranch}
+                                settingsPath={settingsPath}
+                                setSettingsPath={setSettingsPath}
+                                preferences={preferences}
+                                setPreferences={setPreferences}
+                                hasUnsavedSettings={hasUnsavedSettings}
+                                setHasUnsavedSettings={setHasUnsavedSettings}
+                                handlePreferenceToggle={handlePreferenceToggle}
+                                saveConfigurations={saveConfigurations}
+                                copyToClipboard={copyToClipboard}
+                            />
+                        )}
+                        {page === "logs" && (
+                            <BuildLogsPage
+                                jobs={jobs}
+                                loadingJobs={loadingJobs}
+                                activeBuildIndex={activeBuildIndex}
+                                setActiveBuildIndex={setActiveBuildIndex}
+                                logsSearchQuery={logsSearchQuery}
+                                setLogsSearchQuery={setLogsSearchQuery}
+                                liveLogs={liveLogs}
+                                logsContainerRef={logsContainerRef}
+                                rerunJob={rerunJob}
+                                setPage={setPage}
+                            />
+                        )}
+                        {page === "ai-provider" && (
+                            <AIProviderPage
+                                geminiKeyLabel={geminiKeyLabel}
+                                setGeminiKeyLabel={setGeminiKeyLabel}
+                                geminiKey={geminiKey}
+                                setGeminiKey={setGeminiKey}
+                                geminiKeyVisible={geminiKeyVisible}
+                                setGeminiKeyVisible={setGeminiKeyVisible}
+                                groqKeyLabel={groqKeyLabel}
+                                setGroqKeyLabel={setGroqKeyLabel}
+                                groqKey={groqKey}
+                                setGroqKey={setGroqKey}
+                                groqKeyVisible={groqKeyVisible}
+                                setGroqKeyVisible={setGroqKeyVisible}
+                                geminiKeyStatus={geminiKeyStatus}
+                                groqKeyStatus={groqKeyStatus}
+                                handleSaveGeminiKey={handleSaveGeminiKey}
+                                handleSaveGroqKey={handleSaveGroqKey}
+                            />
+                        )}
+                    </main>
+                </div>
             )}
         </div>
     );

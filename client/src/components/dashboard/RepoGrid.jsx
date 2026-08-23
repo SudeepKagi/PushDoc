@@ -7,13 +7,13 @@ import { FolderKanban, RefreshCw } from "lucide-react";
 export default function RepoGrid({ repos, onRepoClick, triggerSync, token, onToggleActive, syncing }) {
     if (repos.length === 0) {
         return (
-            <Card className="p-12 text-center max-w-md mx-auto shadow-none border-dashed border-border">
+            <Card className="p-8 text-center max-w-md mx-auto bg-surface-raised rounded-[6px]">
                 <CardHeader className="p-0 mb-4">
-                    <div className="mx-auto h-12 w-12 rounded-full bg-secondary flex items-center justify-center text-muted-foreground mb-2">
-                        <FolderKanban className="h-6 w-6" />
+                    <div className="mx-auto h-10 w-10 rounded-[6px] bg-surface flex items-center justify-center text-text-muted mb-2">
+                        <FolderKanban className="h-5 w-5" />
                     </div>
-                    <CardTitle className="text-lg font-semibold tracking-tight">No Repositories Synchronized</CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground mt-1">
+                    <CardTitle className="text-base font-semibold tracking-tight text-text-primary">No Repositories Synchronized</CardTitle>
+                    <CardDescription className="text-xs text-text-secondary mt-1">
                         Click the sync button below to import your active GitHub repositories.
                     </CardDescription>
                 </CardHeader>
@@ -22,7 +22,7 @@ export default function RepoGrid({ repos, onRepoClick, triggerSync, token, onTog
                         size="sm"
                         disabled={syncing}
                         onClick={() => triggerSync(token)}
-                        className="gap-2 font-medium"
+                        className="gap-2 font-medium text-xs h-8 px-4 rounded-[6px]"
                     >
                         <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
                         <span>{syncing ? "Syncing..." : "Sync Repositories Now"}</span>
@@ -39,7 +39,7 @@ export default function RepoGrid({ repos, onRepoClick, triggerSync, token, onTog
     });
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedRepos.map((repo) => (
                 <RepoCard
                     key={repo._id}

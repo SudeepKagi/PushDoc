@@ -37,65 +37,36 @@ const BENTO_CARDS = [
 
 export default function Features() {
     return (
-        <section id="features" className="py-24 bg-background border-t border-border">
-            <div className="max-w-7xl mx-auto px-6 space-y-20">
+        <section id="features" className="py-16 bg-bg border-t border-border font-sans">
+            <div className="max-w-5xl mx-auto px-6 space-y-12">
                 {/* Section Header */}
-                <div className="text-center max-w-3xl mx-auto space-y-4">
-                    <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground text-balance">
-                        Any repository.<br />
-                        <span className="text-muted-foreground">Documented on every commit.</span>
+                <div className="text-center max-w-2xl mx-auto space-y-2">
+                    <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">
+                        Any repository. Documented on every commit.
                     </h2>
-                    <p className="text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+                    <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
                         Continuous documentation engine built for developer speed and accuracy.
                     </p>
                 </div>
 
-                {/* Polar 6-Bento Card Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                {/* 6-Bento Card Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {BENTO_CARDS.map((card, idx) => {
                         const Icon = card.icon;
                         return (
-                            <Card key={idx} className="bg-card/60 border-border shadow-none hover:border-foreground/20 transition-all group">
-                                <CardContent className="p-6">
-                                    <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-foreground mb-4 border border-border group-hover:border-primary/50 transition-colors">
-                                        <Icon className="h-5 w-5" />
+                            <Card key={idx} className="bg-surface-raised rounded-[6px] transition-colors">
+                                <CardContent className="p-4 space-y-2">
+                                    <div className="h-8 w-8 rounded-[4px] bg-surface flex items-center justify-center text-text-primary mb-2">
+                                        <Icon className="h-4 w-4 text-accent" />
                                     </div>
-                                    <h3 className="text-sm font-bold text-foreground">{card.title}</h3>
-                                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                                    <h3 className="text-xs font-semibold text-text-primary">{card.title}</h3>
+                                    <p className="text-xs text-text-secondary leading-relaxed">
                                         {card.desc}
                                     </p>
                                 </CardContent>
                             </Card>
                         );
                     })}
-                </div>
-
-                {/* Polar-style Starburst Canvas SVG Graphic */}
-                <div className="relative py-16 flex items-center justify-center pointer-events-none">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-[400px] h-[400px] bg-primary/10 blur-[100px] rounded-full" />
-                    </div>
-                    
-                    <svg width="320" height="320" viewBox="0 0 200 200" fill="none" className="text-primary/40 animate-pulse">
-                        <circle cx="100" cy="100" r="80" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 4" />
-                        <circle cx="100" cy="100" r="50" stroke="currentColor" strokeWidth="0.5" strokeDasharray="3 3" />
-                        <circle cx="100" cy="100" r="20" stroke="currentColor" strokeWidth="0.5" />
-                        <line x1="100" y1="10" x2="100" y2="190" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 4" />
-                        <line x1="10" y1="100" x2="190" y2="100" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 4" />
-                        <line x1="36" y1="36" x2="164" y2="164" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 2" />
-                        <line x1="164" y1="36" x2="36" y2="164" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 2" />
-                        <circle cx="100" cy="100" r="4" fill="currentColor" />
-                    </svg>
-                </div>
-
-                {/* Secondary polar text block */}
-                <div className="text-center max-w-2xl mx-auto space-y-3">
-                    <h3 className="text-2xl font-bold tracking-tight text-foreground">
-                        Built for the shape of modern software.
-                    </h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                        PushDoc connects to your GitHub pipeline to parse source diffs, generate READMEs, and push pull requests automatically.
-                    </p>
                 </div>
             </div>
         </section>

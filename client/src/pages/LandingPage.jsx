@@ -9,7 +9,7 @@ import LandingFooter from "../components/landing/LandingFooter";
 
 export default function LandingPage({ handleLoginRedirect, setPage }) {
     return (
-        <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-screen bg-bg text-text-primary font-sans">
             <Hero handleLoginRedirect={handleLoginRedirect} setPage={setPage} />
             <Features />
             <Integrations />

@@ -16,36 +16,36 @@ const STACK = [
 
 export default function Integrations() {
     return (
-        <section id="integrations" className="py-24 bg-background border-t border-border">
-            <div className="max-w-7xl mx-auto px-6 space-y-16">
-                <div className="text-center max-w-3xl mx-auto space-y-4">
-                    <Badge variant="outline" className="text-xs font-normal rounded-full px-3 gap-1">
-                        <Workflow className="h-3.5 w-3.5 text-primary" /> Supported Ecosystem
+        <section id="integrations" className="py-16 bg-bg border-t border-border font-sans">
+            <div className="max-w-5xl mx-auto px-6 space-y-12">
+                <div className="text-center max-w-2xl mx-auto space-y-2">
+                    <Badge variant="outline" className="text-xs font-mono rounded-[4px] px-2.5 gap-1">
+                        <Workflow className="h-3 w-3 text-accent" /> Supported Ecosystem
                     </Badge>
-                    <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground text-balance">
+                    <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">
                         Works with your entire stack
                     </h2>
-                    <p className="text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+                    <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
                         PushDoc plugs directly into your backend frameworks, database ORMs, and AI providers.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {STACK.map((item, idx) => {
                         const Icon = item.icon;
                         return (
-                            <Card key={idx} className="bg-card/70 border-border shadow-none hover:border-primary/40 transition-all group">
-                                <CardContent className="p-5">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-foreground border border-border group-hover:border-primary/40 transition-colors">
-                                            <Icon className="h-4 w-4" />
+                            <Card key={idx} className="bg-surface-raised rounded-[6px] transition-colors">
+                                <CardContent className="p-4 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="h-8 w-8 rounded-[4px] bg-surface flex items-center justify-center text-text-primary">
+                                            <Icon className="h-4 w-4 text-accent" />
                                         </div>
-                                        <Badge variant="secondary" className="text-[10px] font-mono px-2 py-0.5">
+                                        <Badge variant="secondary" className="text-xs font-mono px-2 py-0.5">
                                             {item.cat}
                                         </Badge>
                                     </div>
-                                    <h3 className="text-sm font-bold text-foreground">{item.name}</h3>
-                                    <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                                    <h3 className="text-xs font-semibold text-text-primary">{item.name}</h3>
+                                    <p className="text-xs text-text-secondary leading-relaxed">
                                         {item.desc}
                                     </p>
                                 </CardContent>

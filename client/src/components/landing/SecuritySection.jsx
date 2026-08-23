@@ -1,56 +1,56 @@
 import React from "react";
 import { Card, CardContent } from "../ui/card.jsx";
 import { Badge } from "../ui/badge.jsx";
-import { ShieldCheck, Lock, EyeOff, KeyRound, Check } from "lucide-react";
+import { ShieldCheck, EyeOff, KeyRound, Lock } from "lucide-react";
 
 export default function SecuritySection() {
     return (
-        <section id="security" className="py-24 bg-muted/20 border-t border-border">
-            <div className="max-w-7xl mx-auto px-6 space-y-16">
-                <div className="text-center max-w-3xl mx-auto space-y-4">
-                    <Badge variant="outline" className="text-xs font-normal rounded-full px-3 gap-1">
-                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> Enterprise Security
+        <section id="security" className="py-16 bg-bg border-t border-border font-sans">
+            <div className="max-w-5xl mx-auto px-6 space-y-12">
+                <div className="text-center max-w-2xl mx-auto space-y-2">
+                    <Badge variant="outline" className="text-xs font-mono rounded-[4px] px-2.5 gap-1">
+                        <ShieldCheck className="h-3 w-3 text-success" /> Enterprise Security
                     </Badge>
-                    <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground text-balance">
+                    <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">
                         Built with zero-retention privacy
                     </h2>
-                    <p className="text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+                    <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
                         Your source code is processed strictly in volatile memory during active scan jobs.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                    <Card className="bg-card border-border shadow-none">
-                        <CardContent className="p-6 space-y-3">
-                            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                                <EyeOff className="h-5 w-5" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="bg-surface-raised rounded-[6px]">
+                        <CardContent className="p-4 space-y-2">
+                            <div className="h-8 w-8 rounded-[4px] bg-surface flex items-center justify-center text-accent mb-2">
+                                <EyeOff className="h-4 w-4" />
                             </div>
-                            <h3 className="text-base font-bold text-foreground">Zero Code Retention</h3>
-                            <p className="text-xs text-muted-foreground leading-relaxed">
+                            <h3 className="text-sm font-semibold text-text-primary">Zero Code Retention</h3>
+                            <p className="text-xs text-text-secondary leading-relaxed">
                                 Git diffs are shallow-cloned in isolated temporary memory buffers and purged immediately post-commit.
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-card border-border shadow-none">
-                        <CardContent className="p-6 space-y-3">
-                            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                                <KeyRound className="h-5 w-5" />
+                    <Card className="bg-surface-raised rounded-[6px]">
+                        <CardContent className="p-4 space-y-2">
+                            <div className="h-8 w-8 rounded-[4px] bg-surface flex items-center justify-center text-accent mb-2">
+                                <KeyRound className="h-4 w-4" />
                             </div>
-                            <h3 className="text-base font-bold text-foreground">HMAC Webhook Signatures</h3>
-                            <p className="text-xs text-muted-foreground leading-relaxed">
+                            <h3 className="text-sm font-semibold text-text-primary">HMAC Webhook Signatures</h3>
+                            <p className="text-xs text-text-secondary leading-relaxed">
                                 Every incoming GitHub webhook request is authenticated with SHA-256 HMAC cryptographic signatures.
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-card border-border shadow-none">
-                        <CardContent className="p-6 space-y-3">
-                            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                                <Lock className="h-5 w-5" />
+                    <Card className="bg-surface-raised rounded-[6px]">
+                        <CardContent className="p-4 space-y-2">
+                            <div className="h-8 w-8 rounded-[4px] bg-surface flex items-center justify-center text-accent mb-2">
+                                <Lock className="h-4 w-4" />
                             </div>
-                            <h3 className="text-base font-bold text-foreground">BYOK (Bring Your Own Key)</h3>
-                            <p className="text-xs text-muted-foreground leading-relaxed">
+                            <h3 className="text-sm font-semibold text-text-primary">BYOK Support</h3>
+                            <p className="text-xs text-text-secondary leading-relaxed">
                                 Provide your own Gemini or Groq API tokens for direct routing without shared rate limits.
                             </p>
                         </CardContent>

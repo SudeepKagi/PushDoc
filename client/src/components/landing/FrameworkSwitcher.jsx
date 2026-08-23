@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardHeader, CardContent } from "../ui/card.jsx";
 import { Button } from "../ui/button.jsx";
 import { Badge } from "../ui/badge.jsx";
-import { Check, Copy, Terminal, Code2 } from "lucide-react";
+import { Check, Copy, Terminal } from "lucide-react";
 
 const CODE_SNIPPETS = {
     express: {
@@ -56,38 +56,34 @@ export default function FrameworkSwitcher() {
     };
 
     return (
-        <section className="py-20 bg-background border-t border-border">
-            <div className="max-w-4xl mx-auto px-6 space-y-8">
-                <div className="text-center space-y-3">
-                    <Badge variant="outline" className="text-xs font-normal rounded-full px-3 gap-1">
-                        <Terminal className="h-3.5 w-3.5 text-primary" /> Developer CLI
+        <section className="py-16 bg-bg border-t border-border font-sans">
+            <div className="max-w-4xl mx-auto px-6 space-y-6">
+                <div className="text-center space-y-2">
+                    <Badge variant="outline" className="text-xs font-mono rounded-[4px] px-2.5 gap-1">
+                        <Terminal className="h-3 w-3 text-accent" /> Developer CLI
                     </Badge>
-                    <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+                    <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">
                         Integrate in one command
                     </h2>
-                    <p className="text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto">
+                    <p className="text-xs sm:text-sm text-text-secondary max-w-lg mx-auto">
                         Run PushDoc CLI locally or attach to your GitHub Actions pipeline.
                     </p>
                 </div>
 
-                <Card className="shadow-2xl border-border bg-card overflow-hidden">
-                    <CardHeader className="p-4 pb-3 border-b border-border bg-muted/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <Card className="bg-surface rounded-[6px] overflow-hidden">
+                    <CardHeader className="p-3 border-b border-border bg-surface-raised flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                            <div className="flex gap-1.5 mr-2">
-                                <div className="h-3 w-3 rounded-full bg-destructive/60" />
-                                <div className="h-3 w-3 rounded-full bg-amber-500/60" />
-                                <div className="h-3 w-3 rounded-full bg-emerald-500/60" />
-                            </div>
-                            <span className="text-xs font-mono text-muted-foreground">pushdoc-config.json</span>
+                            <span className="h-2 w-2 rounded-full bg-accent" />
+                            <span className="text-xs font-mono text-text-secondary">pushdoc-config.json</span>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                             {Object.keys(CODE_SNIPPETS).map((key) => (
                                 <Button
                                     key={key}
                                     variant={activeTab === key ? "secondary" : "ghost"}
                                     size="sm"
-                                    className="text-xs h-7 px-3 font-medium"
+                                    className={`text-xs h-6 px-2.5 rounded-[4px] font-sans ${activeTab === key ? "bg-surface text-text-primary font-semibold" : "text-text-secondary"}`}
                                     onClick={() => setActiveTab(key)}
                                 >
                                     {CODE_SNIPPETS[key].label}
@@ -96,23 +92,23 @@ export default function FrameworkSwitcher() {
                         </div>
                     </CardHeader>
 
-                    <CardContent className="p-6 font-mono text-xs space-y-4">
-                        <div className="flex items-center justify-between p-3 bg-muted/60 rounded-md border border-border">
-                            <div className="flex items-center gap-2 text-foreground">
-                                <span className="text-primary">$</span>
+                    <CardContent className="p-4 font-mono text-xs space-y-3">
+                        <div className="flex items-center justify-between p-2.5 bg-surface-raised rounded-[6px]">
+                            <div className="flex items-center gap-2 text-text-primary">
+                                <span className="text-accent font-semibold">$</span>
                                 <span>{snippet.cmd}</span>
                             </div>
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                className="h-6 w-6 text-text-muted hover:text-text-primary"
                                 onClick={handleCopy}
                             >
-                                {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                                {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
                             </Button>
                         </div>
 
-                        <pre className="text-muted-foreground p-4 bg-muted/30 rounded-md overflow-x-auto border border-border/50 text-[11px] leading-relaxed">
+                        <pre className="text-text-secondary p-3 bg-bg rounded-[6px] overflow-x-auto text-xs leading-relaxed">
                             {snippet.code}
                         </pre>
                     </CardContent>

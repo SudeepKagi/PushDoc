@@ -16,39 +16,37 @@ export default function LandingFooter({ setPage, handleLoginRedirect }) {
     };
 
     return (
-        <footer className="bg-background border-t border-border relative text-foreground">
-            {/* Polar CTA Banner */}
-            <div className="py-24 px-6 text-center max-w-4xl mx-auto relative z-10 space-y-6">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[250px] bg-primary/10 blur-[120px] rounded-full pointer-events-none -z-0" />
-                
-                <h2 className="text-4xl font-black tracking-tight text-foreground sm:text-6xl text-balance leading-tight">
+        <footer className="bg-bg border-t border-border relative text-text-primary font-sans">
+            {/* CTA Banner */}
+            <div className="py-16 px-6 text-center max-w-3xl mx-auto space-y-4">
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary leading-tight">
                     Everything you need to stop writing docs.
                 </h2>
-                <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+                <p className="text-xs sm:text-sm text-text-secondary max-w-lg mx-auto leading-relaxed">
                     Connect your GitHub repository in 30 seconds. PushDoc handles README updates automatically on every commit.
                 </p>
 
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                     <Button 
                         size="lg" 
                         onClick={() => setPage("connect")}
-                        className="gap-2 font-semibold rounded-full px-8 h-12 text-sm bg-foreground text-background hover:bg-foreground/90 shadow-md"
+                        className="gap-2 font-medium rounded-[6px] px-6 h-10 text-sm"
                     >
                         <Github className="h-4 w-4" />
                         <span>Get Started</span>
                         <ArrowRight className="h-4 w-4" />
                     </Button>
 
-                    <div className="flex items-center gap-3 bg-card border border-border rounded-full px-5 h-12 font-mono text-xs text-foreground shadow-sm">
-                        <span className="text-muted-foreground">$</span>
+                    <div className="flex items-center gap-2 bg-surface-raised rounded-[6px] px-4 h-10 font-mono text-xs text-text-primary">
+                        <span className="text-accent font-semibold">$</span>
                         <span>npx pushdoc@latest sync</span>
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            className="h-6 w-6 text-text-muted hover:text-text-primary ml-1"
                             onClick={handleCopy}
                         >
-                            {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                            {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
                         </Button>
                     </div>
                 </div>
@@ -56,42 +54,42 @@ export default function LandingFooter({ setPage, handleLoginRedirect }) {
 
             <Separator />
 
-            {/* Polar-style 4-Column Footer */}
-            <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-2 md:grid-cols-5 gap-8 text-xs text-muted-foreground">
-                <div className="col-span-2 space-y-4">
+            {/* Footer links */}
+            <div className="max-w-5xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-5 gap-8 text-xs text-text-secondary">
+                <div className="col-span-2 space-y-3">
                     <PushDocLogo />
-                    <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+                    <p className="text-xs text-text-secondary max-w-xs leading-relaxed">
                         Automated AI documentation platform for software developers and engineering teams.
                     </p>
-                    <p className="text-[11px] text-muted-foreground/60">
+                    <p className="text-xs text-text-muted font-mono">
                         © {year} PushDoc. All rights reserved.
                     </p>
                 </div>
 
-                <div className="space-y-3">
-                    <div className="font-semibold text-foreground text-xs uppercase tracking-wider">Product</div>
-                    <ul className="space-y-2">
-                        <li><a href="#features" className="hover:text-foreground transition-colors">Features</a></li>
-                        <li><a href="#architecture" className="hover:text-foreground transition-colors">AST Engine</a></li>
-                        <li><a href="#integrations" className="hover:text-foreground transition-colors">Ecosystem</a></li>
+                <div className="space-y-2">
+                    <div className="font-semibold text-text-primary text-xs uppercase font-mono tracking-wider">Product</div>
+                    <ul className="space-y-1.5">
+                        <li><a href="#features" className="text-text-secondary hover:text-text-primary transition-colors">Features</a></li>
+                        <li><a href="#architecture" className="text-text-secondary hover:text-text-primary transition-colors">AST Engine</a></li>
+                        <li><a href="#integrations" className="text-text-secondary hover:text-text-primary transition-colors">Ecosystem</a></li>
                     </ul>
                 </div>
 
-                <div className="space-y-3">
-                    <div className="font-semibold text-foreground text-xs uppercase tracking-wider">Resources</div>
-                    <ul className="space-y-2">
-                        <li><a href="#security" className="hover:text-foreground transition-colors">Security & Privacy</a></li>
-                        <li><a href="#faq" className="hover:text-foreground transition-colors">FAQ</a></li>
-                        <li><a href="https://pushdoc-api.onrender.com/health" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">API Status</a></li>
+                <div className="space-y-2">
+                    <div className="font-semibold text-text-primary text-xs uppercase font-mono tracking-wider">Resources</div>
+                    <ul className="space-y-1.5">
+                        <li><a href="#security" className="text-text-secondary hover:text-text-primary transition-colors">Security & Privacy</a></li>
+                        <li><a href="#faq" className="text-text-secondary hover:text-text-primary transition-colors">FAQ</a></li>
+                        <li><a href="https://pushdoc-api.onrender.com/" target="_blank" rel="noopener noreferrer" className="text-text-secondary hover:text-text-primary transition-colors">API Status</a></li>
                     </ul>
                 </div>
 
-                <div className="space-y-3">
-                    <div className="font-semibold text-foreground text-xs uppercase tracking-wider">Company</div>
-                    <ul className="space-y-2">
-                        <li><a href="https://github.com/SudeepKagi/PushDoc" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">GitHub Repository</a></li>
-                        <li><a href="#security" className="hover:text-foreground transition-colors">Privacy Policy</a></li>
-                        <li><a href="#security" className="hover:text-foreground transition-colors">Terms of Service</a></li>
+                <div className="space-y-2">
+                    <div className="font-semibold text-text-primary text-xs uppercase font-mono tracking-wider">Company</div>
+                    <ul className="space-y-1.5">
+                        <li><a href="https://github.com/SudeepKagi/PushDoc" target="_blank" rel="noopener noreferrer" className="text-text-secondary hover:text-text-primary transition-colors">GitHub Repository</a></li>
+                        <li><a href="#security" className="text-text-secondary hover:text-text-primary transition-colors">Privacy Policy</a></li>
+                        <li><a href="#security" className="text-text-secondary hover:text-text-primary transition-colors">Terms of Service</a></li>
                     </ul>
                 </div>
             </div>

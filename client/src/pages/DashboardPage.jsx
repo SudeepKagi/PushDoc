@@ -66,34 +66,34 @@ export default function DashboardPage({ repos, openDetails, triggerSync, token, 
     }, [filteredRepos.length, totalPages, page]);
 
     return (
-        <div className="space-y-8 max-w-7xl mx-auto py-6">
+        <div className="space-y-6 max-w-7xl mx-auto py-4 font-sans">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                    <h1 className="text-xl font-semibold tracking-tight text-text-primary">
                         Repositories
                     </h1>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-xs text-text-secondary mt-0.5">
                         Manage AI-powered README generation and auto-commit preferences.
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
                         size="sm"
-                        className="gap-2 font-medium"
+                        className="gap-1.5 text-xs font-medium h-8 rounded-[6px]"
                         onClick={() => setAppPage("logs")}
                     >
-                        <Terminal className="h-4 w-4" />
+                        <Terminal className="h-3.5 w-3.5" />
                         <span>View Logs</span>
                     </Button>
                     <Button
                         size="sm"
                         disabled={syncing}
-                        className="gap-2 font-medium shadow-sm"
+                        className="gap-1.5 text-xs font-medium h-8 rounded-[6px]"
                         onClick={() => triggerSync(token)}
                     >
-                        <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+                        <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
                         <span>{syncing ? "Syncing..." : "Refresh List"}</span>
                     </Button>
                 </div>
@@ -108,23 +108,23 @@ export default function DashboardPage({ repos, openDetails, triggerSync, token, 
             />
 
             {/* Filter and Search Bar Section */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                 <Tabs value={filter} onValueChange={setFilter} className="w-full sm:w-auto">
-                    <TabsList>
-                        <TabsTrigger value="all">All Repositories</TabsTrigger>
-                        <TabsTrigger value="active">Active</TabsTrigger>
-                        <TabsTrigger value="inactive">Inactive</TabsTrigger>
+                    <TabsList className="bg-surface-raised rounded-[6px] h-8 p-1">
+                        <TabsTrigger value="all" className="text-xs px-3 py-1 rounded-[4px]">All</TabsTrigger>
+                        <TabsTrigger value="active" className="text-xs px-3 py-1 rounded-[4px]">Active</TabsTrigger>
+                        <TabsTrigger value="inactive" className="text-xs px-3 py-1 rounded-[4px]">Inactive</TabsTrigger>
                     </TabsList>
                 </Tabs>
 
-                <div className="relative w-full sm:w-72">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-text-muted" />
                     <Input
                         type="search"
                         placeholder="Search repositories..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9 h-9"
+                        className="pl-8 h-8 text-xs font-mono rounded-[6px]"
                     />
                 </div>
             </div>
@@ -142,17 +142,16 @@ export default function DashboardPage({ repos, openDetails, triggerSync, token, 
             {/* Pagination Footer */}
             {filteredRepos.length > 0 && totalPages > 1 && (
                 <div className="flex items-center justify-between pt-4 border-t border-border">
-                    <p className="text-xs text-muted-foreground">
-                        Showing page <span className="font-medium text-foreground">{page}</span> of{" "}
-                        <span className="font-medium text-foreground">{totalPages}</span> ({filteredRepos.length} total)
+                    <p className="text-xs text-text-secondary font-mono">
+                        Page {page} of {totalPages} ({filteredRepos.length} total)
                     </p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                         <Button
                             variant="outline"
                             size="sm"
                             disabled={page === 1}
                             onClick={() => setPage(p => Math.max(1, p - 1))}
-                            className="gap-1 h-8 text-xs"
+                            className="gap-1 h-7 text-xs rounded-[6px]"
                         >
                             <ChevronLeft className="h-3.5 w-3.5" />
                             <span>Previous</span>
@@ -162,7 +161,7 @@ export default function DashboardPage({ repos, openDetails, triggerSync, token, 
                             size="sm"
                             disabled={page === totalPages}
                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                            className="gap-1 h-8 text-xs"
+                            className="gap-1 h-7 text-xs rounded-[6px]"
                         >
                             <span>Next</span>
                             <ChevronRight className="h-3.5 w-3.5" />
