@@ -1,4 +1,89 @@
-export const buildPrompt = (repositoryContext) => {
+/**
+ * Prompt Builder
+ *
+ * Builds the final generation prompt for the README. Accepts a pre-computed
+ * `facts` object (from facts.extractor.js) as an optional second argument.
+ * When provided, it injects a GROUNDING CONSTRAINT block that lists the exact
+ * identifiers the model may reference — packages, routes, env vars, scripts.
+ * This is the primary hallucination-prevention mechanism on the generation side
+ * (the critic handles detection on the output side).
+ */
+
+/**
+ * Builds a machine-readable grounding constraint block from the facts object.
+ *
+ * The block lists the exact identifiers that were extracted from static analysis.
+ * The model is instructed that it may only reference identifiers from this list.
+ * If the facts object is null or empty, returns an empty string so the prompt
+ * degrades gracefully to the original behavior.
+ *
+ * @param {object|null} facts - Output of extractFacts()
+ * @returns {string} Grounding constraint prompt block, or "" if facts is empty
+ */
+const buildGroundingConstraint = (facts) => {
+    if (!facts) return "";
+
+    const lines = [];
+
+    // Only inject the block if there is at least one non-empty fact category.
+    const hasPackages = (facts.dependencies?.length ?? 0) > 0;
+    const hasRoutes   = (facts.routes?.length ?? 0) > 0;
+    const hasEnvVars  = (facts.envFileVars?.length ?? 0) > 0;
+    const hasScripts  = (facts.scripts?.length ?? 0) > 0;
+
+    if (!hasPackages && !hasRoutes && !hasEnvVars && !hasScripts) return "";
+
+    lines.push(`
+========================
+GROUNDING CONSTRAINT — CRITICAL
+========================
+
+The following identifiers were extracted from this repository's code by static
+analysis. They are the ONLY values you may use when writing the README.
+Do NOT invent, assume, or guess any identifier not on these lists.
+If a list is empty, omit that section from the README entirely.
+`);
+
+    if (hasPackages) {
+        lines.push(`CONFIRMED PACKAGES (from package.json — these are the ONLY packages you may mention):`);
+        lines.push(facts.dependencies.join(", "));
+        lines.push("");
+    }
+
+    if (hasRoutes) {
+        lines.push(`CONFIRMED API ROUTES (from route files — these are the ONLY endpoints you may document):`);
+        for (const r of facts.routes) {
+            lines.push(`  ${r.method.padEnd(7)} ${r.path}`);
+        }
+        lines.push("");
+    }
+
+    if (hasEnvVars) {
+        lines.push(`CONFIRMED ENV VARS (from .env.example — these are the ONLY variable names you may mention):`);
+        lines.push(facts.envFileVars.join(", "));
+        lines.push("");
+    }
+
+    if (hasScripts) {
+        lines.push(`CONFIRMED SCRIPTS (from package.json — these are the ONLY scripts you may document):`);
+        for (const s of facts.scripts) {
+            lines.push(`  ${s.name.padEnd(14)} ${s.command}`);
+        }
+        lines.push("");
+    }
+
+    return lines.join("\n");
+};
+
+/**
+ * @param {string} repositoryContext - Assembled context string from the context builder
+ * @param {object|null} facts        - Output of extractFacts(); if null, the constraint
+ *                                     block is omitted and the original behavior is preserved
+ * @returns {string} Full generation prompt
+ */
+export const buildPrompt = (repositoryContext, facts = null) => {
+
+    const groundingBlock = buildGroundingConstraint(facts);
 
     return `
 You are a senior technical writer and open-source documentation expert.
@@ -67,7 +152,7 @@ CRITICAL RULES
    - Routes (what does the API do end-to-end?)
    - Models (what data is tracked?)
    - Components/Pages (what does the user interface do? What are the main views?)
-
+${groundingBlock}
 ========================
 STYLE REQUIREMENTS — MANDATORY
 ========================
@@ -193,4 +278,4 @@ REPOSITORY CONTEXT
 ${repositoryContext}
 
 `;
-};
+};

@@ -9,6 +9,9 @@ const WORKSPACE_ROOT = config.workspace.root;
 // Maximum age of a stale workspace before it gets force-cleaned (30 minutes)
 const STALE_WORKSPACE_MAX_AGE_MS = 30 * 60 * 1000;
 
+// Active workspace timeouts: Map<jobId, NodeJS.Timeout>
+const activeWorkspaceTimeouts = new Map();
+
 if (!fs.existsSync(WORKSPACE_ROOT)) {
     try {
         fs.mkdirSync(WORKSPACE_ROOT, {
@@ -73,6 +76,8 @@ export function getRepositoryPath(
 
 export function cleanupWorkspace(jobId) {
     const cleanId = validateJobId(jobId);
+    clearWorkspaceTimeout(cleanId);
+
     const workspacePath = path.join(
         WORKSPACE_ROOT,
         cleanId
@@ -87,6 +92,57 @@ export function cleanupWorkspace(jobId) {
         }
     } catch (err) {
         throw new WorkspaceError(`Failed to cleanup workspace directory for job ${cleanId}: ${err.message}`);
+    }
+}
+
+/**
+ * Sets a hard maximum lifetime timeout on a workspace directory.
+ * If the job hangs or dies without calling cleanupWorkspace, this timeout
+ * fires and deletes the directory from disk.
+ *
+ * @param {string} jobId
+ * @param {number} [ms=600000] - Default: 10 minutes (600,000 ms)
+ */
+export function setWorkspaceTimeout(jobId, ms = 10 * 60 * 1000) {
+    const cleanId = validateJobId(jobId);
+    
+    // Clear any existing timeout for this jobId
+    if (activeWorkspaceTimeouts.has(cleanId)) {
+        clearTimeout(activeWorkspaceTimeouts.get(cleanId));
+    }
+
+    const timer = setTimeout(() => {
+        try {
+            logger.warn(cleanId, `Workspace lifetime limit reached (${Math.round(ms / 60000)}m) — triggering forced cleanup`);
+            cleanupWorkspace(cleanId);
+        } catch (err) {
+            logger.warn(cleanId, `Timeout forced workspace cleanup failed: ${err.message}`);
+        } finally {
+            activeWorkspaceTimeouts.delete(cleanId);
+        }
+    }, ms);
+
+    // Unref so the timer doesn't prevent Node process exit during graceful shutdown
+    if (timer.unref) {
+        timer.unref();
+    }
+
+    activeWorkspaceTimeouts.set(cleanId, timer);
+    return timer;
+}
+
+/**
+ * Clears the active workspace timeout for a completed/cleaned job.
+ */
+export function clearWorkspaceTimeout(jobId) {
+    try {
+        const cleanId = validateJobId(jobId);
+        if (activeWorkspaceTimeouts.has(cleanId)) {
+            clearTimeout(activeWorkspaceTimeouts.get(cleanId));
+            activeWorkspaceTimeouts.delete(cleanId);
+        }
+    } catch {
+        // Ignore invalid IDs on cleanup
     }
 }
 

@@ -1,6 +1,9 @@
 import * as repositoryAnalyzer from "../analyzers/repository.analyzer.js";
 import * as embeddingService  from "../services/embedding.service.js";
 import * as retrievalService  from "../services/retrieval.service.js";
+import * as dependencyGraph   from "../analyzers/dependency.graph.js";
+import { config }             from "../config/app.config.js";
+import * as logger            from "../services/logger.service.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -83,62 +86,92 @@ export const buildRepositoryContext = async (repository, precalculatedKnowledge)
     const knowledge = precalculatedKnowledge || repositoryAnalyzer.analyzeRepository(repository);
     const projectType = knowledge.projectType || "backend";
 
-    // 2. Inject project type as the first line so the AI knows the architecture upfront
+    // 2. Tier-1: Zero-LLM deterministic header — built from static analysis only.
+    // This section always appears first and never requires an AI call, so it
+    // cannot hallucinate. The LLM sees the framework, entry points, and tree
+    // before any generated text.
+    context += buildTier1Section(repository.files, knowledge);
+
+    // 3. Inject project type
     context += `================================================================================\r\nPROJECT TYPE: ${projectType.toUpperCase()}\r\n================================================================================\r\n\r\n`;
 
-    // 3. Format PROJECT section
+    // 4. Format PROJECT section
     const packageInfo = knowledge.package;
     if (packageInfo) {
         context += buildProjectSection(packageInfo);
         context += buildTechStackSection(packageInfo);
     }
 
-    // 4. Format FOLDER STRUCTURE section (derived from actual file paths)
+    // 5. Format FOLDER STRUCTURE section (derived from actual file paths)
     context += buildFolderStructureSection(repository.files);
 
-    // 5. Format APPLICATION FEATURES section
+    // 6. Format APPLICATION FEATURES section
     if (knowledge.features) {
         context += buildFeaturesSection(knowledge.features);
     }
 
-    // 6. Format DETERMINISTIC AST FACTS section (API calls, process.env, .env.example)
+    // 7. Format DETERMINISTIC AST FACTS section (API calls, process.env, .env.example)
     if (knowledge.ast) {
         context += buildAstSection(knowledge.ast);
     }
 
-    // 7. Format API OVERVIEW section (backend/fullstack only)
+    // 8. Format API OVERVIEW section (backend/fullstack only)
     if (knowledge.routes && knowledge.routes.length > 0) {
         context += buildApiOverviewSection(knowledge.routes);
     }
 
-    // 8. Format DATABASE MODELS section (backend/fullstack only)
+    // 9. Format DATABASE MODELS section (backend/fullstack only)
     if (knowledge.models && knowledge.models.length > 0) {
         context += buildModelsSection(knowledge.models);
     }
 
-    // 9. Format CONTROLLERS section (backend/fullstack only)
+    // 10. Format CONTROLLERS section (backend/fullstack only)
     if (knowledge.controllers && knowledge.controllers.length > 0) {
         context += buildControllersSection(knowledge.controllers);
     }
 
-    // 10. Raw Source Inclusion: Branch by repository size
+    // 11. Raw Source Inclusion: Branch by repository size
     const RAG_THRESHOLD_FILE_COUNT = 40;
     if (repository.files && repository.files.length > RAG_THRESHOLD_FILE_COUNT) {
         try {
-            const chunks = embeddingService.chunkRepository(repository.files);
+            // Select only the top-N most-imported files for embedding.
+            // This limits embedding API calls to the architecturally important files.
+            const topN = config.rag.topNFiles;
+            const candidateFiles = dependencyGraph.selectTopFiles(repository.files, topN);
+            logger.info(`RAG: selected ${candidateFiles.length}/${repository.files.length} files by centrality for embedding`);
+
+            const chunks = embeddingService.chunkRepository(candidateFiles);
             const vectorIndex = await embeddingService.buildVectorIndex(chunks);
 
+            const topNChunks = config.rag.topNChunks;
             const relevantChunks = await retrievalService.queryVectorIndex(
                 vectorIndex,
                 "Main application entry point, core features, API routes, data flow, external integrations",
-                12
+                topNChunks
             );
 
             context += buildRagSourceSection(relevantChunks);
-            return context;
-        } catch {
-            // Fallback to standard raw source section on embedding error
+        } catch (err) {
+            logger.warn(`RAG embedding failed, falling back to raw source: ${err.message}`);
+            context += buildRawSourceSection(repository.files, projectType);
         }
+
+        // Apply token budget: if context exceeds the limit for this repo's size tier,
+        // truncate at the char limit. We truncate from the end so the deterministic
+        // Tier-1 section (which comes first) is always preserved.
+        const fileCount = repository.files.length;
+        const budget = fileCount > 150
+            ? config.tokenBudget.large
+            : fileCount > 40
+                ? config.tokenBudget.medium
+                : config.tokenBudget.small;
+
+        if (context.length > budget) {
+            logger.warn(`Context (${context.length} chars) exceeded budget (${budget} chars) — truncating`);
+            context = context.slice(0, budget);
+        }
+
+        return context;
     }
 
     // Default for small repos (<= 40 files)
@@ -146,6 +179,81 @@ export const buildRepositoryContext = async (repository, precalculatedKnowledge)
 
     return context;
 };
+
+/**
+ * Tier-1 Zero-LLM Section
+ *
+ * Built entirely from static analysis — no AI calls, no retrieval.
+ * Detects the framework, entry points, and scripts from the file list and
+ * package.json. This section always appears first in the context so the model
+ * sees deterministic facts before any retrieved or generated content.
+ */
+function buildTier1Section(files, knowledge) {
+    const fileNames = new Set(
+        (files || []).map(f => f.path.replace(/\\/g, "/").split("/").pop().toLowerCase())
+    );
+    const allPaths = (files || []).map(f => f.path.replace(/\\/g, "/").toLowerCase());
+
+    // ── Framework detection ──────────────────────────────────────────────
+    // Check for framework-specific config files and package.json dependencies.
+    const deps = {
+        ...(knowledge.package?.project?.dependencies || {}),
+        ...(knowledge.package?.project?.devDependencies || {}),
+    };
+
+    const frameworks = [];
+    if (fileNames.has("next.config.js") || fileNames.has("next.config.ts") || deps["next"]) {
+        frameworks.push("Next.js");
+    }
+    if (fileNames.has("vite.config.js") || fileNames.has("vite.config.ts") || deps["vite"]) {
+        frameworks.push("Vite");
+    }
+    if (fileNames.has("astro.config.mjs") || deps["astro"]) {
+        frameworks.push("Astro");
+    }
+    if (fileNames.has("nuxt.config.js") || deps["nuxt"] || deps["nuxt3"]) {
+        frameworks.push("Nuxt");
+    }
+    if (fileNames.has("svelte.config.js") || deps["svelte"] || deps["@sveltejs/kit"]) {
+        frameworks.push("SvelteKit");
+    }
+    if (deps["express"]) frameworks.push("Express");
+    if (deps["fastify"]) frameworks.push("Fastify");
+    if (deps["nestjs"] || deps["@nestjs/core"]) frameworks.push("NestJS");
+    if (deps["koa"])    frameworks.push("Koa");
+
+    // ── Entry point detection ────────────────────────────────────────────
+    const entryPointCandidates = [
+        "server.js", "server.ts", "app.js", "app.ts",
+        "index.js", "index.ts",
+        "main.js", "main.ts", "main.jsx", "main.tsx",
+        "src/index.js", "src/index.ts", "src/main.js", "src/main.ts",
+    ];
+    const entryPoints = entryPointCandidates.filter(ep =>
+        allPaths.some(p => p.endsWith(ep))
+    );
+
+    // ── Package scripts ──────────────────────────────────────────────────
+    const scripts = knowledge.package?.project?.scripts || {};
+    const scriptLines = Object.entries(scripts)
+        .map(([name, cmd]) => `  ${name.padEnd(14)} ${cmd}`)
+        .join("\n");
+
+    // ── Assemble section ─────────────────────────────────────────────────
+    let section = `================================================================================
+TIER-1 DETERMINISTIC FACTS (zero LLM calls — static analysis only)
+================================================================================\n`;
+
+    section += `Detected Frameworks: ${frameworks.length > 0 ? frameworks.join(", ") : "None detected"}\n`;
+    section += `Entry Points:        ${entryPoints.length > 0 ? entryPoints.join(", ") : "Not detected"}\n`;
+
+    if (scriptLines) {
+        section += `\nPackage Scripts:\n${scriptLines}\n`;
+    }
+
+    section += "\n";
+    return section;
+}
 
 function buildRagSourceSection(relevantChunks) {
     let section = `================================================================================

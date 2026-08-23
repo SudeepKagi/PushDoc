@@ -10,8 +10,9 @@
  * Non-zero exit code means failure.
  */
 
-import { createWorkspace, getRepositoryPath, cleanupWorkspace } from "../services/workspace.service.js";
+import { createWorkspace, getRepositoryPath, cleanupWorkspace, setWorkspaceTimeout, clearWorkspaceTimeout } from "../services/workspace.service.js";
 import { createAuthenticatedCloneUrl, pushChanges } from "../services/git.service.js";
+import { redact } from "../services/logger.service.js";
 import { ValidationError, GitError } from "../utils/errors.js";
 
 let passed = 0;
@@ -77,6 +78,14 @@ test("blocks path traversal in cleanupWorkspace via malicious jobId", () => {
     }).toThrow(ValidationError);
 });
 
+console.log("\n── Workspace Timeout Lifecycle ──");
+
+test("schedules and clears workspace lifetime timeout without errors", () => {
+    const timer = setWorkspaceTimeout("job-timeout-test-123", 5000);
+    if (!timer) throw new Error("Expected setWorkspaceTimeout to return a timer object");
+    clearWorkspaceTimeout("job-timeout-test-123");
+});
+
 console.log("\n── Git Token Redaction & Sanitization ──");
 
 test("validates Git clone auth URL builder arguments", () => {
@@ -106,6 +115,49 @@ test("blocks git push on invalid branch formats", async () => {
         if (!(err instanceof ValidationError)) {
             throw new Error(`Expected ValidationError, got ${err.constructor.name}: ${err.message}`);
         }
+    }
+});
+
+console.log("\n── Logger Token Redaction ──");
+
+test("redacts GitHub personal access tokens", () => {
+    const raw = "Cloning with token ghp_1234567890abcdef1234567890abcdef";
+    const redacted = redact(raw);
+    if (redacted.includes("ghp_1234567890")) {
+        throw new Error("GitHub token was not redacted");
+    }
+    if (!redacted.includes("[REDACTED_GITHUB_TOKEN]")) {
+        throw new Error(`Expected [REDACTED_GITHUB_TOKEN], got: ${redacted}`);
+    }
+});
+
+test("redacts GitHub app server tokens and Bearer headers", () => {
+    const raw = "Authorization: Bearer ghs_abcdef1234567890abcdef123456";
+    const redacted = redact(raw);
+    if (redacted.includes("ghs_abcdef")) {
+        throw new Error("App server token was not redacted");
+    }
+    if (!redacted.includes("Bearer [REDACTED]")) {
+        throw new Error(`Expected Bearer [REDACTED], got: ${redacted}`);
+    }
+});
+
+test("redacts Groq and Gemini API keys", () => {
+    const rawGemini = "Connecting to Gemini with key AIzaSyAbcdef1234567890-_1234567890123";
+    const rawGroq = "Connecting to Groq with key gsk_1234567890abcdef1234567890";
+
+    const cleanGemini = redact(rawGemini);
+    const cleanGroq = redact(rawGroq);
+
+    if (cleanGemini.includes("AIzaSy")) throw new Error("Gemini key was not redacted");
+    if (cleanGroq.includes("gsk_")) throw new Error("Groq key was not redacted");
+});
+
+test("redacts basic auth credentials embedded in clone URLs", () => {
+    const raw = "git clone https://x-access-token:ghs_secret1234567890@github.com/org/repo.git";
+    const redacted = redact(raw);
+    if (redacted.includes("ghs_secret1234567890")) {
+        throw new Error("URL credentials were not redacted");
     }
 });
 

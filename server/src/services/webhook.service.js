@@ -1,11 +1,38 @@
 import crypto from "crypto";
 import readmeQueue from "../queue/queue.js";
+import redisConnection from "../queue/connection.js";
 import * as repositoryService from "./repository.service.js";
 import * as logger from "./logger.service.js";
 import { ValidationError } from "../utils/errors.js";
 
-export const handleWebhook = async (event, payload) => {
-    logger.info(`Processing Webhook Event: ${event}`);
+// How long to remember a delivery ID to prevent reprocessing (24 hours).
+// GitHub may redeliver a webhook if it doesn't receive a 2xx — this dedupes those.
+const DELIVERY_ID_TTL_SECONDS = 86_400;
+
+/**
+ * Called by the webhook controller after signature verification.
+ * Fire-and-forget from the controller — this runs after the 202 is sent.
+ *
+ * @param {string} event - X-GitHub-Event header value (e.g. "push")
+ * @param {object} payload - Parsed JSON body
+ * @param {string} deliveryId - X-GitHub-Delivery header value (unique per delivery)
+ */
+export const enqueueWebhook = async (event, payload, deliveryId) => {
+    logger.info(`Received webhook event: ${event} (delivery: ${deliveryId})`);
+
+    // Idempotency: check if we've already processed this exact delivery.
+    // Redis SET with NX (only set if Not eXists) and EX (TTL) is atomic —
+    // no race condition between the check and the set.
+    if (deliveryId) {
+        const key = `delivery:${deliveryId}`;
+        // Returns "OK" if key was set (first time seen), null if key already existed.
+        const result = await redisConnection.set(key, "1", "NX", "EX", DELIVERY_ID_TTL_SECONDS);
+        if (result === null) {
+            logger.info(`Skipping duplicate delivery ${deliveryId} (already processed)`);
+            return;
+        }
+    }
+
     switch (event) {
         case "push":
             return handlePushEvent(payload);
@@ -34,14 +61,8 @@ const handlePushEvent = async (payload) => {
         return;
     }
 
-    if (
-        latestCommit.message.startsWith(
-            "docs: update README"
-        )
-    ) {
-        logger.info(
-            "Skipping bot-generated README commit to avoid infinite generation loops"
-        );
+    if (latestCommit.message.startsWith("docs: update README")) {
+        logger.info("Skipping bot-generated README commit to avoid infinite generation loops");
         return;
     }
 
@@ -56,6 +77,7 @@ const handlePushEvent = async (payload) => {
         logger.info(
             `Ignoring push to non-default branch "${pushedBranch}" (default: "${defaultBranch}")`
         );
+        return;
     }
 
     const repository = await repositoryService.getRepositoryByGithubId(payload.repository.id);
@@ -69,6 +91,23 @@ const handlePushEvent = async (payload) => {
         return;
     }
 
+    // Security Gate: Validate that the incoming installation ID matches the repository's registered installation
+    const incomingInstallationId = payload.installation?.id;
+    if (incomingInstallationId && repository.installation?.installationId) {
+        if (incomingInstallationId.toString() !== repository.installation.installationId.toString()) {
+            logger.warn(
+                `Security: Webhook installation ID (${incomingInstallationId}) does not match registered installation ID (${repository.installation.installationId}) for ${repository.fullName} — dropping event`
+            );
+            return;
+        }
+    }
+
+    // Debounce burst pushes: using a deterministic jobId means BullMQ will
+    // silently drop a new job if one with the same ID is already waiting in
+    // the queue. This collapses rapid consecutive pushes to the same repo
+    // into a single job — the last push's commit SHA wins once the worker
+    // picks it up. No timer needed; BullMQ handles this natively.
+    const jobId = `repo-${repository.githubId}`;
 
     await readmeQueue.add(
         "generate-readme",
@@ -78,6 +117,7 @@ const handlePushEvent = async (payload) => {
             commitSha: payload.after,
         },
         {
+            jobId,
             // Retry up to 3 times with exponential backoff on transient errors
             attempts: 3,
             backoff: {
@@ -87,7 +127,7 @@ const handlePushEvent = async (payload) => {
         }
     );
 
-    logger.success("README generation job added to queue");
+    logger.success(`README generation job queued (jobId: ${jobId})`);
 };
 
 const handleInstallationRepositoriesEvent = async (payload) => {
@@ -127,10 +167,15 @@ const handleInstallationRepositoriesEvent = async (payload) => {
     }
 };
 
-export const verifySignature = (
-    signature,
-    rawBody
-) => {
+/**
+ * Verifies an X-Hub-Signature-256 header against the raw request body.
+ * Uses timingSafeEqual to prevent timing-based signature oracle attacks.
+ *
+ * @param {string} signature - Full "sha256=..." header value
+ * @param {Buffer} rawBody - Raw request body buffer (set by express.json verify callback)
+ * @returns {boolean}
+ */
+export const verifySignature = (signature, rawBody) => {
     if (!signature || !rawBody) {
         return false;
     }
@@ -143,10 +188,7 @@ export const verifySignature = (
 
     const expectedSignature =
         "sha256=" +
-        crypto.createHmac(
-            "sha256",
-            webhookSecret
-        )
+        crypto.createHmac("sha256", webhookSecret)
             .update(rawBody)
             .digest("hex");
 

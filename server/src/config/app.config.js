@@ -62,6 +62,38 @@ export const config = {
             delay: 5000,
         },
     },
+    cache: {
+        // How long to cache an embedding vector keyed by content SHA (7 days).
+        // Embeddings are expensive (Gemini API calls); 7 days is safe because
+        // the key encodes the exact content — any file change produces a new key.
+        embeddingTtlSeconds: 7 * 24 * 60 * 60,
+    },
+    circuitBreaker: {
+        // opossum circuit breaker settings applied per AI provider.
+        // timeout: abort a single generate() call if it takes longer than this (ms).
+        timeout: 30_000,
+        // Open the breaker after this % of calls in the rolling window fail.
+        errorThresholdPercentage: 50,
+        // After this many ms in the open state, try one request (half-open) to test recovery.
+        resetTimeout: 60_000,
+    },
+    tokenBudget: {
+        // Maximum context string length (chars, not tokens) per repo-size tier.
+        // Rough approximation: 4 chars per token. Gemini 2.5 Flash context is 1M tokens.
+        // We stay well under that to leave room for the prompt and generated output.
+        // On overflow, the lowest-ranked RAG chunks are dropped first.
+        small:  80_000,   // repos <= 40 files
+        medium: 120_000,  // repos 41–150 files
+        large:  160_000,  // repos > 150 files
+    },
+    rag: {
+        // Maximum number of files to select for embedding in large repos.
+        // Files are ranked by in-degree (dependency centrality) before selection.
+        // Raising this increases embedding cost; lowering it may miss key context.
+        topNFiles: 15,
+        // Number of RAG chunks to retrieve for the generation query.
+        topNChunks: 12,
+    },
 };
 
 export const validateConfig = () => {

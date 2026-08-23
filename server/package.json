@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "worker": "node src/workers/worker.js",
+    "worker:dev": "nodemon src/workers/worker.js"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +30,7 @@
     "mongoose": "^9.7.3",
     "morgan": "^1.11.0",
     "nodemon": "^3.1.14",
+    "opossum": "^10.0.0",
     "simple-git": "^3.36.0"
   }
 }

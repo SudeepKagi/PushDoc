@@ -1,4 +1,6 @@
 import { config } from "../config/app.config.js";
+import fs from "fs";
+import path from "path";
 
 const LEVELS = {
     DEBUG:   0,
@@ -10,8 +12,24 @@ const LEVELS = {
 
 const CURRENT_LEVEL = config.env === "production" ? LEVELS.INFO : LEVELS.DEBUG;
 
-import fs from "fs";
-import path from "path";
+/**
+ * Redacts sensitive tokens and secrets from log strings:
+ * - GitHub Personal Access Tokens (ghp_*, ghs_*, gho_*, ghu_*, ghr_*)
+ * - Bearer tokens (Bearer eyJ... or Bearer \S+)
+ * - Basic auth credentials in URLs (x-access-token:...@ or https://token@)
+ * - Groq and Gemini API keys (gsk_*, AIzaSy*)
+ */
+export const redact = (str) => {
+    if (typeof str !== "string") return str;
+
+    return str
+        .replace(/Bearer\s+[A-Za-z0-9._~+/-]+=*/gi, "Bearer [REDACTED]")
+        .replace(/gh[pousr]_[A-Za-z0-9_]{16,}/g, "[REDACTED_GITHUB_TOKEN]")
+        .replace(/gsk_[A-Za-z0-9_]{20,}/g, "[REDACTED_GROQ_KEY]")
+        .replace(/AIza[0-9A-Za-z_\-]{20,}/g, "[REDACTED_GEMINI_KEY]")
+        .replace(/x-access-token:[^@]+@/gi, "x-access-token:[REDACTED]@")
+        .replace(/(https?:\/\/)[^:]+:[^@]+@/gi, "$1[REDACTED]@");
+};
 
 const writeLogToFile = (jobId, logLine) => {
     try {
@@ -33,12 +51,12 @@ const formatLog = (levelIcon, levelName, jobIdOrMsg, msg) => {
     if (msg !== undefined) {
         jobId = ` [Job ${jobIdOrMsg}]`;
         message = msg;
-        const line = `[${timestamp}]${jobId} ${levelIcon} ${levelName}: ${message}`;
+        const line = redact(`[${timestamp}]${jobId} ${levelIcon} ${levelName}: ${message}`);
         writeLogToFile(jobIdOrMsg, line);
         return line;
     }
 
-    return `[${timestamp}]${jobId} ${levelIcon} ${levelName}: ${message}`;
+    return redact(`[${timestamp}]${jobId} ${levelIcon} ${levelName}: ${message}`);
 };
 
 export const divider = () => {

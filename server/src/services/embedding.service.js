@@ -1,11 +1,27 @@
+import crypto from "crypto";
 import { GoogleGenAI } from "@google/genai";
 import { config } from "../config/app.config.js";
+import * as cache from "./cache.service.js";
 
 const EMBEDDING_MODEL = "text-embedding-004";
 const MAX_CHUNK_LINES = 40;
 
 /**
+ * Computes a deterministic SHA-1 hash of a string.
+ * Used as the Redis cache key for embedding vectors.
+ *
+ * We use the chunk content (not the file path) as the input so:
+ *   - Renaming a file with identical content still gets a cache hit.
+ *   - Editing even one character in a file produces a new, distinct key.
+ *   - Two different files with the same content share one cached vector
+ *     (correct — identical text should produce identical embeddings).
+ */
+const contentSha = (text) =>
+    crypto.createHash("sha1").update(text).digest("hex");
+
+/**
  * Splits repository files into clean code chunks for embedding.
+ * Each chunk is a slice of a file's lines. Binary/asset files are skipped.
  */
 export const chunkRepository = (files) => {
     const chunks = [];
@@ -68,6 +84,13 @@ export const cosineSimilarity = (vecA, vecB) => {
 
 /**
  * Generates embeddings for a batch of text chunks using Gemini text-embedding-004.
+ *
+ * Cache strategy: before each API call, check Redis for a stored vector keyed
+ * by SHA-1(chunk.content). On a hit, use the cached vector (no API call). On a
+ * miss, call the API and write the result to Redis with a 7-day TTL.
+ *
+ * This means re-runs on unchanged files cost zero embedding API calls.
+ * Only files whose content actually changed (new SHA) incur an API call.
  */
 export const buildVectorIndex = async (chunks) => {
     const apiKey = config.ai.geminiKeys[0] || process.env.GEMINI_API_KEY;
@@ -77,31 +100,41 @@ export const buildVectorIndex = async (chunks) => {
 
     const ai = new GoogleGenAI({ apiKey });
     const indexedChunks = [];
+    const ttl = config.cache.embeddingTtlSeconds;
 
-    // Batch embed chunks (max 20 per request)
-    const BATCH_SIZE = 15;
-    for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
-        const batch = chunks.slice(i, i + BATCH_SIZE);
+    for (const chunk of chunks) {
+        try {
+            const sha = contentSha(chunk.content);
+            const cacheKey = `embed:${sha}`;
 
-        for (const chunk of batch) {
-            try {
-                const response = await ai.models.embedContent({
-                    model: EMBEDDING_MODEL,
-                    contents: chunk.content,
-                });
+            // Step 1: Check the cache. Returns the stored float array or null.
+            const cachedVector = await cache.get(cacheKey);
 
-                const values = response.embedding?.values;
-                if (values) {
-                    indexedChunks.push({
-                        ...chunk,
-                        vector: values,
-                    });
-                }
-            } catch {
-                // Ignore individual embedding failures to maintain resilience
+            if (cachedVector) {
+                // Cache hit — use stored vector, skip the API call entirely.
+                indexedChunks.push({ ...chunk, vector: cachedVector });
+                continue;
             }
+
+            // Step 2: Cache miss — call the Gemini embedding API.
+            const response = await ai.models.embedContent({
+                model: EMBEDDING_MODEL,
+                contents: chunk.content,
+            });
+
+            const values = response.embedding?.values;
+            if (values) {
+                // Step 3: Write to cache before returning so the next job can hit it.
+                await cache.set(cacheKey, values, ttl);
+                indexedChunks.push({ ...chunk, vector: values });
+            }
+        } catch {
+            // Ignore individual embedding failures to maintain resilience.
+            // A missing vector for one chunk just means it won't be retrieved;
+            // the rest of the index is still valid.
         }
     }
 
     return indexedChunks;
 };
+

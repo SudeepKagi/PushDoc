@@ -102,6 +102,12 @@ const readmeWorker = new Worker(
                 workspaceService.createWorkspace(
                     jobId
                 );
+            // Hard security ceiling: auto-delete workspace if job exceeds 10 minutes
+            workspaceService.setWorkspaceTimeout(
+                jobId,
+                10 * 60 * 1000
+            );
+
             logger.info(
                 jobId,
                 `Workspace: ${workspacePath}`

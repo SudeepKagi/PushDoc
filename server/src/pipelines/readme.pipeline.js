@@ -2,10 +2,12 @@ import * as repositoryReader from "../readers/repository.reader.js";
 import * as repositoryAnalyzer from "../analyzers/repository.analyzer.js";
 import * as repositoryContextBuilder from "../builders/repositoryContext.builder.js";
 import * as promptBuilder from "../builders/prompt.builder.js";
+import * as factsExtractor from "../analyzers/facts.extractor.js";
+import * as critic from "../analyzers/critic.js";
+import * as diagramService from "../services/diagram.service.js";
 import * as aiService from "../services/ai.service.js";
 import * as validatorService from "../services/validator.service.js";
 import * as logger from "../services/logger.service.js";
-
 
 export const generateReadme = async (
     repositoryPath,
@@ -34,6 +36,13 @@ export const generateReadme = async (
 
     logger.info(
         jobId,
+        "Extracting deterministic ground-truth facts..."
+    );
+
+    const facts = factsExtractor.extractFacts(knowledge);
+
+    logger.info(
+        jobId,
         "Building repository context..."
     );
 
@@ -43,17 +52,16 @@ export const generateReadme = async (
             knowledge
         );
 
-
     logger.info(
         jobId,
-        "Building prompt..."
+        "Building grounded prompt..."
     );
 
     const prompt =
         promptBuilder.buildPrompt(
-            repositoryContext
+            repositoryContext,
+            facts
         );
-
 
     logger.info(
         jobId,
@@ -67,23 +75,67 @@ export const generateReadme = async (
 
     logger.info(
         jobId,
+        "Generating deterministic Mermaid architecture diagram..."
+    );
+
+    const architectureSection = diagramService.generateArchitectureSection(repository.files);
+
+    let combinedReadme = rawReadme;
+    if (architectureSection && !combinedReadme.includes("```mermaid")) {
+        if (combinedReadme.includes("## 📁 Project Structure")) {
+            combinedReadme = combinedReadme.replace(
+                /(## 📁 Project Structure[\s\S]*?)(---|\n## )/,
+                `$1\n---\n\n${architectureSection}\n\n$2`
+            );
+        } else if (combinedReadme.includes("## ⚙️ Installation")) {
+            combinedReadme = combinedReadme.replace(
+                "## ⚙️ Installation",
+                `${architectureSection}\n---\n\n## ⚙️ Installation`
+            );
+        } else {
+            combinedReadme = `${combinedReadme}\n\n---\n\n${architectureSection}`;
+        }
+    }
+
+    logger.info(
+        jobId,
         "Validating and sanitizing generated README..."
     );
 
-    const readme = validatorService.validateAndSanitizeReadme(
-        rawReadme,
+    const sanitizedReadme = validatorService.validateAndSanitizeReadme(
+        combinedReadme,
         knowledge
     );
 
+    logger.info(
+        jobId,
+        "Running post-generation critic hallucination pass..."
+    );
+
+    const criticReport = critic.critique(sanitizedReadme, facts);
+
+    if (!criticReport.isClean) {
+        logger.warn(
+            jobId,
+            `Critic found ${criticReport.violations.length} ungrounded identifiers: ${criticReport.violations.map(v => `${v.type}:${v.value}`).join(", ")}`
+        );
+    } else {
+        logger.info(
+            jobId,
+            "Critic scan passed — zero ungrounded identifiers found"
+        );
+    }
+
     logger.success(
         jobId,
-        "README content generated & validated"
+        "README content generated, diagrammed, validated & critiqued"
     );
 
     return {
-        readme,
+        readme: sanitizedReadme,
         knowledge,
+        facts,
+        criticReport,
     };
 
 };
-

@@ -1,16 +1,20 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card.jsx";
 import { Button } from "../components/ui/button.jsx";
 import { Badge } from "../components/ui/badge.jsx";
 import { Separator } from "../components/ui/separator.jsx";
-import { ArrowLeft, Play, RefreshCw, CheckCircle2, Clock, FileText, Lock, Unlock, Sparkles, Terminal, Code2, GitCommit, AlertCircle } from "lucide-react";
+import { 
+    ArrowLeft, Play, RefreshCw, CheckCircle2, Clock, FileText, 
+    Lock, Unlock, Sparkles, Terminal, Code2, GitCommit, 
+    AlertCircle, Copy, Check, Eye, GitCompare, FileCode, ExternalLink
+} from "lucide-react";
 
 function ProgressTracker({ status }) {
     const steps = [
         { label: "Queued", icon: Clock, desc: "Pipeline job queued in worker queue", states: ["QUEUED"] },
         { label: "Cloning", icon: Terminal, desc: "Shallow cloning git commit diff", states: ["CLONING"] },
         { label: "AST Analyzing", icon: Code2, desc: "Extracting Express routes & database schemas", states: ["READING"] },
-        { label: "AI Writing", icon: Sparkles, desc: "Synthesizing documentation with Gemini AI", states: ["GENERATING", "WRITING"] },
+        { label: "AI Writing", icon: Sparkles, desc: "Synthesizing documentation with grounded facts", states: ["GENERATING", "WRITING"] },
         { label: "Committing", icon: FileText, desc: "Formatting README markdown artifact", states: ["COMMITTING"] },
         { label: "Pushing", icon: GitCommit, desc: "Pushing README commit to repository", states: ["PUSHING"] },
     ];
@@ -23,8 +27,8 @@ function ProgressTracker({ status }) {
     const progressPercent = isCompleted ? 100 : Math.max(10, Math.round(((currentStepIndex + 1) / steps.length) * 100));
 
     return (
-        <Card className="mb-6 border-border shadow-none bg-card/90">
-            <CardHeader className="p-5 pb-3 flex flex-row items-center justify-between border-b border-border">
+        <Card className="mb-6 border-border shadow-none glass-panel">
+            <CardHeader className="p-5 pb-3 flex flex-row items-center justify-between border-b border-border/70">
                 <div className="flex items-center gap-2.5">
                     <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                         <RefreshCw className="h-4 w-4 animate-spin text-primary" />
@@ -70,7 +74,7 @@ function ProgressTracker({ status }) {
                                         ? "bg-primary/10 border-primary text-foreground ring-1 ring-primary/30" 
                                         : isPassed 
                                             ? "bg-muted/40 border-border text-foreground" 
-                                            : "bg-card border-border/50 text-muted-foreground opacity-60"
+                                            : "bg-card/40 border-border/50 text-muted-foreground opacity-60"
                                 }`}
                             >
                                 <div className="flex items-center justify-between mb-1.5">
@@ -157,7 +161,7 @@ function renderMarkdown(rawContent) {
                 inCodeBlock = false;
                 const escaped = codeLines.join("\n")
                     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                html += `<pre class="bg-muted p-4 rounded-md overflow-x-auto text-xs font-mono border border-border my-3">${escaped}</pre>`;
+                html += `<pre class="bg-muted/80 p-4 rounded-md overflow-x-auto text-xs font-mono border border-border my-3 leading-relaxed">${escaped}</pre>`;
                 codeLines = [];
             }
             continue;
@@ -174,7 +178,7 @@ function renderMarkdown(rawContent) {
         if (!trimmed) { html += `<div class="h-2"></div>`; continue; }
 
         if (/^-{3,}$/.test(trimmed) || /^\*{3,}$/.test(trimmed) || /^_{3,}$/.test(trimmed)) {
-            html += `<hr class="my-4 border-border"/>`;
+            html += `<hr class="my-4 border-border/80"/>`;
             continue;
         }
 
@@ -218,10 +222,47 @@ function renderMarkdown(rawContent) {
     return html;
 }
 
+function DiffViewer({ original = "", generated = "" }) {
+    if (!original && !generated) {
+        return <div className="p-8 text-center text-xs text-muted-foreground">No diff data available.</div>;
+    }
+
+    const origLines = (original || "").split("\n");
+    const genLines = (generated || "").split("\n");
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[550px] overflow-hidden text-xs font-mono">
+            {/* Original */}
+            <div className="flex flex-col h-full rounded-md border border-border/80 bg-background/50 overflow-hidden">
+                <div className="p-2.5 bg-muted/70 border-b border-border font-semibold text-muted-foreground flex items-center justify-between">
+                    <span>Original README</span>
+                    <Badge variant="outline" className="text-[10px]">{origLines.length} lines</Badge>
+                </div>
+                <div className="p-3 overflow-y-auto flex-1 space-y-0.5 whitespace-pre-wrap leading-relaxed text-muted-foreground">
+                    {original || "(No original README found in repository)"}
+                </div>
+            </div>
+
+            {/* Generated */}
+            <div className="flex flex-col h-full rounded-md border border-primary/30 bg-primary/5 overflow-hidden">
+                <div className="p-2.5 bg-primary/10 border-b border-primary/20 font-semibold text-primary flex items-center justify-between">
+                    <span className="flex items-center gap-1.5"><Sparkles className="h-3 w-3" /> Grounded AI Generation</span>
+                    <Badge variant="default" className="text-[10px]">{genLines.length} lines</Badge>
+                </div>
+                <div className="p-3 overflow-y-auto flex-1 space-y-0.5 whitespace-pre-wrap leading-relaxed text-foreground">
+                    {generated || "(README has not been generated yet)"}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, jobs = [] }) {
     if (!selectedRepo) return null;
 
-    const [isTriggering, setIsTriggering] = React.useState(false);
+    const [isTriggering, setIsTriggering] = useState(false);
+    const [activeTab, setActiveTab] = useState("preview"); // "preview" | "diff" | "raw"
+    const [copied, setCopied] = useState(false);
 
     const latestJob = jobs.find(j => j.repository?._id === selectedRepo._id);
     const isRunning = isTriggering || (latestJob && ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(latestJob.status));
@@ -235,21 +276,28 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
         }
     };
 
+    const handleCopy = () => {
+        if (!latestJob?.generatedReadme) return;
+        navigator.clipboard.writeText(latestJob.generatedReadme);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
     const displayDuration = latestJob?.duration ? (latestJob.duration / 1000).toFixed(1) + "s" : "N/A";
     const displayLastRun = latestJob?.completedAt 
         ? new Date(latestJob.completedAt).toLocaleString("en-GB", { hour12: false }) 
         : "Never scanned";
 
-    const containerRef = React.useRef(null);
-    React.useEffect(() => {
-        if (!containerRef.current) return;
+    const containerRef = useRef(null);
+    useEffect(() => {
+        if (!containerRef.current || activeTab !== "preview") return;
         containerRef.current.innerHTML = renderMarkdown(latestJob?.generatedReadme || "");
-    }, [latestJob?.generatedReadme]);
+    }, [latestJob?.generatedReadme, activeTab]);
 
     const activeStatus = isTriggering ? "QUEUED" : latestJob?.status;
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto py-4">
+        <div className="space-y-6 max-w-7xl mx-auto py-4 animate-fade-in-up">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -269,17 +317,30 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                             {selectedRepo.private ? "Private" : "Public"}
                         </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{selectedRepo.fullName}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 font-mono">{selectedRepo.fullName}</p>
                 </div>
-                <Button
-                    size="sm"
-                    className="gap-2 font-medium"
-                    onClick={handleManualTrigger}
-                    disabled={isRunning}
-                >
-                    {isRunning ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Play className="h-4 w-4" />}
-                    <span>{isRunning ? "Running Pipeline..." : "Trigger Manual Scan"}</span>
-                </Button>
+                <div className="flex items-center gap-2">
+                    {latestJob?.generatedReadme && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 text-xs font-medium"
+                            onClick={handleCopy}
+                        >
+                            {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                            <span>{copied ? "Copied!" : "Copy README"}</span>
+                        </Button>
+                    )}
+                    <Button
+                        size="sm"
+                        className="gap-2 font-medium glow-primary"
+                        onClick={handleManualTrigger}
+                        disabled={isRunning}
+                    >
+                        {isRunning ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Play className="h-4 w-4" />}
+                        <span>{isRunning ? "Running Pipeline..." : "Trigger Manual Scan"}</span>
+                    </Button>
+                </div>
             </div>
 
             {/* Live Progress Tracker */}
@@ -288,25 +349,82 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Content */}
+                {/* Main Review & Preview Card */}
                 <div className="lg:col-span-2 space-y-6">
-                    <Card className="shadow-none border-border">
-                        <CardHeader className="p-4 pb-3 border-b border-border flex flex-row items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-muted-foreground" />
-                                <CardTitle className="text-sm font-semibold">README.md Preview</CardTitle>
+                    <Card className="shadow-none border-border glass-panel">
+                        <CardHeader className="p-4 pb-3 border-b border-border/80 flex flex-row items-center justify-between gap-2">
+                            {/* Tab Switcher */}
+                            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/60">
+                                <button
+                                    onClick={() => setActiveTab("preview")}
+                                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                                        activeTab === "preview" 
+                                            ? "bg-card text-foreground shadow-sm font-semibold" 
+                                            : "text-muted-foreground hover:text-foreground"
+                                    }`}
+                                >
+                                    <Eye className="h-3.5 w-3.5" />
+                                    <span>Preview</span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab("diff")}
+                                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                                        activeTab === "diff" 
+                                            ? "bg-card text-foreground shadow-sm font-semibold" 
+                                            : "text-muted-foreground hover:text-foreground"
+                                    }`}
+                                >
+                                    <GitCompare className="h-3.5 w-3.5" />
+                                    <span>Review Diff</span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab("raw")}
+                                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                                        activeTab === "raw" 
+                                            ? "bg-card text-foreground shadow-sm font-semibold" 
+                                            : "text-muted-foreground hover:text-foreground"
+                                    }`}
+                                >
+                                    <FileCode className="h-3.5 w-3.5" />
+                                    <span>Raw Markdown</span>
+                                </button>
                             </div>
-                            <Badge variant="secondary" className="text-xs font-normal">GitHub Markdown</Badge>
+
+                            <Badge variant="secondary" className="text-xs font-normal font-mono hidden sm:inline-flex">
+                                GitHub Markdown
+                            </Badge>
                         </CardHeader>
-                        <CardContent className="p-6 h-[500px] overflow-y-auto">
+
+                        <CardContent className="p-6">
                             {!latestJob?.generatedReadme ? (
-                                <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
-                                    <FileText className="h-10 w-10 mb-2 opacity-50" />
-                                    <p className="text-sm font-medium">No README generated yet</p>
-                                    <p className="text-xs text-muted-foreground mt-1">Click Trigger Manual Scan above to generate docs.</p>
+                                <div className="h-[450px] flex flex-col items-center justify-center text-center text-muted-foreground">
+                                    <FileText className="h-10 w-10 mb-2 opacity-50 text-muted-foreground" />
+                                    <p className="text-sm font-medium text-foreground">No README generated yet</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Click Trigger Manual Scan above to generate documentation.</p>
                                 </div>
                             ) : (
-                                <div ref={containerRef} className="prose dark:prose-invert max-w-none text-xs" />
+                                <>
+                                    {activeTab === "preview" && (
+                                        <div className="h-[550px] overflow-y-auto pr-2">
+                                            <div ref={containerRef} className="prose dark:prose-invert max-w-none text-xs" />
+                                        </div>
+                                    )}
+
+                                    {activeTab === "diff" && (
+                                        <DiffViewer 
+                                            original={latestJob?.originalReadme} 
+                                            generated={latestJob?.generatedReadme} 
+                                        />
+                                    )}
+
+                                    {activeTab === "raw" && (
+                                        <div className="h-[550px] overflow-y-auto">
+                                            <pre className="p-4 bg-muted/80 rounded-md text-xs font-mono whitespace-pre-wrap border border-border leading-relaxed text-foreground">
+                                                {latestJob?.generatedReadme}
+                                            </pre>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </CardContent>
                     </Card>
@@ -314,29 +432,41 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
 
                 {/* Sidebar Properties */}
                 <div className="space-y-6">
-                    <Card className="shadow-none border-border">
+                    <Card className="shadow-none border-border glass-panel">
                         <CardHeader className="p-4 pb-2">
                             <CardTitle className="text-sm font-semibold">Repository Properties</CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 space-y-3 text-xs">
-                            <div className="flex justify-between items-center py-1.5 border-b border-border">
+                            <div className="flex justify-between items-center py-1.5 border-b border-border/80">
                                 <span className="text-muted-foreground">Default Branch</span>
                                 <Badge variant="secondary" className="font-mono text-xs">{selectedRepo.branch || "main"}</Badge>
                             </div>
-                            <div className="flex justify-between items-center py-1.5 border-b border-border">
+                            <div className="flex justify-between items-center py-1.5 border-b border-border/80">
                                 <span className="text-muted-foreground">Last Scanned</span>
                                 <span className="font-medium text-foreground">{displayLastRun}</span>
                             </div>
-                            <div className="flex justify-between items-center py-1.5 border-b border-border">
+                            <div className="flex justify-between items-center py-1.5 border-b border-border/80">
                                 <span className="text-muted-foreground">Scan Duration</span>
                                 <span className="font-medium text-foreground">{displayDuration}</span>
                             </div>
                             <div className="flex justify-between items-center py-1.5">
-                                <span className="text-muted-foreground">Auto-Commit</span>
+                                <span className="text-muted-foreground">Auto-Commit on Push</span>
                                 <Badge variant={selectedRepo.isActive ? "success" : "secondary"}>
-                                    {selectedRepo.isActive ? "Enabled" : "Disabled"}
+                                    {selectedRepo.isActive ? "Active" : "Disabled"}
                                 </Badge>
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-none border-border glass-panel">
+                        <CardHeader className="p-4 pb-2">
+                            <CardTitle className="text-sm font-semibold">Automation & Review Mode</CardTitle>
+                            <CardDescription className="text-xs">Review before committing</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-3 text-xs text-muted-foreground">
+                            <p>
+                                When pushes arrive, PushDoc analyzes AST structures and synthesizes documentation. You can review the diff side-by-side before manual or automated commits.
+                            </p>
                         </CardContent>
                     </Card>
                 </div>

@@ -30,3 +30,9 @@ export const getInstallationByUser = async (userId) => {
     });
 };
 
+export const getInstallationByInstallationId = async (installationId) => {
+    if (!installationId) return null;
+    return await Installation.findOne({
+        installationId,
+    });
+};
