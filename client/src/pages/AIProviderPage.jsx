@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card.jsx";
 import { Badge } from "../components/ui/badge.jsx";
 import { Button } from "../components/ui/button.jsx";
@@ -6,8 +6,8 @@ import { Input } from "../components/ui/input.jsx";
 import { Label } from "../components/ui/label.jsx";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "../components/ui/table.jsx";
 import { 
-    Cpu, Key, Eye, EyeOff, CheckCircle2, ShieldCheck, Zap, 
-    Lock, ShieldAlert, RefreshCw, Trash2, Info
+    Cpu, Eye, EyeOff, CheckCircle2, ShieldCheck, Zap, 
+    Lock, RefreshCw, Trash2
 } from "lucide-react";
 
 export default function AIProviderPage({
@@ -32,12 +32,53 @@ export default function AIProviderPage({
     isGeminiCustom,
     isGroqCustom
 }) {
+    const [savingGemini, setSavingGemini] = useState(false);
+    const [savingGroq, setSavingGroq] = useState(false);
+    const [clearingGemini, setClearingGemini] = useState(false);
+    const [clearingGroq, setClearingGroq] = useState(false);
+
+    const onSaveGemini = async () => {
+        setSavingGemini(true);
+        try {
+            await handleSaveGeminiKey();
+        } finally {
+            setTimeout(() => setSavingGemini(false), 500);
+        }
+    };
+
+    const onClearGemini = async () => {
+        setClearingGemini(true);
+        try {
+            await handleClearGeminiKey();
+        } finally {
+            setTimeout(() => setClearingGemini(false), 400);
+        }
+    };
+
+    const onSaveGroq = async () => {
+        setSavingGroq(true);
+        try {
+            await handleSaveGroqKey();
+        } finally {
+            setTimeout(() => setSavingGroq(false), 500);
+        }
+    };
+
+    const onClearGroq = async () => {
+        setClearingGroq(true);
+        try {
+            await handleClearGroqKey();
+        } finally {
+            setTimeout(() => setClearingGroq(false), 400);
+        }
+    };
+
     return (
-        <div className="space-y-6 max-w-7xl mx-auto py-4 font-sans">
+        <div className="space-y-6 max-w-6xl mx-auto py-2 font-sans">
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl font-semibold tracking-tight text-text-primary">AI Provider & API Security</h1>
-                    <p className="text-xs text-text-secondary mt-0.5">
+                    <p className="text-xs text-text-secondary mt-1">
                         Manage model failover priority, view key protection status, and configure custom BYOK tokens safely.
                     </p>
                 </div>
@@ -137,13 +178,13 @@ export default function AIProviderPage({
                 {/* Tokens Card */}
                 <Card className="bg-surface-raised rounded-[6px] flex flex-col justify-between p-4">
                     <CardHeader className="p-0 pb-2">
-                        <CardTitle className="text-xs font-semibold text-text-primary font-sans">Token Usage & Rate Limits</CardTitle>
-                        <CardDescription className="text-xs text-text-secondary font-sans">Monthly cluster consumption</CardDescription>
+                        <CardTitle className="text-xs font-semibold text-text-primary font-sans">Token Usage & Limits</CardTitle>
+                        <CardDescription className="text-xs text-text-secondary font-sans">Cluster resource metrics</CardDescription>
                     </CardHeader>
                     <CardContent className="p-0 pt-2 space-y-3">
                         <div>
                             <div className="text-2xl font-bold font-mono tracking-tight text-text-primary mb-0.5">7.7M</div>
-                            <p className="text-xs text-text-secondary font-sans">Total Tokens Processed across active repositories</p>
+                            <p className="text-xs text-text-secondary font-sans">Total Tokens Processed</p>
                         </div>
                         <div className="p-2.5 bg-surface rounded-[6px] text-xs text-text-secondary font-mono space-y-1">
                             <div className="flex justify-between">
@@ -212,17 +253,23 @@ export default function AIProviderPage({
                         )}
 
                         <div className="flex items-center gap-2 pt-1">
-                            <Button className="flex-1 h-8 font-medium text-xs rounded-[6px]" onClick={handleSaveGeminiKey}>
-                                Save Custom Key
+                            <Button 
+                                className="flex-1 h-8 font-medium text-xs rounded-[6px] gap-1.5" 
+                                onClick={onSaveGemini}
+                                disabled={savingGemini}
+                            >
+                                {savingGemini && <RefreshCw className="h-3 w-3 animate-spin" />}
+                                <span>{savingGemini ? "Saving..." : "Save Custom Key"}</span>
                             </Button>
                             {isGeminiCustom && (
                                 <Button 
                                     variant="outline" 
-                                    className="h-8 text-xs rounded-[6px] text-danger hover:bg-danger/10"
-                                    onClick={handleClearGeminiKey}
+                                    className="h-8 text-xs rounded-[6px] text-danger hover:bg-danger/10 gap-1"
+                                    onClick={onClearGemini}
+                                    disabled={clearingGemini}
                                 >
-                                    <Trash2 className="h-3.5 w-3.5 mr-1" />
-                                    Revert
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <span>{clearingGemini ? "Clearing..." : "Revert"}</span>
                                 </Button>
                             )}
                         </div>
@@ -279,17 +326,24 @@ export default function AIProviderPage({
                         )}
 
                         <div className="flex items-center gap-2 pt-1">
-                            <Button variant="outline" className="flex-1 h-8 font-medium text-xs rounded-[6px]" onClick={handleSaveGroqKey}>
-                                Save Custom Key
+                            <Button 
+                                variant="outline" 
+                                className="flex-1 h-8 font-medium text-xs rounded-[6px] gap-1.5" 
+                                onClick={onSaveGroq}
+                                disabled={savingGroq}
+                            >
+                                {savingGroq && <RefreshCw className="h-3 w-3 animate-spin" />}
+                                <span>{savingGroq ? "Saving..." : "Save Custom Key"}</span>
                             </Button>
                             {isGroqCustom && (
                                 <Button 
                                     variant="outline" 
-                                    className="h-8 text-xs rounded-[6px] text-danger hover:bg-danger/10"
-                                    onClick={handleClearGroqKey}
+                                    className="h-8 text-xs rounded-[6px] text-danger hover:bg-danger/10 gap-1"
+                                    onClick={onClearGroq}
+                                    disabled={clearingGroq}
                                 >
-                                    <Trash2 className="h-3.5 w-3.5 mr-1" />
-                                    Revert
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <span>{clearingGroq ? "Clearing..." : "Revert"}</span>
                                 </Button>
                             )}
                         </div>

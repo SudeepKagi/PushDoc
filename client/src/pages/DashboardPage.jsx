@@ -66,14 +66,14 @@ export default function DashboardPage({ repos, openDetails, triggerSync, token, 
     }, [filteredRepos.length, totalPages, page]);
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto py-4 font-sans">
+        <div className="space-y-6 max-w-6xl mx-auto py-2 font-sans">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl font-semibold tracking-tight text-text-primary">
                         Repositories
                     </h1>
-                    <p className="text-xs text-text-secondary mt-0.5">
+                    <p className="text-xs text-text-secondary mt-1">
                         Manage AI-powered README generation and auto-commit preferences.
                     </p>
                 </div>
@@ -84,17 +84,17 @@ export default function DashboardPage({ repos, openDetails, triggerSync, token, 
                         className="gap-1.5 text-xs font-medium h-8 rounded-[6px]"
                         onClick={() => setAppPage("logs")}
                     >
-                        <Terminal className="h-3.5 w-3.5" />
+                        <Terminal className="h-3.5 w-3.5 text-text-muted" />
                         <span>View Logs</span>
                     </Button>
                     <Button
                         size="sm"
                         disabled={syncing}
-                        className="gap-1.5 text-xs font-medium h-8 rounded-[6px]"
+                        className="gap-1.5 text-xs font-medium h-8 rounded-[6px] min-w-[100px]"
                         onClick={() => triggerSync(token)}
                     >
-                        <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
-                        <span>{syncing ? "Syncing..." : "Refresh List"}</span>
+                        <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin text-white" : ""}`} />
+                        <span>{syncing ? "Syncing..." : "Sync Repos"}</span>
                     </Button>
                 </div>
             </div>

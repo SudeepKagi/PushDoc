@@ -1,11 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card.jsx";
 import { Button } from "../components/ui/button.jsx";
 import { Input } from "../components/ui/input.jsx";
 import { Label } from "../components/ui/label.jsx";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select.jsx";
-import { Separator } from "../components/ui/separator.jsx";
-import { Settings, Webhook, GitBranch, Copy, Eye, EyeOff, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Settings, Webhook, GitBranch, Copy, Check, Eye, EyeOff, RefreshCw, CheckCircle2 } from "lucide-react";
 
 export default function SettingsPage({
     selectedRepo,
@@ -25,15 +24,39 @@ export default function SettingsPage({
     saveConfigurations,
     copyToClipboard
 }) {
+    const [saving, setSaving] = useState(false);
+    const [regenerating, setRegenerating] = useState(false);
+    const [copiedUrl, setCopiedUrl] = useState(false);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await saveConfigurations();
+        } finally {
+            setTimeout(() => setSaving(false), 600);
+        }
+    };
+
+    const handleRegenerateSecret = () => {
+        setRegenerating(true);
+        setTimeout(() => {
+            setRegenerating(false);
+            alert("Webhook secret regenerated and updated successfully!");
+        }, 800);
+    };
+
+    const handleCopy = (text) => {
+        copyToClipboard(text);
+        setCopiedUrl(true);
+        setTimeout(() => setCopiedUrl(false), 2000);
+    };
+
     return (
-        <div className="space-y-6 max-w-7xl mx-auto py-4 font-sans">
+        <div className="space-y-6 max-w-6xl mx-auto py-2 font-sans">
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <Settings className="h-4 w-4 text-text-muted" />
-                        <h1 className="text-xl font-semibold tracking-tight text-text-primary">Repository Settings</h1>
-                    </div>
-                    <p className="text-xs text-text-secondary mt-0.5">Configure webhooks, analysis branches, and automated generation rules</p>
+                    <h1 className="text-xl font-semibold tracking-tight text-text-primary">Repository Settings</h1>
+                    <p className="text-xs text-text-secondary mt-1">Configure webhooks, analysis branches, and automated generation rules</p>
                 </div>
             </header>
 
@@ -42,8 +65,8 @@ export default function SettingsPage({
                 <Card className="bg-surface rounded-[6px] p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="space-y-0.5">
-                            <Label className="text-xs font-semibold text-text-primary">Active Repository</Label>
-                            <p className="text-xs text-text-secondary">Select repository to view or edit target options</p>
+                            <Label className="text-xs font-semibold text-text-primary">Active Repository Context</Label>
+                            <p className="text-xs text-text-secondary">Select repository to view or edit target branch and output preferences</p>
                         </div>
                         <Select
                             value={selectedRepo?._id || ""}
@@ -84,9 +107,10 @@ export default function SettingsPage({
                                     variant="outline"
                                     size="icon"
                                     className="h-8 w-8 shrink-0 rounded-[6px]"
-                                    onClick={() => copyToClipboard("https://pushdoc-api.onrender.com/webhooks/github")}
+                                    onClick={() => handleCopy("https://pushdoc-api.onrender.com/webhooks/github")}
+                                    title="Copy Webhook URL"
                                 >
-                                    <Copy className="h-3.5 w-3.5" />
+                                    {copiedUrl ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
                                 </Button>
                             </div>
                         </div>
@@ -97,7 +121,7 @@ export default function SettingsPage({
                                 <Input
                                     type={webhookSecretVisible ? "text" : "password"}
                                     defaultValue="secret_token_1234567890"
-                                    className="font-mono text-xs h-8 rounded-[6px]"
+                                    className="font-mono text-xs h-8 rounded-[6px] pr-8"
                                 />
                                 <Button
                                     variant="ghost"
@@ -110,9 +134,15 @@ export default function SettingsPage({
                             </div>
                         </div>
 
-                        <Button variant="outline" size="sm" className="gap-1.5 h-7 text-xs rounded-[6px]" onClick={() => alert("Secret regenerated!")}>
-                            <RefreshCw className="h-3 w-3" />
-                            <span>Regenerate Secret</span>
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="gap-1.5 h-7 text-xs rounded-[6px]" 
+                            onClick={handleRegenerateSecret}
+                            disabled={regenerating}
+                        >
+                            <RefreshCw className={`h-3 w-3 ${regenerating ? "animate-spin" : ""}`} />
+                            <span>{regenerating ? "Regenerating..." : "Regenerate Secret"}</span>
                         </Button>
                     </CardContent>
                 </Card>
@@ -156,7 +186,7 @@ export default function SettingsPage({
             <Card className="bg-surface rounded-[6px]">
                 <CardHeader className="p-4 pb-2 border-b border-border bg-surface-raised">
                     <CardTitle className="text-xs font-semibold text-text-primary">Analysis Preferences</CardTitle>
-                    <CardDescription className="text-xs text-text-secondary">Toggle which analyzers run during processing</CardDescription>
+                    <CardDescription className="text-xs text-text-secondary">Toggle which AST analyzers run during pipeline execution</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                     <label className="flex items-start justify-between p-3 rounded-[6px] bg-surface-raised hover:bg-surface-raised/80 transition-colors cursor-pointer">
@@ -202,7 +232,7 @@ export default function SettingsPage({
 
             {/* Sticky Action Bar */}
             {hasUnsavedSettings && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-xl bg-surface-raised shadow-md rounded-[6px] p-3 flex items-center justify-between gap-4 z-50">
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-xl bg-surface-raised shadow-md rounded-[6px] p-3 flex items-center justify-between gap-4 z-50 border border-border">
                     <div className="flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                         <span className="text-xs text-text-primary font-medium">Unsaved changes in preferences</span>
@@ -211,13 +241,20 @@ export default function SettingsPage({
                         <Button
                             variant="ghost"
                             size="sm"
+                            disabled={saving}
                             className="h-7 text-xs rounded-[6px]"
                             onClick={() => { setPreferences({ routeAnalyzer: true, modelAnalyzer: true, controllerAnalyzer: false }); setHasUnsavedSettings(false); }}
                         >
                             Reset
                         </Button>
-                        <Button size="sm" className="h-7 text-xs font-medium rounded-[6px]" onClick={saveConfigurations}>
-                            Save Settings
+                        <Button 
+                            size="sm" 
+                            disabled={saving}
+                            className="h-7 text-xs font-medium rounded-[6px] gap-1.5" 
+                            onClick={handleSave}
+                        >
+                            {saving && <RefreshCw className="h-3 w-3 animate-spin" />}
+                            <span>{saving ? "Saving..." : "Save Settings"}</span>
                         </Button>
                     </div>
                 </div>
