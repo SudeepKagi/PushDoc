@@ -2,114 +2,146 @@ import React, { useState } from "react";
 import { Card, CardHeader, CardContent } from "../ui/card.jsx";
 import { Button } from "../ui/button.jsx";
 import { Badge } from "../ui/badge.jsx";
-import { Check, Copy, Terminal } from "lucide-react";
+import { Check, Code2, Sparkles, Layers } from "lucide-react";
 
-const CODE_SNIPPETS = {
+const FRAMEWORK_FACTS = {
     express: {
-        label: "Express.js",
-        cmd: "npx pushdoc@latest sync --framework express",
-        code: `// PushDoc AST Route & Model Extractor
-import { parseExpressRoutes } from "@pushdoc/ast";
-import app from "./app.js";
-
-const docs = await parseExpressRoutes(app, {
-  extractSchemas: true,
-  outputBranch: "main"
-});
-// ✓ Extracted 14 endpoints & Mongoose schemas`,
+        label: "Express.js & Mongoose",
+        badge: "REST API + Schemas",
+        description: "Parses Express route handlers, nested routers, middleware stacks, and Mongoose schema definitions.",
+        code: `// Deterministic AST Extraction Output for Express.js
+{
+  "framework": "Express.js",
+  "entryFile": "server.js",
+  "routes": [
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "controller": "authController.login",
+      "middleware": ["validateBody(loginSchema)", "rateLimiter"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/:id",
+      "controller": "userController.getUserById",
+      "middleware": ["requireAuth", "verifyOwnership"]
+    }
+  ],
+  "models": [
+    {
+      "name": "User",
+      "collection": "users",
+      "fields": ["email (String, Unique)", "role (Enum)", "passwordHash (String)"]
+    }
+  ]
+}`,
     },
     fastify: {
         label: "Fastify",
-        cmd: "npx pushdoc@latest sync --framework fastify",
-        code: `// PushDoc Fastify Route Parser
-import { parseFastifySchemas } from "@pushdoc/ast";
-import fastify from "./server.js";
-
-const docs = await parseFastifySchemas(fastify, {
-  includeAuthRoutes: true
-});
-// ✓ Extracted 9 Fastify JSON schema routes`,
+        badge: "JSON Schema Validation",
+        description: "Extracts Fastify route schemas, response validation objects, and lifecycle hooks automatically.",
+        code: `// Deterministic AST Extraction Output for Fastify
+{
+  "framework": "Fastify",
+  "entryFile": "app.js",
+  "routes": [
+    {
+      "method": "POST",
+      "url": "/api/v1/payments/charge",
+      "handler": "paymentHandler.createCharge",
+      "schema": {
+        "body": { "amount": "number", "currency": "string" },
+        "response": { "200": { "status": "string", "transactionId": "string" } }
+      }
+    }
+  ],
+  "plugins": ["@fastify/cors", "@fastify/jwt", "@fastify/rate-limit"]
+}`,
     },
     nextjs: {
-        label: "Next.js App Router",
-        cmd: "npx pushdoc@latest sync --framework next",
-        code: `// PushDoc Next.js Route Handler Extractor
-import { parseNextRoutes } from "@pushdoc/ast";
-
-const docs = await parseNextRoutes("./src/app/api", {
-  generateReadme: true
-});
-// ✓ Extracted App Router API handlers`,
+        label: "Next.js & Prisma",
+        badge: "App Router + ORM",
+        description: "Scans Next.js App Router route handlers (/app/api/.../route.ts) and Prisma schema models.",
+        code: `// Deterministic AST Extraction Output for Next.js & Prisma
+{
+  "framework": "Next.js App Router",
+  "routerType": "app-router",
+  "endpoints": [
+    {
+      "file": "app/api/projects/route.ts",
+      "methods": ["GET", "POST"],
+      "auth": "next-auth / server-session"
+    },
+    {
+      "file": "app/api/projects/[id]/route.ts",
+      "methods": ["GET", "PUT", "DELETE"]
+    }
+  ],
+  "prismaModels": [
+    { "model": "Project", "fields": ["id", "title", "ownerId", "createdAt"] },
+    { "model": "Member", "fields": ["id", "projectId", "userId", "role"] }
+  ]
+}`,
     },
 };
 
 export default function FrameworkSwitcher() {
     const [activeTab, setActiveTab] = useState("express");
-    const [copied, setCopied] = useState(false);
 
-    const snippet = CODE_SNIPPETS[activeTab];
-
-    const handleCopy = () => {
-        navigator.clipboard.writeText(snippet.cmd);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+    const activeFramework = FRAMEWORK_FACTS[activeTab];
 
     return (
         <section className="py-16 bg-bg border-t border-border font-sans">
             <div className="max-w-4xl mx-auto px-6 space-y-6">
                 <div className="text-center space-y-2">
                     <Badge variant="outline" className="text-xs font-mono rounded-[4px] px-2.5 gap-1">
-                        <Terminal className="h-3 w-3 text-accent" /> Developer CLI
+                        <Layers className="h-3 w-3 text-accent" /> Multi-Framework Support
                     </Badge>
                     <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">
-                        Integrate in one command
+                        Automated AST Codebase Extraction
                     </h2>
                     <p className="text-xs sm:text-sm text-text-secondary max-w-lg mx-auto">
-                        Run PushDoc CLI locally or attach to your GitHub Actions pipeline.
+                        PushDoc detects your repository stack automatically on push — zero configuration or packages required.
                     </p>
                 </div>
 
-                <Card className="bg-surface rounded-[6px] overflow-hidden">
+                <Card className="bg-surface rounded-[6px] overflow-hidden border border-border">
                     <CardHeader className="p-3 border-b border-border bg-surface-raised flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                            <span className="h-2 w-2 rounded-full bg-accent" />
-                            <span className="text-xs font-mono text-text-secondary">pushdoc-config.json</span>
+                            <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+                            <span className="text-xs font-mono text-text-secondary">Extracted AST Fact Graph</span>
                         </div>
 
                         <div className="flex items-center gap-1">
-                            {Object.keys(CODE_SNIPPETS).map((key) => (
+                            {Object.keys(FRAMEWORK_FACTS).map((key) => (
                                 <Button
                                     key={key}
                                     variant={activeTab === key ? "secondary" : "ghost"}
                                     size="sm"
-                                    className={`text-xs h-6 px-2.5 rounded-[4px] font-sans ${activeTab === key ? "bg-surface text-text-primary font-semibold" : "text-text-secondary"}`}
+                                    className={`text-xs h-6 px-2.5 rounded-[4px] font-sans ${activeTab === key ? "bg-surface text-text-primary font-semibold border border-border" : "text-text-secondary"}`}
                                     onClick={() => setActiveTab(key)}
                                 >
-                                    {CODE_SNIPPETS[key].label}
+                                    {FRAMEWORK_FACTS[key].label}
                                 </Button>
                             ))}
                         </div>
                     </CardHeader>
 
                     <CardContent className="p-4 font-mono text-xs space-y-3">
-                        <div className="flex items-center justify-between p-2.5 bg-surface-raised rounded-[6px]">
-                            <div className="flex items-center gap-2 text-text-primary">
-                                <span className="text-accent font-semibold">$</span>
-                                <span>{snippet.cmd}</span>
+                        <div className="flex items-center justify-between p-2.5 bg-surface-raised rounded-[6px] border border-border">
+                            <div className="flex items-center gap-2 text-xs font-sans">
+                                <span className="font-semibold text-text-primary">{activeFramework.label}</span>
+                                <Badge variant="accent" className="text-[10px] font-mono">{activeFramework.badge}</Badge>
                             </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-text-muted hover:text-text-primary"
-                                onClick={handleCopy}
-                            >
-                                {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-                            </Button>
+                            <span className="text-text-muted text-xs font-mono">100% Ground Truth</span>
                         </div>
 
-                        <pre className="text-text-secondary p-3 bg-bg rounded-[6px] overflow-x-auto text-xs leading-relaxed">
-                            {snippet.code}
+                        <p className="text-xs text-text-secondary font-sans leading-relaxed">
+                            {activeFramework.description}
+                        </p>
+
+                        <pre className="text-text-primary p-3 bg-bg rounded-[6px] overflow-x-auto text-xs leading-relaxed border border-border">
+                            {activeFramework.code}
                         </pre>
                     </CardContent>
                 </Card>

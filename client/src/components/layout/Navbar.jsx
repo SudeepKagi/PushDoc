@@ -74,16 +74,6 @@ export default function Navbar({ page, setPage, user, handleLoginRedirect, logou
                 <div className="flex items-center gap-3">
                     {user && !isLanding ? (
                         <div className="flex items-center gap-3">
-                            <a 
-                                href="https://github.com/apps/pushdoc/installations/new" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="hidden md:inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary font-sans transition-colors"
-                            >
-                                <span>Add GitHub Org</span>
-                                <ExternalLink className="h-3 w-3" />
-                            </a>
-
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0 border border-border">
@@ -109,11 +99,15 @@ export default function Navbar({ page, setPage, user, handleLoginRedirect, logou
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => setPage("settings")}>
                                         <Settings className="mr-2 h-3.5 w-3.5 text-text-secondary" />
-                                        <span>Settings</span>
+                                        <span>Sync Settings</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => setPage("ai-provider")}>
                                         <ShieldCheck className="mr-2 h-3.5 w-3.5 text-text-secondary" />
                                         <span>AI & API Security</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => window.open("https://github.com/apps/pushdoc/installations/new", "_blank")}>
+                                        <ExternalLink className="mr-2 h-3.5 w-3.5 text-text-secondary" />
+                                        <span>Configure GitHub App</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => { logout(); setPage("landing"); }}>

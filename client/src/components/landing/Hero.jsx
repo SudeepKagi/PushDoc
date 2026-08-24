@@ -3,7 +3,7 @@ import { Button } from "../ui/button.jsx";
 import { Badge } from "../ui/badge.jsx";
 import { Card, CardHeader, CardContent } from "../ui/card.jsx";
 import { GithubIcon as Github } from "../ui/githubIcon.jsx";
-import { ArrowRight, Webhook, Code2, GitCommit, Sparkles, Check, Copy, CheckCircle2, FileText, Database, Shield, Zap, Layers } from "lucide-react";
+import { ArrowRight, Webhook, Code2, GitCommit, Sparkles, CheckCircle2, FileText, Database, Shield, Layers } from "lucide-react";
 
 const AUTHKIT_WIDGET_TABS = [
     {
@@ -103,38 +103,38 @@ const AUTHKIT_WIDGET_TABS = [
 ];
 
 export default function Hero({ handleLoginRedirect, setPage }) {
-    const [copied, setCopied] = useState(false);
     const [activeTabId, setActiveTabId] = useState("routes");
 
     const activeTab = AUTHKIT_WIDGET_TABS.find(t => t.id === activeTabId) || AUTHKIT_WIDGET_TABS[0];
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText("npx pushdoc@latest sync");
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+    const scrollToArchitecture = () => {
+        const el = document.getElementById("architecture");
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth" });
+        }
     };
 
     return (
         <section className="relative pt-24 pb-16 bg-bg text-text-primary font-sans">
             <div className="max-w-5xl mx-auto px-6 text-center space-y-6">
                 {/* Announcement chip */}
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[4px] bg-surface-raised text-xs font-mono">
-                    <span className="h-2 w-2 rounded-full bg-accent" />
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[4px] bg-surface-raised text-xs font-mono border border-border">
+                    <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                     <span className="text-text-primary font-medium">PushDoc 2.0</span>
-                    <span className="text-text-muted">• Automated Documentation Engine</span>
+                    <span className="text-text-muted">• Zero-Config GitHub App Pipeline</span>
                 </div>
 
-                {/* Headline: IBM Plex Sans 600, 36px scale */}
-                <h1 className="text-2xl sm:text-2xl font-semibold tracking-tight text-text-primary max-w-3xl mx-auto leading-tight">
+                {/* Headline */}
+                <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-text-primary max-w-3xl mx-auto leading-tight">
                     Your Codebase. Documented on Every Commit.
                 </h1>
 
                 {/* Subtitle */}
                 <p className="text-sm sm:text-base text-text-secondary max-w-xl mx-auto leading-relaxed">
-                    An AI-powered documentation engine that parses raw AST facts into clean, production-ready READMEs directly from Git.
+                    An automated GitHub App pipeline that extracts deterministic AST facts from your routes and schemas to generate production-ready READMEs on every git push.
                 </p>
 
-                {/* Action Controls */}
+                {/* Genuine Action Controls */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                     <Button 
                         size="lg" 
@@ -142,27 +142,23 @@ export default function Hero({ handleLoginRedirect, setPage }) {
                         className="gap-2 font-medium rounded-[6px] px-6 h-10 text-sm"
                     >
                         <Github className="h-4 w-4" />
-                        <span>Connect Repository</span>
+                        <span>Connect GitHub Repository</span>
                         <ArrowRight className="h-4 w-4" />
                     </Button>
 
-                    <div className="flex items-center gap-2 bg-surface-raised rounded-[6px] px-4 h-10 font-mono text-xs text-text-primary">
-                        <span className="text-accent">$</span>
-                        <span>npx pushdoc@latest sync</span>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 text-text-muted hover:text-text-primary ml-1"
-                            onClick={handleCopy}
-                        >
-                            {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-                        </Button>
-                    </div>
+                    <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={scrollToArchitecture}
+                        className="font-medium rounded-[6px] px-5 h-10 text-sm"
+                    >
+                        <span>How It Works</span>
+                    </Button>
                 </div>
 
                 {/* Interactive Live Canvas Widget */}
                 <div className="mt-12 text-left">
-                    <Card className="bg-surface rounded-[6px] overflow-hidden">
+                    <Card className="bg-surface rounded-[6px] overflow-hidden border border-border">
                         <div className="p-3 border-b border-border bg-surface-raised flex flex-wrap items-center justify-between gap-3">
                             <div className="flex items-center gap-2">
                                 <span className="h-2 w-2 rounded-full bg-accent" />
@@ -195,7 +191,7 @@ export default function Hero({ handleLoginRedirect, setPage }) {
                                 <p className="text-xs text-text-secondary font-sans leading-relaxed">{activeTab.desc}</p>
                             </div>
 
-                            <div className="p-3 bg-bg rounded-[6px] transition-all">
+                            <div className="p-3 bg-bg rounded-[6px] transition-all border border-border">
                                 {activeTab.renderPreview()}
                             </div>
                         </CardContent>
@@ -204,38 +200,38 @@ export default function Hero({ handleLoginRedirect, setPage }) {
 
                 {/* 3-Bento Feature Row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 text-left">
-                    <Card className="bg-surface-raised rounded-[6px]">
+                    <Card className="bg-surface-raised rounded-[6px] border border-border">
                         <CardContent className="p-4 space-y-2">
                             <div className="h-8 w-8 rounded-[4px] bg-surface flex items-center justify-center text-text-primary mb-2">
                                 <Webhook className="h-4 w-4 text-accent" />
                             </div>
-                            <h3 className="text-sm font-semibold text-text-primary font-sans">Zero-Config Webhooks</h3>
+                            <h3 className="text-sm font-semibold text-text-primary font-sans">Zero-Config GitHub Webhooks</h3>
                             <p className="text-xs text-text-secondary leading-relaxed font-sans">
-                                Fires automatically on git push events with sub-7ms payload parsing and HMAC cryptographic verification.
+                                Automatically fires on git push events with sub-7ms payload parsing and cryptographic HMAC-SHA256 verification.
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-surface-raised rounded-[6px]">
+                    <Card className="bg-surface-raised rounded-[6px] border border-border">
                         <CardContent className="p-4 space-y-2">
                             <div className="h-8 w-8 rounded-[4px] bg-surface flex items-center justify-center text-text-primary mb-2">
                                 <Code2 className="h-4 w-4 text-accent" />
                             </div>
-                            <h3 className="text-sm font-semibold text-text-primary font-sans">AST Fact Extraction</h3>
+                            <h3 className="text-sm font-semibold text-text-primary font-sans">Deterministic AST Fact Extraction</h3>
                             <p className="text-xs text-text-secondary leading-relaxed font-sans">
-                                Deterministically parses Express routes, Mongoose schemas, and APIs before AI prompt synthesis to prevent hallucinations.
+                                Extracts Express routes, Fastify endpoints, and Mongoose schemas before AI generation to prevent hallucinations.
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-surface-raised rounded-[6px]">
+                    <Card className="bg-surface-raised rounded-[6px] border border-border">
                         <CardContent className="p-4 space-y-2">
                             <div className="h-8 w-8 rounded-[4px] bg-surface flex items-center justify-center text-text-primary mb-2">
                                 <GitCommit className="h-4 w-4 text-accent" />
                             </div>
-                            <h3 className="text-sm font-semibold text-text-primary font-sans">Auto README Sync</h3>
+                            <h3 className="text-sm font-semibold text-text-primary font-sans">Automated Git Commits</h3>
                             <p className="text-xs text-text-secondary leading-relaxed font-sans">
-                                Commits clean, structured README markdown directly back to your default branch or pull request automatically.
+                                Commits clean, structured README markdown directly back to your default branch with 100-point validation scoring.
                             </p>
                         </CardContent>
                     </Card>
