@@ -96,3 +96,28 @@ export const getRepositoryDefaultBranchAndCommit = async (installationId, owner,
         throw new GitHubError(`Failed to fetch repository details from GitHub: ${error.message}`, error.status || 502);
     }
 };
+
+export const getRepositoryReadme = async (installationId, owner, repo) => {
+    try {
+        const installationOctokit = await githubApp.getInstallationOctokit(installationId);
+        const response = await installationOctokit.request(
+            "GET /repos/{owner}/{repo}/readme",
+            {
+                owner,
+                repo,
+            }
+        );
+        if (response.data && response.data.content) {
+            const buffer = Buffer.from(response.data.content, "base64");
+            return {
+                content: buffer.toString("utf8"),
+                name: response.data.name,
+                path: response.data.path,
+            };
+        }
+        return { content: "" };
+    } catch (error) {
+        // Return empty string if repository has no README on GitHub
+        return { content: "", error: error.message };
+    }
+};

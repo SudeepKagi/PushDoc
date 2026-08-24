@@ -6,8 +6,8 @@ import * as logger from "./src/services/logger.service.js";
 import { purgeStaleWorkspaces } from "./src/services/workspace.service.js";
 dotenv.config();
  
-// Support embedded worker for single-instance cloud deployments (e.g. Render free tier)
-if (process.env.EMBEDDED_WORKER === "true" || process.env.START_WORKER === "true") {
+// Support embedded worker for single-instance cloud deployments (Render, Railway, Fly, Local)
+if (process.env.SEPARATE_WORKER !== "true") {
     import("./src/workers/readme.worker.js")
         .then(() => logger.info("Embedded README worker initialized in-process"))
         .catch(err => logger.error(`Failed to start embedded worker: ${err.message}`));

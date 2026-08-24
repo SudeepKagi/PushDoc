@@ -11,7 +11,7 @@ const jobSchema = new mongoose.Schema(
         bullJobId: {
             type: String,
             required: true,
-            unique: true,
+            index: true,
         },
 
         commitSha: {

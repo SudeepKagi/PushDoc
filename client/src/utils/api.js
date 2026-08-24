@@ -40,6 +40,16 @@ export const fetchJobLogs = async (jobId, token) => {
     return data;
 };
 
+export const fetchRepoReadme = async (repoId, token) => {
+    const res = await fetch(`${BACKEND_URL}/github/repositories/${repoId}/readme`, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+    const data = await res.json();
+    return data;
+};
+
 export const triggerManualBuild = async (repoId, token) => {
     const res = await fetch(`${BACKEND_URL}/github/repositories/${repoId}/trigger`, {
         method: "POST",
@@ -61,4 +71,3 @@ export const toggleRepositoryActive = async (repoId, token) => {
     const data = await res.json();
     return data;
 };
-

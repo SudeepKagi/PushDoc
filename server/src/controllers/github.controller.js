@@ -258,6 +258,46 @@ export const getJobLogs = async (req, res) => {
     }
 };
 
+export const getRepositoryReadme = async (req, res) => {
+    try {
+        const { repoId } = req.params;
+        const installation = await installationService.getInstallationByUser(req.user.userId);
+        if (!installation) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized: No GitHub App installation found for your user account"
+            });
+        }
+
+        const repository = await repositoryService.getRepositoryById(repoId);
+        if (!repository) {
+            return res.status(404).json({
+                success: false,
+                message: "Repository not found"
+            });
+        }
+
+        const readmeData = await githubService.getRepositoryReadme(
+            installation.installationId,
+            repository.owner,
+            repository.name
+        );
+
+        return res.status(200).json({
+            success: true,
+            readme: readmeData.content || "",
+            name: readmeData.name || "README.md",
+            path: readmeData.path || "README.md",
+        });
+    } catch (error) {
+        return res.status(200).json({
+            success: true,
+            readme: "",
+            message: error.message
+        });
+    }
+};
+
 export const triggerManualBuild = async (req, res) => {
     try {
         const { repoId } = req.params;
@@ -301,6 +341,8 @@ export const triggerManualBuild = async (req, res) => {
             logger.warn(`Could not query GitHub for branch/commit (${ghErr.message}), falling back to ${branch}@HEAD`);
         }
 
+        const bullJobId = `manual-${repository.githubId}-${Date.now()}`;
+
         const job = await readmeQueue.add(
             "generate-readme",
             {
@@ -309,11 +351,14 @@ export const triggerManualBuild = async (req, res) => {
                 commitSha,
             },
             {
+                jobId: bullJobId,
                 attempts: 3,
                 backoff: {
                     type: "exponential",
                     delay: 5000,
                 },
+                removeOnComplete: true,
+                removeOnFail: 100,
             }
         );
 
@@ -368,46 +413,48 @@ export const toggleRepository = async (req, res) => {
         let jobQueued = false;
         let jobId = null;
 
-        // If toggling ON for the first time (i.e. zero previous jobs)
+        // If toggling ON, queue a sync generation job
         if (!wasActive && updatedRepo.isActive) {
-            const jobCount = await jobService.getJobCountForRepository(repository._id);
-            if (jobCount === 0) {
+            try {
+                let branch = `refs/heads/${repository.branch || "main"}`;
+                let commitSha = "HEAD";
                 try {
-                    let branch = `refs/heads/${repository.branch || "main"}`;
-                    let commitSha = "HEAD";
-                    try {
-                        const details = await githubService.getRepositoryDefaultBranchAndCommit(
-                            installation.installationId,
-                            repository.owner,
-                            repository.name
-                        );
-                        if (details.branch) branch = details.branch;
-                        if (details.commitSha) commitSha = details.commitSha;
-                    } catch (ghErr) {
-                        logger.warn(`Could not query GitHub default branch (${ghErr.message}), falling back to ${branch}@HEAD`);
-                    }
-
-                    const job = await readmeQueue.add(
-                        "generate-readme",
-                        {
-                            repositoryId: repository.githubId,
-                            branch,
-                            commitSha,
-                        },
-                        {
-                            attempts: 3,
-                            backoff: {
-                                type: "exponential",
-                                delay: 5000,
-                            },
-                        }
+                    const details = await githubService.getRepositoryDefaultBranchAndCommit(
+                        installation.installationId,
+                        repository.owner,
+                        repository.name
                     );
-                    jobQueued = true;
-                    jobId = job.id;
-                    logger.success(`First-time toggle auto-queued README generation job for ${repository.fullName} (Job ID: ${job.id})`);
-                } catch (queueErr) {
-                    logger.warn(`Failed to auto-queue first-time job for ${repository.fullName}: ${queueErr.message}`);
+                    if (details.branch) branch = details.branch;
+                    if (details.commitSha) commitSha = details.commitSha;
+                } catch (ghErr) {
+                    logger.warn(`Could not query GitHub default branch (${ghErr.message}), falling back to ${branch}@HEAD`);
                 }
+
+                const bullJobId = `toggle-${repository.githubId}-${Date.now()}`;
+
+                const job = await readmeQueue.add(
+                    "generate-readme",
+                    {
+                        repositoryId: repository.githubId,
+                        branch,
+                        commitSha,
+                    },
+                    {
+                        jobId: bullJobId,
+                        attempts: 3,
+                        backoff: {
+                            type: "exponential",
+                            delay: 5000,
+                        },
+                        removeOnComplete: true,
+                        removeOnFail: 100,
+                    }
+                );
+                jobQueued = true;
+                jobId = job.id;
+                logger.success(`Toggle auto-queued README generation job for ${repository.fullName} (Job ID: ${job.id})`);
+            } catch (queueErr) {
+                logger.warn(`Failed to auto-queue toggle job for ${repository.fullName}: ${queueErr.message}`);
             }
         }
 

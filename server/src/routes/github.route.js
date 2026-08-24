@@ -38,6 +38,12 @@ router.get(
     githubController.getJobLogs
 );
 
+router.get(
+    "/repositories/:repoId/readme",
+    authMiddleware,
+    githubController.getRepositoryReadme
+);
+
 router.post(
     "/repositories/:repoId/trigger",
     authMiddleware,

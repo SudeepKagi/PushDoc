@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../co
 import { Button } from "../components/ui/button.jsx";
 import { Badge } from "../components/ui/badge.jsx";
 import { Skeleton } from "../components/ui/skeleton.jsx";
+import { fetchRepoReadme } from "../utils/api.js";
 import { 
     ArrowLeft, Play, RefreshCw, CheckCircle2, Clock, FileText, 
     Lock, Unlock, Sparkles, Terminal, Code2, GitCommit, 
@@ -29,7 +30,7 @@ function CommitGraphStatus({ status }) {
     const activeIndex = isCompleted ? stages.length - 1 : currentStageIndex >= 0 ? currentStageIndex : 0;
 
     return (
-        <div className="bg-surface-raised rounded-[6px] p-4 mb-6 space-y-4">
+        <div className="bg-surface-raised rounded-[6px] p-4 mb-6 space-y-4 border border-border">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
@@ -84,38 +85,36 @@ function CommitGraphStatus({ status }) {
 /**
  * Real Diff Viewer with Semantic Tints and Gutter Border
  */
-function DiffViewer({ original = "", generated = "" }) {
-    if (!original && !generated) {
-        return (
-            <div className="p-8 text-center text-xs font-mono text-text-muted">
-                No diff data available.
-            </div>
-        );
-    }
-
+function DiffViewer({ original = "", generated = "", onTriggerScan, isRunning = false }) {
     const origLines = (original || "").split("\n");
     const genLines = (generated || "").split("\n");
 
     return (
-        <div className="bg-bg rounded-[6px] overflow-hidden diff-view">
+        <div className="bg-bg rounded-[6px] overflow-hidden diff-view border border-border">
             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
                 {/* Original README Column */}
                 <div className="flex flex-col h-[500px]">
                     <div className="px-3 py-2 bg-surface-raised border-b border-border flex items-center justify-between">
                         <span className="text-xs font-mono text-text-secondary font-medium">Original README</span>
-                        <Badge variant="secondary" className="text-xs font-mono">{origLines.length} lines</Badge>
+                        <Badge variant="secondary" className="text-xs font-mono">{original ? `${origLines.length} lines` : "Empty"}</Badge>
                     </div>
                     <div className="overflow-y-auto flex-1 p-2 space-y-0.5">
-                        {origLines.map((line, i) => (
-                            <div key={i} className="flex items-start text-xs font-mono">
-                                <span className="w-8 text-right pr-2 text-text-muted border-r border-border select-none shrink-0">
-                                    {i + 1}
-                                </span>
-                                <span className="pl-2 whitespace-pre-wrap text-text-secondary">
-                                    {line || " "}
-                                </span>
+                        {original ? (
+                            origLines.map((line, i) => (
+                                <div key={i} className="flex items-start text-xs font-mono">
+                                    <span className="w-8 text-right pr-2 text-text-muted border-r border-border select-none shrink-0">
+                                        {i + 1}
+                                    </span>
+                                    <span className="pl-2 whitespace-pre-wrap text-text-secondary">
+                                        {line || " "}
+                                    </span>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-8 text-center text-xs font-mono text-text-muted">
+                                No original README found on repository.
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
 
@@ -126,27 +125,43 @@ function DiffViewer({ original = "", generated = "" }) {
                             <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                             <span className="text-xs font-mono text-text-primary font-medium">Synthesized README</span>
                         </div>
-                        <Badge variant="accent" className="text-xs font-mono">{genLines.length} lines</Badge>
+                        <Badge variant="accent" className="text-xs font-mono">{generated ? `${genLines.length} lines` : "Pending"}</Badge>
                     </div>
                     <div className="overflow-y-auto flex-1 p-2 space-y-0.5">
-                        {genLines.map((line, i) => {
-                            const isAdded = !origLines.includes(line);
-                            return (
-                                <div 
-                                    key={i} 
-                                    className={`flex items-start text-xs font-mono ${
-                                        isAdded ? "diff-line-add" : "text-text-primary"
-                                    }`}
+                        {generated ? (
+                            genLines.map((line, i) => {
+                                const isAdded = !origLines.includes(line);
+                                return (
+                                    <div 
+                                        key={i} 
+                                        className={`flex items-start text-xs font-mono ${
+                                            isAdded ? "diff-line-add" : "text-text-primary"
+                                        }`}
+                                    >
+                                        <span className="w-8 text-right pr-2 text-text-muted border-r border-border select-none shrink-0">
+                                            {i + 1}
+                                        </span>
+                                        <span className="pl-2 whitespace-pre-wrap">
+                                            {line || " "}
+                                        </span>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center p-6 text-center space-y-3">
+                                <FileText className="h-8 w-8 text-text-muted opacity-40" />
+                                <p className="text-xs text-text-secondary">No synthesized README generated yet.</p>
+                                <Button 
+                                    size="sm" 
+                                    disabled={isRunning} 
+                                    className="gap-1.5 text-xs h-7 rounded-[6px]"
+                                    onClick={onTriggerScan}
                                 >
-                                    <span className="w-8 text-right pr-2 text-text-muted border-r border-border select-none shrink-0">
-                                        {i + 1}
-                                    </span>
-                                    <span className="pl-2 whitespace-pre-wrap">
-                                        {line || " "}
-                                    </span>
-                                </div>
-                            );
-                        })}
+                                    <Play className="h-3 w-3" />
+                                    <span>Synthesize Now</span>
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -211,7 +226,7 @@ function renderMarkdown(rawContent) {
                 inCodeBlock = false;
                 const escaped = codeLines.join("\n")
                     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                html += `<pre class="bg-surface-raised p-3 rounded-[6px] overflow-x-auto text-xs font-mono my-3 leading-relaxed text-text-primary">${escaped}</pre>`;
+                html += `<pre class="bg-surface-raised p-3 rounded-[6px] overflow-x-auto text-xs font-mono my-3 leading-relaxed text-text-primary border border-border">${escaped}</pre>`;
                 codeLines = [];
             }
             continue;
@@ -272,12 +287,14 @@ function renderMarkdown(rawContent) {
     return html;
 }
 
-export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, jobs = [] }) {
+export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, jobs = [], token, refreshJobs }) {
     if (!selectedRepo) return null;
 
     const [isTriggering, setIsTriggering] = useState(false);
     const [activeTab, setActiveTab] = useState("preview");
     const [copied, setCopied] = useState(false);
+    const [liveReadme, setLiveReadme] = useState("");
+    const [loadingLiveReadme, setLoadingLiveReadme] = useState(false);
 
     // Robust ID matching between populated object and string ID
     const latestJob = jobs.find(j => {
@@ -288,10 +305,31 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
 
     const isRunning = isTriggering || (latestJob && ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(latestJob.status));
 
+    // Fetch current live README from GitHub
+    useEffect(() => {
+        if (!selectedRepo?._id || !token) return;
+        let isMounted = true;
+        setLoadingLiveReadme(true);
+
+        fetchRepoReadme(selectedRepo._id, token)
+            .then((data) => {
+                if (isMounted && data.success && data.readme) {
+                    setLiveReadme(data.readme);
+                }
+            })
+            .catch((err) => console.warn("Failed to fetch live repository README:", err))
+            .finally(() => {
+                if (isMounted) setLoadingLiveReadme(false);
+            });
+
+        return () => { isMounted = false; };
+    }, [selectedRepo?._id, token]);
+
     const handleManualTrigger = async () => {
         setIsTriggering(true);
         try {
             await triggerManualBuild(selectedRepo._id);
+            if (refreshJobs) await refreshJobs();
         } catch (err) {
             console.error("Trigger manual build error:", err);
         } finally {
@@ -299,23 +337,27 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
         }
     };
 
+    // Active markdown content to display: synthesized README if available, otherwise live GitHub README
+    const activeMarkdown = latestJob?.generatedReadme || liveReadme || "";
+    const isSynthesized = !!latestJob?.generatedReadme;
+
     const handleCopy = () => {
-        if (!latestJob?.generatedReadme) return;
-        navigator.clipboard.writeText(latestJob.generatedReadme);
+        if (!activeMarkdown) return;
+        navigator.clipboard.writeText(activeMarkdown);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const displayDuration = latestJob?.duration ? (latestJob.duration / 1000).toFixed(1) + "s" : "N/A";
+    const displayDuration = latestJob?.duration ? (latestJob.duration / 1000).toFixed(1) + "s" : isRunning ? "Running..." : "N/A";
     const displayLastRun = latestJob?.completedAt 
         ? new Date(latestJob.completedAt).toLocaleString("en-GB", { hour12: false }) 
-        : "Never scanned";
+        : "Not scanned yet";
 
     const containerRef = useRef(null);
     useEffect(() => {
         if (!containerRef.current || activeTab !== "preview") return;
-        containerRef.current.innerHTML = renderMarkdown(latestJob?.generatedReadme || "");
-    }, [latestJob?.generatedReadme, activeTab]);
+        containerRef.current.innerHTML = renderMarkdown(activeMarkdown);
+    }, [activeMarkdown, activeTab]);
 
     const activeStatus = isTriggering ? "QUEUED" : latestJob?.status;
 
@@ -343,7 +385,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                     <p className="text-xs text-text-secondary mt-0.5 font-mono">{selectedRepo.fullName}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    {latestJob?.generatedReadme && (
+                    {activeMarkdown && (
                         <Button
                             variant="outline"
                             size="sm"
@@ -361,7 +403,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                         disabled={isRunning}
                     >
                         {isRunning ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-                        <span>{isRunning ? "Running Scan..." : "Trigger Scan"}</span>
+                        <span>{isRunning ? "Running Scan..." : isSynthesized ? "Re-synthesize README" : "Trigger Scan"}</span>
                     </Button>
                 </div>
             </div>
@@ -374,7 +416,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Review & Preview Card */}
                 <div className="lg:col-span-2 space-y-6">
-                    <Card className="bg-surface rounded-[6px]">
+                    <Card className="bg-surface rounded-[6px] border border-border">
                         <CardHeader className="p-3 border-b border-border bg-surface-raised flex flex-row items-center justify-between gap-2">
                             {/* Tab Switcher */}
                             <div className="flex items-center gap-1 bg-bg p-0.5 rounded-[4px]">
@@ -416,18 +458,26 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                             {isRunning ? (
                                 <Badge variant="accent" className="text-xs font-mono gap-1.5">
                                     <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-                                    <span>Scanning in progress</span>
+                                    <span>Pipeline in progress</span>
+                                </Badge>
+                            ) : isSynthesized ? (
+                                <Badge variant="success" className="text-xs font-mono">
+                                    AI Synthesized
+                                </Badge>
+                            ) : liveReadme ? (
+                                <Badge variant="secondary" className="text-xs font-mono">
+                                    Current GitHub README
                                 </Badge>
                             ) : (
-                                <Badge variant="secondary" className="text-xs font-mono hidden sm:inline-flex">
-                                    GitHub Markdown
+                                <Badge variant="outline" className="text-xs font-mono">
+                                    No README
                                 </Badge>
                             )}
                         </CardHeader>
 
                         <CardContent className="p-4">
-                            {isRunning && !latestJob?.generatedReadme ? (
-                                <div className="h-[400px] flex flex-col justify-center space-y-4 p-6 animate-pulse">
+                            {isRunning ? (
+                                <div className="h-[450px] flex flex-col justify-center space-y-4 p-6 animate-pulse">
                                     <div className="flex items-center gap-2">
                                         <Skeleton className="h-6 w-1/3 bg-surface-raised" />
                                         <Skeleton className="h-5 w-16 rounded-[4px] bg-surface-raised" />
@@ -443,14 +493,32 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                                         <Skeleton className="h-4 w-3/4 bg-surface-raised" />
                                     </div>
                                 </div>
-                            ) : !latestJob?.generatedReadme ? (
-                                <div className="h-[400px] flex flex-col items-center justify-center text-center text-text-secondary">
-                                    <FileText className="h-8 w-8 mb-2 opacity-40 text-text-muted" />
-                                    <p className="text-xs font-medium text-text-primary">No README generated yet</p>
-                                    <p className="text-xs text-text-muted mt-1">Click Trigger Scan above to generate documentation.</p>
+                            ) : loadingLiveReadme ? (
+                                <div className="h-[450px] flex items-center justify-center">
+                                    <RefreshCw className="h-5 w-5 animate-spin text-accent" />
+                                </div>
+                            ) : !activeMarkdown ? (
+                                <div className="h-[450px] flex flex-col items-center justify-center text-center text-text-secondary space-y-3">
+                                    <FileText className="h-10 w-10 opacity-40 text-text-muted" />
+                                    <div>
+                                        <p className="text-sm font-medium text-text-primary">No README Found</p>
+                                        <p className="text-xs text-text-muted mt-1">This repository currently has no README file on GitHub.</p>
+                                    </div>
+                                    <Button size="sm" onClick={handleManualTrigger} className="gap-1.5 text-xs h-8 rounded-[6px]">
+                                        <Sparkles className="h-3.5 w-3.5" />
+                                        <span>Synthesize First README</span>
+                                    </Button>
                                 </div>
                             ) : (
                                 <>
+                                    {!isSynthesized && (
+                                        <div className="mb-3 p-2.5 bg-surface-raised rounded-[6px] border border-border flex items-center justify-between text-xs">
+                                            <span className="text-text-secondary">
+                                                Showing current live README from GitHub. Click <strong className="text-text-primary">Trigger Scan</strong> to synthesize AST-grounded documentation.
+                                            </span>
+                                        </div>
+                                    )}
+
                                     {activeTab === "preview" && (
                                         <div className="h-[500px] overflow-y-auto pr-2 font-sans">
                                             <div ref={containerRef} className="text-xs leading-relaxed text-text-primary" />
@@ -459,15 +527,17 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
 
                                     {activeTab === "diff" && (
                                         <DiffViewer 
-                                            original={latestJob?.originalReadme} 
+                                            original={latestJob?.originalReadme || liveReadme} 
                                             generated={latestJob?.generatedReadme} 
+                                            onTriggerScan={handleManualTrigger}
+                                            isRunning={isRunning}
                                         />
                                     )}
 
                                     {activeTab === "raw" && (
                                         <div className="h-[500px] overflow-y-auto">
-                                            <pre className="p-3 bg-bg rounded-[6px] text-xs font-mono whitespace-pre-wrap leading-relaxed text-text-primary">
-                                                {latestJob?.generatedReadme}
+                                            <pre className="p-3 bg-bg rounded-[6px] text-xs font-mono whitespace-pre-wrap leading-relaxed text-text-primary border border-border">
+                                                {activeMarkdown}
                                             </pre>
                                         </div>
                                     )}
@@ -479,7 +549,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
 
                 {/* Sidebar Properties */}
                 <div className="space-y-4">
-                    <Card className="bg-surface rounded-[6px]">
+                    <Card className="bg-surface rounded-[6px] border border-border">
                         <CardHeader className="p-3 pb-2 border-b border-border bg-surface-raised">
                             <CardTitle className="text-xs font-semibold text-text-primary">Repository Properties</CardTitle>
                         </CardHeader>
@@ -505,12 +575,12 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-surface-raised rounded-[6px]">
+                    <Card className="bg-surface-raised rounded-[6px] border border-border">
                         <CardHeader className="p-3 pb-1">
                             <CardTitle className="text-xs font-semibold text-text-primary">Review Mode</CardTitle>
                         </CardHeader>
                         <CardContent className="p-3 pt-0 text-xs text-text-secondary leading-relaxed font-sans">
-                            PushDoc generates README diffs directly from Git commits. Review changes side-by-side in the diff tab before push verification.
+                            PushDoc generates README diffs directly from your codebase AST. Review additions in the diff tab before automatic push verification.
                         </CardContent>
                     </Card>
                 </div>

@@ -102,12 +102,8 @@ const handlePushEvent = async (payload) => {
         }
     }
 
-    // Debounce burst pushes: using a deterministic jobId means BullMQ will
-    // silently drop a new job if one with the same ID is already waiting in
-    // the queue. This collapses rapid consecutive pushes to the same repo
-    // into a single job — the last push's commit SHA wins once the worker
-    // picks it up. No timer needed; BullMQ handles this natively.
-    const jobId = `repo-${repository.githubId}`;
+    // Generate unique timestamped BullMQ jobId
+    const jobId = `push-${repository.githubId}-${Date.now()}`;
 
     await readmeQueue.add(
         "generate-readme",
@@ -124,6 +120,8 @@ const handlePushEvent = async (payload) => {
                 type: "exponential",
                 delay: 5000,
             },
+            removeOnComplete: true,
+            removeOnFail: 100,
         }
     );
 

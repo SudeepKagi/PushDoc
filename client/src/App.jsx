@@ -233,6 +233,8 @@ export default function App() {
                                 setPage={setPage}
                                 triggerManualBuild={triggerManualBuild}
                                 jobs={jobs}
+                                token={token}
+                                refreshJobs={refreshJobs}
                             />
                         )}
                         {page === "settings" && (

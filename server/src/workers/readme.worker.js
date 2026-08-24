@@ -131,6 +131,12 @@ const readmeWorker = new Worker(
                 "Repository cloned"
             );
 
+            // Capture original README text if it exists BEFORE writing anything new
+            originalReadme = readmeService.readExistingReadme(repositoryPath);
+            if (originalReadme) {
+                logger.info(jobId, `Found existing repository README (${originalReadme.split('\n').length} lines)`);
+            }
+
             await jobService.updateStatus(
                 trackingJob._id,
                 "READING"
@@ -148,16 +154,6 @@ const readmeWorker = new Worker(
                 jobId,
                 "README generated"
             );
-
-            // Capture original README text if it exists
-            try {
-                const origPath = path.join(repositoryPath, "README.md");
-                if (fs.existsSync(origPath)) {
-                    originalReadme = fs.readFileSync(origPath, "utf8");
-                }
-            } catch (err) {
-                logger.warn(jobId, `Failed to read original README: ${err.message}`);
-            }
 
             await jobService.updateStatus(
                 trackingJob._id,
