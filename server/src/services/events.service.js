@@ -1,5 +1,4 @@
 import { EventEmitter } from "events";
-import * as logger from "./logger.service.js";
 
 class EventsService extends EventEmitter {
     constructor() {
@@ -19,7 +18,6 @@ class EventsService extends EventEmitter {
             this.clients.set(uid, new Set());
         }
         this.clients.get(uid).add(res);
-        logger.debug(`[SSE] Client connected for user ${uid}. Total clients: ${this.clients.get(uid).size}`);
     }
 
     /**
@@ -34,7 +32,6 @@ class EventsService extends EventEmitter {
             if (set.size === 0) {
                 this.clients.delete(uid);
             }
-            logger.debug(`[SSE] Client disconnected for user ${uid}`);
         }
     }
 
@@ -51,8 +48,7 @@ class EventsService extends EventEmitter {
         for (const res of Array.from(clientSet)) {
             try {
                 res.write(payload);
-            } catch (err) {
-                logger.warn(`[SSE] Error writing to client for user ${uid}: ${err.message}`);
+            } catch {
                 clientSet.delete(res);
             }
         }
