@@ -55,22 +55,25 @@ if (config.env !== "production") {
 }
 
 
-// Strict rate limit for auth endpoints (10 requests per 15 minutes)
+// Trust reverse proxy for accurate client IP identification on Render/Vercel
+app.set("trust proxy", 1);
+
+// Rate limit for auth endpoints (60 requests per 15 minutes)
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 10,
+    max: 60,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { success: false, message: "Too many requests. Please try again later." },
+    message: { success: false, message: "Too many authentication requests. Please try again later." },
 });
 
-// General API rate limit (100 requests per 15 minutes per IP)
+// General API rate limit (1,000 requests per 15 minutes per IP for real-time dashboard polling)
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: 1000,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { success: false, message: "Too many requests. Please try again later." },
+    message: { success: false, message: "Too many requests. Please slow down." },
 });
 
 app.use("/", indexRouter);

@@ -239,7 +239,7 @@ function renderMarkdown(rawContent) {
             .filter(Boolean)
             .join("");
 
-        html += `<div class="w-full my-4 overflow-x-auto rounded-[6px] border border-border bg-surface shadow-sm"><table class="w-full text-xs border-collapse table-auto min-w-[500px]"><thead><tr>${headerCells}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
+        html += `<div class="w-full my-4 overflow-x-auto rounded-[6px] border border-border bg-surface shadow-sm"><table class="w-full text-xs border-collapse table-auto" style="min-width: max-content;"><thead><tr>${headerCells}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
         tableRows = []; 
         inTable = false;
     };
@@ -343,15 +343,6 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
     // Check if the current job is actively in progress
     const isJobActive = latestJob && ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(latestJob.status);
     const isRunning = isTriggering || isJobActive;
-
-    // Live polling when job is active
-    useEffect(() => {
-        if (!isJobActive || !refreshJobs) return;
-        const interval = setInterval(() => {
-            refreshJobs();
-        }, 2000);
-        return () => clearInterval(interval);
-    }, [isJobActive, refreshJobs]);
 
     // Fetch current live README from GitHub
     useEffect(() => {

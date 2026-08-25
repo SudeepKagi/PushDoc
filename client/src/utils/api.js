@@ -21,23 +21,37 @@ export const syncRepositories = async (token) => {
 };
 
 export const fetchJobs = async (token) => {
-    const res = await fetch(`${BACKEND_URL}/github/jobs`, {
-        headers: {
-            Authorization: `Bearer ${token}`
+    try {
+        const res = await fetch(`${BACKEND_URL}/github/jobs`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        if (!res.ok) {
+            return { success: false, status: res.status };
         }
-    });
-    const data = await res.json();
-    return data;
+        const data = await res.json();
+        return data;
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
 };
 
 export const fetchJobLogs = async (jobId, token) => {
-    const res = await fetch(`${BACKEND_URL}/github/jobs/${jobId}/logs`, {
-        headers: {
-            Authorization: `Bearer ${token}`
+    try {
+        const res = await fetch(`${BACKEND_URL}/github/jobs/${jobId}/logs`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        if (!res.ok) {
+            return { success: false, status: res.status };
         }
-    });
-    const data = await res.json();
-    return data;
+        const data = await res.json();
+        return data;
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
 };
 
 export const fetchRepoReadme = async (repoId, token) => {
