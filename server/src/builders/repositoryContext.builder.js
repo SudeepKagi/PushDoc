@@ -7,6 +7,12 @@
  * and RAG semantic chunks (for large repositories).
  */
 
+import * as logger from "../services/logger.service.js";
+import { config } from "../config/app.config.js";
+import { selectTopFiles } from "../analyzers/dependency.graph.js";
+import * as embeddingService from "../services/embedding.service.js";
+import * as retrievalService from "../services/retrieval.service.js";
+
 import {
     buildTier1Section,
     buildFolderStructureSection,
@@ -106,14 +112,14 @@ export const buildRepositoryContext = async (repository, knowledge) => {
 
     if (repository.files && repository.files.length > RAG_THRESHOLD_FILE_COUNT) {
         try {
-            const topN = config.rag.topNFiles;
-            const candidateFiles = dependencyGraph.selectTopFiles(repository.files, topN);
+            const topN = config.rag?.topNFiles || 15;
+            const candidateFiles = selectTopFiles(repository.files, topN);
             logger.info(`RAG: selected ${candidateFiles.length}/${repository.files.length} files by centrality for embedding`);
 
             const chunks = embeddingService.chunkRepository(candidateFiles);
             const vectorIndex = await embeddingService.buildVectorIndex(chunks);
 
-            const topNChunks = config.rag.topNChunks;
+            const topNChunks = config.rag?.topNChunks || 8;
             const relevantChunks = await retrievalService.queryVectorIndex(
                 vectorIndex,
                 "Main application entry point, core features, API routes, data flow, external integrations",
@@ -128,10 +134,10 @@ export const buildRepositoryContext = async (repository, knowledge) => {
 
         const fileCount = repository.files.length;
         const budget = fileCount > 150
-            ? config.tokenBudget.large
+            ? config.tokenBudget?.large || 160_000
             : fileCount > 40
-                ? config.tokenBudget.medium
-                : config.tokenBudget.small;
+                ? config.tokenBudget?.medium || 120_000
+                : config.tokenBudget?.small || 80_000;
 
         if (context.length > budget) {
             logger.warn(`Context (${context.length} chars) exceeded budget (${budget} chars) — truncating`);

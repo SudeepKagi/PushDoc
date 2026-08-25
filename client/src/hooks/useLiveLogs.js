@@ -49,7 +49,13 @@ export default function useLiveLogs(token, isActive) {
         fetchJobLogs(activeJob._id, token)
             .then(data => {
                 if (isMounted && data && data.success) {
-                    setLiveLogs(data.logs || []);
+                    const fetched = data.logs || [];
+                    setLiveLogs(prev => {
+                        if (prev.length === 0) return fetched;
+                        const existing = new Set(prev);
+                        const newEntries = fetched.filter(l => !existing.has(l));
+                        return [...prev, ...newEntries];
+                    });
                 }
             })
             .catch(err => console.warn("Failed to fetch historical logs:", err.message));

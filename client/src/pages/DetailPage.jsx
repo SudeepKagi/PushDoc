@@ -216,11 +216,15 @@ function renderMarkdown(rawContent) {
     const flushTable = () => {
         if (tableRows.length < 2) { tableRows = []; inTable = false; return; }
 
+        const parseRow = (rowStr) => {
+            let cells = rowStr.trim().split("|");
+            if (cells[0] === "") cells.shift();
+            if (cells[cells.length - 1] === "") cells.pop();
+            return cells;
+        };
+
         // Process header row
-        const headerCells = tableRows[0]
-            .split("|")
-            .filter((c, idx, arr) => idx > 0 && idx < arr.length - 1 || c.trim())
-            .filter(c => c.trim())
+        const headerCells = parseRow(tableRows[0])
             .map(c => `<th class="p-2.5 border-b border-border font-semibold bg-surface-raised text-left text-xs whitespace-nowrap text-text-primary min-w-[100px]">${inline(c.trim())}</th>`)
             .join("");
 
@@ -228,12 +232,10 @@ function renderMarkdown(rawContent) {
         const bodyRows = tableRows.slice(2);
         const bodyHtml = bodyRows
             .map(row => {
-                const cells = row.split("|")
-                    .filter((c, idx, arr) => idx > 0 && idx < arr.length - 1 || c.trim())
-                    .filter(c => c.trim());
+                const cells = parseRow(row);
                 if (cells.length === 0) return "";
                 return `<tr class="border-b border-border/40 hover:bg-surface-raised/40 transition-colors">${
-                    cells.map(c => `<td class="p-2.5 align-top text-xs font-sans text-text-secondary whitespace-normal break-words min-w-[120px] max-w-[360px]">${inline(c.trim())}</td>`).join("")
+                    cells.map(c => `<td class="p-2.5 align-top text-xs font-sans text-text-secondary whitespace-normal break-words min-w-[120px] max-w-[360px]">${inline(c.trim()) || "&nbsp;"}</td>`).join("")
                 }</tr>`;
             })
             .filter(Boolean)
@@ -319,8 +321,6 @@ function renderMarkdown(rawContent) {
 }
 
 export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, toggleRepository, jobs = [], token, refreshJobs }) {
-    if (!selectedRepo) return null;
-
     const [isTriggering, setIsTriggering] = useState(false);
     const [activeTab, setActiveTab] = useState("preview");
     const [copied, setCopied] = useState(false);
@@ -456,6 +456,8 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
     }, [activeMarkdown, activeTab]);
 
     const activeStatus = isTriggering ? "QUEUED" : latestJob?.status;
+
+    if (!selectedRepo) return null;
 
     return (
         <div className="space-y-6 max-w-6xl mx-auto py-2 font-sans w-full min-w-0 overflow-x-hidden">

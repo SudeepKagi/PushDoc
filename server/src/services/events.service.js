@@ -70,15 +70,17 @@ class EventsService extends EventEmitter {
         }
     }
 
-    /**
-     * Broadcast a job state transition (QUEUED, CLONING, GENERATING, COMPLETED, etc.)
-     */
     broadcastJobUpdate(userId, job) {
         if (userId) {
             this.sendToUser(userId, "job_update", job);
+            return;
         }
-        // Also broadcast so any active dashboard tab tracks the update
-        this.broadcast("job_update", job);
+        const ownerId = job?.repository?.installation?.user?.toString() || job?.repository?.installation?.toString();
+        if (ownerId) {
+            this.sendToUser(ownerId, "job_update", job);
+        } else {
+            this.broadcast("job_update", job);
+        }
     }
 
     /**
