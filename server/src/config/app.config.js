@@ -42,10 +42,15 @@ export const config = {
     cors: {
         origin: process.env.CORS_ORIGIN
             ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
-            : ["http://localhost:1234", "http://localhost:5173", "http://localhost:3000"],
+            : [
+                "https://pushdoc-client.onrender.com",
+                "http://localhost:5173",
+                "http://localhost:3000",
+                "http://localhost:1234",
+            ],
     },
     frontend: {
-        url: process.env.FRONTEND_URL || "http://localhost:1234",
+        url: process.env.FRONTEND_URL || (process.env.NODE_ENV === "production" ? "https://pushdoc-client.onrender.com" : "http://localhost:5173"),
     },
     workspace: {
         // In production: set WORKSPACE_ROOT_PATH to an absolute path outside the app

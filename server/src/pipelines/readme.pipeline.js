@@ -78,7 +78,7 @@ export const generateReadme = async (
         "Generating deterministic Mermaid architecture diagram..."
     );
 
-    const architectureSection = diagramService.generateArchitectureSection(repository.files);
+    const architectureSection = diagramService.generateArchitectureSection(repository.files, knowledge);
 
     let combinedReadme = rawReadme;
     if (architectureSection && !combinedReadme.includes("```mermaid")) {

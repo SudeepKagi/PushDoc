@@ -3,99 +3,110 @@ import { Button } from "../ui/button.jsx";
 import { Badge } from "../ui/badge.jsx";
 import { Card, CardHeader, CardContent } from "../ui/card.jsx";
 import { GithubIcon as Github } from "../ui/githubIcon.jsx";
-import { ArrowRight, Webhook, Code2, GitCommit, Sparkles, CheckCircle2, FileText, Database, Shield, Layers } from "lucide-react";
+import { ArrowRight, Webhook, Code2, GitCommit, Sparkles, CheckCircle2, FileText, Database, Shield, Layers, Network, AlertTriangle } from "lucide-react";
 
-const AUTHKIT_WIDGET_TABS = [
+const ARCHITECTURE_WIDGET_TABS = [
     {
-        id: "routes",
-        label: "AST Route Extractor",
+        id: "facts",
+        label: "Common Fact Model",
         icon: Code2,
-        title: "Express & Fastify Route AST Parsing",
-        desc: "Deterministically parses URL parameters, HTTP verbs, and controller middleware directly from code AST.",
+        title: "Traceable, Evidence-Backed Facts",
+        desc: "Extracts normalized endpoint, datastore, and dependency facts with source reliability and confidence scoring.",
         renderPreview: () => (
             <div className="space-y-3 font-mono text-xs">
                 <div className="flex items-center justify-between text-text-secondary border-b border-border pb-2">
-                    <span>Parsed AST Route Endpoint</span>
-                    <span className="text-success font-semibold">GET /api/v1/users/:id</span>
+                    <span>Extracted Fact Descriptor</span>
+                    <span className="text-success font-semibold">fact:endpoint:payment-service:post:/api/v1/charge</span>
                 </div>
                 <div className="p-3 bg-surface-raised rounded-[6px] space-y-1.5 text-xs">
-                    <div className="text-accent font-semibold">// Controller Handler</div>
-                    <div className="text-text-primary">Controller: getUserByIdHandler</div>
-                    <div className="text-text-secondary">Middleware: [authenticateToken, checkRateLimit]</div>
-                    <div className="text-text-secondary">URL Params: id (string, required)</div>
+                    <div className="text-accent font-semibold">// Common Fact Model Entry</div>
+                    <div className="text-text-primary">Type: "endpoint" | Method: POST | Path: /api/v1/charge</div>
+                    <div className="text-text-secondary">Source: payment-service/src/routes/pay.py:42 (analyzer: python)</div>
+                    <div className="text-text-secondary">Evidence: ["FastAPI @router.post()"] | Confidence: 0.98 | Reliability: 1.0</div>
                 </div>
                 <div className="flex items-center gap-2 text-success text-xs font-sans font-medium">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>Extracted with 100% ground-truth accuracy from @babel/parser</span>
+                    <span>Evidence-grounded fact layer ready for correlation & context synthesis</span>
                 </div>
             </div>
         ),
     },
     {
-        id: "schemas",
-        label: "Schema Model Parser",
-        icon: Database,
-        title: "Mongoose & Prisma Model Extraction",
-        desc: "Extracts database schema fields, field validation rules, and relational definitions automatically.",
+        id: "graph",
+        label: "Architecture Graph",
+        icon: Network,
+        title: "Entity-Relationship Topology & External APIs",
+        desc: "Synthesizes services, datastores, message brokers, and third-party SaaS APIs into a connected graph.",
         renderPreview: () => (
             <div className="space-y-3 font-mono text-xs">
                 <div className="flex items-center justify-between text-text-secondary border-b border-border pb-2">
-                    <span>Target Schema</span>
-                    <span className="text-accent font-semibold">UserSchema (Mongoose)</span>
+                    <span>Derived Relationship Graph</span>
+                    <span className="text-accent font-semibold">3 Services • 2 Datastores • 1 External API</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                    <div className="p-2.5 bg-surface-raised rounded-[6px]">
-                        <span className="text-text-primary font-semibold">email:</span> <span className="text-text-secondary">String (Required, Unique)</span>
+                    <div className="p-2.5 bg-surface-raised rounded-[6px] space-y-1">
+                        <div className="text-text-primary font-semibold">api-gateway ──(calls_http)──&gt; payment-service</div>
+                        <div className="text-text-muted text-[11px]">Protocol: REST (POST /api/v1/charge)</div>
                     </div>
-                    <div className="p-2.5 bg-surface-raised rounded-[6px]">
-                        <span className="text-text-primary font-semibold">role:</span> <span className="text-text-secondary">Enum ["admin", "user"]</span>
+                    <div className="p-2.5 bg-surface-raised rounded-[6px] space-y-1">
+                        <div className="text-text-primary font-semibold">payment-service ──(calls_api)──&gt; Stripe API</div>
+                        <div className="text-text-muted text-[11px]">Detected via stripe-python client</div>
                     </div>
-                    <div className="p-2.5 bg-surface-raised rounded-[6px]">
-                        <span className="text-text-primary font-semibold">passwordHash:</span> <span className="text-text-secondary">String (Select: false)</span>
+                    <div className="p-2.5 bg-surface-raised rounded-[6px] space-y-1">
+                        <div className="text-text-primary font-semibold">order-service ──(publishes_to)──&gt; Kafka: orders</div>
+                        <div className="text-text-muted text-[11px]">Protocol: Kafka event bus</div>
                     </div>
-                    <div className="p-2.5 bg-surface-raised rounded-[6px]">
-                        <span className="text-text-primary font-semibold">createdAt:</span> <span className="text-text-secondary">Date (Default: Date.now)</span>
+                    <div className="p-2.5 bg-surface-raised rounded-[6px] space-y-1">
+                        <div className="text-text-primary font-semibold">user-service ──(uses_datastore)──&gt; PostgreSQL</div>
+                        <div className="text-text-muted text-[11px]">ORM: Spring Data JPA</div>
                     </div>
+                </div>
+            </div>
+        ),
+    },
+    {
+        id: "conflicts",
+        label: "Contract Drift Detection",
+        icon: AlertTriangle,
+        title: "OpenAPI Spec vs Code Route Drift",
+        desc: "Detects breaking mismatches between OpenAPI/Swagger specifications and actual source code routes.",
+        renderPreview: () => (
+            <div className="space-y-3 font-mono text-xs">
+                <div className="flex items-center justify-between text-text-secondary border-b border-border pb-2">
+                    <span>Derived Conflict Finding</span>
+                    <Badge variant="warning" className="text-[10px] font-mono">HIGH SEVERITY</Badge>
+                </div>
+                <div className="p-3 bg-surface-raised rounded-[6px] space-y-1.5 text-xs">
+                    <div className="text-warning font-semibold">⚠️ Contract Mismatch Detected</div>
+                    <div className="text-text-primary">Expected: GET /api/v1/payments (declared in openapi.yaml:28)</div>
+                    <div className="text-text-secondary">Actual: GET /api/v1/payment (implemented in routes/pay.js:14)</div>
+                    <div className="text-text-muted text-[11px]">Finding: OpenAPI spec documents plural route but code exports singular route.</div>
+                </div>
+                <div className="flex items-center gap-2 text-warning text-xs font-sans font-medium">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    <span>Flagged directly in context to prevent inaccurate API documentation</span>
                 </div>
             </div>
         ),
     },
     {
         id: "readme",
-        label: "Auto README Sync",
+        label: "Automated Git Sync",
         icon: FileText,
-        title: "Direct Commit back to Repository",
-        desc: "Formats clean, structured Markdown documentation and dispatches git commits back to your default branch.",
+        title: "Deterministic Synthesis & Git Commit",
+        desc: "Synthesizes structured README documentation grounded in verified facts and commits directly to GitHub.",
         renderPreview: () => (
             <div className="space-y-3 font-sans text-xs">
                 <div className="flex items-center justify-between border-b border-border pb-2">
-                    <span className="font-semibold text-text-primary"># API Reference & Documentation</span>
+                    <span className="font-semibold text-text-primary"># Architecture &amp; API Reference</span>
                     <Badge variant="secondary" className="font-mono text-xs">README.md</Badge>
                 </div>
                 <p className="text-text-secondary text-xs leading-relaxed">
-                    Automated documentation generated by PushDoc AI engine based on commit <code className="bg-surface-raised px-1.5 py-0.5 rounded-[4px] font-mono text-xs text-text-primary">#7dfae20</code>.
+                    Automated documentation generated by PushDoc engine grounded in 42 verified architecture facts for commit <code className="bg-surface-raised px-1.5 py-0.5 rounded-[4px] font-mono text-xs text-text-primary">#9b3e1f0</code>.
                 </p>
                 <div className="p-3 bg-surface-raised rounded-[6px] space-y-1 text-xs font-mono">
                     <div className="text-success font-semibold">✓ Committed to origin/main</div>
-                    <div className="text-text-secondary">Author: PushDoc Bot &lt;bot@pushdoc.io&gt;</div>
-                </div>
-            </div>
-        ),
-    },
-    {
-        id: "badges",
-        label: "Shields.io Audit",
-        icon: Shield,
-        title: "Dependency & Status Badge Generation",
-        desc: "Audits package.json dependencies to generate confirmed Shields.io tech badges without dead links.",
-        renderPreview: () => (
-            <div className="space-y-3 font-sans text-xs">
-                <div className="text-text-secondary text-xs">Verified Repository Tech Badges:</div>
-                <div className="flex flex-wrap gap-2 pt-1">
-                    <Badge variant="accent" className="font-mono text-xs">Express v4.19</Badge>
-                    <Badge variant="success" className="font-mono text-xs">Node.js v20</Badge>
-                    <Badge variant="secondary" className="font-mono text-xs">MongoDB v6.0</Badge>
-                    <Badge variant="warning" className="font-mono text-xs">Shields.io Verified</Badge>
+                    <div className="text-text-secondary">Validation Score: 98/100 • Sections: [Overview, Architecture, API, Models, Tech Stack]</div>
                 </div>
             </div>
         ),
@@ -103,9 +114,9 @@ const AUTHKIT_WIDGET_TABS = [
 ];
 
 export default function Hero({ handleLoginRedirect, setPage }) {
-    const [activeTabId, setActiveTabId] = useState("routes");
+    const [activeTabId, setActiveTabId] = useState("facts");
 
-    const activeTab = AUTHKIT_WIDGET_TABS.find(t => t.id === activeTabId) || AUTHKIT_WIDGET_TABS[0];
+    const activeTab = ARCHITECTURE_WIDGET_TABS.find(t => t.id === activeTabId) || ARCHITECTURE_WIDGET_TABS[0];
 
     const scrollToArchitecture = () => {
         const el = document.getElementById("architecture");
@@ -120,18 +131,18 @@ export default function Hero({ handleLoginRedirect, setPage }) {
                 {/* Announcement chip */}
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[4px] bg-surface-raised text-xs font-mono border border-border">
                     <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
-                    <span className="text-text-primary font-medium">PushDoc 2.0</span>
-                    <span className="text-text-muted">• Zero-Config GitHub App Pipeline</span>
+                    <span className="text-text-primary font-medium">PushDoc Architecture Engine</span>
+                    <span className="text-text-muted">• Polyglot Codebase Analysis</span>
                 </div>
 
                 {/* Headline */}
                 <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-text-primary max-w-3xl mx-auto leading-tight">
-                    Your Codebase. Documented on Every Commit.
+                    Your Codebase. Analyzed &amp; Documented on Every Commit.
                 </h1>
 
                 {/* Subtitle */}
                 <p className="text-sm sm:text-base text-text-secondary max-w-xl mx-auto leading-relaxed">
-                    An automated GitHub App pipeline that extracts deterministic AST facts from your routes and schemas to generate production-ready READMEs on every git push.
+                    An evidence-backed repository intelligence platform that extracts traceable code facts, builds an architecture graph, detects contract drift, and generates grounded documentation on every git push.
                 </p>
 
                 {/* Genuine Action Controls */}
@@ -162,11 +173,11 @@ export default function Hero({ handleLoginRedirect, setPage }) {
                         <div className="p-3 border-b border-border bg-surface-raised flex flex-wrap items-center justify-between gap-3">
                             <div className="flex items-center gap-2">
                                 <span className="h-2 w-2 rounded-full bg-accent" />
-                                <span className="text-xs font-mono font-medium text-text-secondary">AST Engine Inspector</span>
+                                <span className="text-xs font-mono font-medium text-text-secondary">Architecture Engine Inspector</span>
                             </div>
 
                             <div className="flex flex-wrap gap-1">
-                                {AUTHKIT_WIDGET_TABS.map((tab) => {
+                                {ARCHITECTURE_WIDGET_TABS.map((tab) => {
                                     const TabIcon = tab.icon;
                                     const isActive = tab.id === activeTabId;
                                     return (
@@ -207,7 +218,7 @@ export default function Hero({ handleLoginRedirect, setPage }) {
                             </div>
                             <h3 className="text-sm font-semibold text-text-primary font-sans">Zero-Config GitHub Webhooks</h3>
                             <p className="text-xs text-text-secondary leading-relaxed font-sans">
-                                Automatically fires on git push events with sub-7ms payload parsing and cryptographic HMAC-SHA256 verification.
+                                Automatically fires on git push events with cryptographic HMAC-SHA256 signature verification and BullMQ Redis background queues.
                             </p>
                         </CardContent>
                     </Card>
@@ -215,11 +226,11 @@ export default function Hero({ handleLoginRedirect, setPage }) {
                     <Card className="bg-surface-raised rounded-[6px] border border-border">
                         <CardContent className="p-4 space-y-2">
                             <div className="h-8 w-8 rounded-[4px] bg-surface flex items-center justify-center text-text-primary mb-2">
-                                <Code2 className="h-4 w-4 text-accent" />
+                                <Network className="h-4 w-4 text-accent" />
                             </div>
-                            <h3 className="text-sm font-semibold text-text-primary font-sans">Deterministic AST Fact Extraction</h3>
+                            <h3 className="text-sm font-semibold text-text-primary font-sans">Common Facts &amp; Architecture Graph</h3>
                             <p className="text-xs text-text-secondary leading-relaxed font-sans">
-                                Extracts Express routes, Fastify endpoints, and Mongoose schemas before AI generation to prevent hallucinations.
+                                Extracts polyglot endpoints and constructs an entity-relationship topology connecting services, datastores, and message brokers.
                             </p>
                         </CardContent>
                     </Card>
@@ -227,11 +238,11 @@ export default function Hero({ handleLoginRedirect, setPage }) {
                     <Card className="bg-surface-raised rounded-[6px] border border-border">
                         <CardContent className="p-4 space-y-2">
                             <div className="h-8 w-8 rounded-[4px] bg-surface flex items-center justify-center text-text-primary mb-2">
-                                <GitCommit className="h-4 w-4 text-accent" />
+                                <AlertTriangle className="h-4 w-4 text-accent" />
                             </div>
-                            <h3 className="text-sm font-semibold text-text-primary font-sans">Automated Git Commits</h3>
+                            <h3 className="text-sm font-semibold text-text-primary font-sans">Contract Drift &amp; Automated Commit</h3>
                             <p className="text-xs text-text-secondary leading-relaxed font-sans">
-                                Commits clean, structured README markdown directly back to your default branch with 100-point validation scoring.
+                                Detects OpenAPI spec vs code route mismatches and commits validated, production-grade documentation directly back to your repo.
                             </p>
                         </CardContent>
                     </Card>

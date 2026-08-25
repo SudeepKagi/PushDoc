@@ -1,37 +1,37 @@
 import React from "react";
 import { Card, CardContent } from "../ui/card.jsx";
-import { Route, Database, ShieldCheck, Zap, Shield, Sparkles } from "lucide-react";
+import { Network, Database, AlertTriangle, Layers, Code2, Sparkles } from "lucide-react";
 
 const BENTO_CARDS = [
     {
-        icon: Route,
-        title: "Express & Fastify Routes",
-        desc: "Automatically extracts URL parameters, HTTP methods, and middleware chains from your source code AST.",
+        icon: Network,
+        title: "Polyglot Service Analysis",
+        desc: "Extracts Express, FastAPI, Spring Boot, and Go routes into normalized, traceable Common Facts with line-level evidence.",
     },
     {
         icon: Database,
-        title: "Database Models",
-        desc: "Parses Mongoose schemas, Prisma definitions, and Sequelize models to generate accurate data structures.",
+        title: "Database Models & ORMs",
+        desc: "Parses Mongoose schemas, SQLAlchemy models, and Spring Data JPA entities with fields, constraints, and relationships.",
     },
     {
-        icon: ShieldCheck,
-        title: "Environment Schemas",
-        desc: "Identifies process.env dependencies and .env.example keys to document required environment variables.",
+        icon: AlertTriangle,
+        title: "Contract Drift Detection",
+        desc: "Compares OpenAPI specifications against actual code routes and flags undeclared environment variables automatically.",
     },
     {
-        icon: Zap,
-        title: "Multi-Model Failover",
-        desc: "Automated routing between Gemini 2.5 Flash and Groq Llama 3.3 to guarantee 99.99% pipeline availability.",
+        icon: Layers,
+        title: "Architecture Graph Engine",
+        desc: "Resolves inter-service HTTP calls, Kafka pub/sub message topics, datastore connections, and external SaaS APIs.",
     },
     {
-        icon: Shield,
-        title: "Shields.io Badges",
-        desc: "Audits package.json dependencies to generate confirmed Shields.io tech badges without dead links.",
+        icon: Code2,
+        title: "Automated Mermaid Diagrams",
+        desc: "Renders deterministic system topology diagrams and subgraphs directly from the verified code architecture graph.",
     },
     {
         icon: Sparkles,
-        title: "Zero Hallucination",
-        desc: "Grounded strictly in static analysis facts before prompt compilation so documentation never invents code.",
+        title: "Evidence-Grounded AI Docs",
+        desc: "Synthesizes comprehensive README documentation grounded strictly in verified static facts with 100-point validation.",
     },
 ];
 
@@ -42,10 +42,10 @@ export default function Features() {
                 {/* Section Header */}
                 <div className="text-center max-w-2xl mx-auto space-y-2">
                     <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">
-                        Any repository. Documented on every commit.
+                        Evidence-backed repository intelligence.
                     </h2>
                     <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-                        Continuous documentation engine built for developer speed and accuracy.
+                        Deterministic static analysis, cross-service correlation, and grounded documentation for full-stack and polyglot codebases.
                     </p>
                 </div>
 

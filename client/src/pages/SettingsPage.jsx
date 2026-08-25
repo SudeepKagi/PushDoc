@@ -4,8 +4,8 @@ import { Button } from "../components/ui/button.jsx";
 import { Input } from "../components/ui/input.jsx";
 import { Label } from "../components/ui/label.jsx";
 import { Badge } from "../components/ui/badge.jsx";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select.jsx";
 import { Settings, Webhook, GitBranch, Copy, Check, Eye, EyeOff, RefreshCw, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
+import { BACKEND_URL } from "../constants/config.js";
 
 function generateCryptoSecret() {
     try {
@@ -146,14 +146,14 @@ export default function SettingsPage({
                             <div className="flex items-center gap-2">
                                 <Input 
                                     readOnly 
-                                    value="https://pushdoc-api.onrender.com/webhooks/github" 
+                                    value={`${BACKEND_URL}/webhooks/github`} 
                                     className="font-mono text-xs h-8 rounded-[6px] bg-bg" 
                                 />
                                 <Button
                                     variant="outline"
                                     size="icon"
                                     className="h-8 w-8 shrink-0 rounded-[6px]"
-                                    onClick={() => handleCopy("https://pushdoc-api.onrender.com/webhooks/github", "url")}
+                                    onClick={() => handleCopy(`${BACKEND_URL}/webhooks/github`, "url")}
                                     title="Copy Webhook URL"
                                 >
                                     {copiedUrl ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}

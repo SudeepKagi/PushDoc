@@ -1,17 +1,17 @@
 import React from "react";
 import { Card, CardContent } from "../ui/card.jsx";
 import { Badge } from "../ui/badge.jsx";
-import { Cpu, Server, Database, GitBranch, Sparkles, Shield, Code, Workflow } from "lucide-react";
+import { Cpu, Server, Database, GitBranch, Sparkles, Layers, Code, Workflow, Box } from "lucide-react";
 
 const STACK = [
-    { name: "Express.js", cat: "Backend AST", icon: Server, desc: "Parses route handlers, middleware, & URL params." },
-    { name: "Fastify", cat: "Backend AST", icon: Code, desc: "Extracts JSON schema routes & controller functions." },
-    { name: "Mongoose", cat: "Data Models", icon: Database, desc: "Extracts MongoDB schemas, types, & field validation." },
-    { name: "Prisma ORM", cat: "Data Models", icon: Database, desc: "Parses schema.prisma definitions & relations." },
-    { name: "GitHub Webhooks", cat: "Git Engine", icon: GitBranch, desc: "Sub-7ms HMAC signature verification on git push." },
-    { name: "Gemini 2.5 Flash", cat: "AI Provider", icon: Sparkles, desc: "High-speed LLM for structured Markdown synthesis." },
-    { name: "Groq Llama 3.3", cat: "AI Failover", icon: Cpu, desc: "Ultra-low latency backup provider for 99.99% uptime." },
-    { name: "Shields.io", cat: "Badges", icon: Shield, desc: "Validates package dependencies for live badges." },
+    { name: "Node.js & Express", cat: "JavaScript/TS", icon: Server, desc: "Parses Express routes, middleware, and Mongoose models." },
+    { name: "Python & FastAPI", cat: "Python", icon: Code, desc: "Extracts FastAPI, Flask, and Django routes and SQLAlchemy ORMs." },
+    { name: "Java & Spring Boot", cat: "Java/Kotlin", icon: Layers, desc: "Parses Spring Boot REST controllers and Spring Data JPA entities." },
+    { name: "Go & Gin", cat: "Go", icon: Code, desc: "Extracts Gin/Echo router definitions and GORM database models." },
+    { name: "OpenAPI & Docker", cat: "Infrastructure", icon: Box, desc: "Ingests OpenAPI 3.0 specifications and Docker Compose topologies." },
+    { name: "Postgres, Mongo, Redis", cat: "Datastores", icon: Database, desc: "Maps database connections and caching layers into architecture graphs." },
+    { name: "Gemini & Groq (BYOK)", cat: "AI Models", icon: Sparkles, desc: "Flexible routing to Google Gemini and Groq with custom API key support." },
+    { name: "GitHub App & BullMQ", cat: "Automation", icon: GitBranch, desc: "HMAC-SHA256 authenticated webhooks and Redis background job queues." },
 ];
 
 export default function Integrations() {
@@ -20,13 +20,13 @@ export default function Integrations() {
             <div className="max-w-5xl mx-auto px-6 space-y-12">
                 <div className="text-center max-w-2xl mx-auto space-y-2">
                     <Badge variant="outline" className="text-xs font-mono rounded-[4px] px-2.5 gap-1">
-                        <Workflow className="h-3 w-3 text-accent" /> Supported Ecosystem
+                        <Workflow className="h-3 w-3 text-accent" /> Supported Ecosystems
                     </Badge>
                     <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-text-primary">
-                        Works with your entire stack
+                        Multi-language and framework support
                     </h2>
                     <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-                        PushDoc plugs directly into your backend frameworks, database ORMs, and AI providers.
+                        PushDoc extracts structured architecture facts across polyglot backend services, ORMs, and specifications.
                     </p>
                 </div>
 

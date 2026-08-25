@@ -12,6 +12,7 @@
  */
 
 import { extractDiagramEdges } from "../analyzers/diagram.graph.js";
+import { MermaidRenderer }     from "../analyzers/core/mermaid.renderer.js";
 
 /**
  * Generates a Mermaid flowchart string from an edge list.
@@ -103,10 +104,23 @@ export const validateDiagram = (mermaidString) => {
  * Convenience method: Extracts edges, renders Mermaid, and wraps in Markdown code fence.
  *
  * @param {Array<{ path: string, content: string, extension?: string }>} files
+ * @param {object} [knowledge=null] - Repository knowledge containing ArchitectureGraph
  * @param {number} [maxNodes=12]
  * @returns {string} Markdown section with ```mermaid block, or "" if graph has no edges
  */
-export const generateArchitectureSection = (files, maxNodes = 12) => {
+export const generateArchitectureSection = (files, knowledge = null, maxNodes = 12) => {
+    // 1. Prefer central Architecture Graph if it contains nodes & edges
+    if (knowledge?.architectureGraph) {
+        const mermaidFromGraph = MermaidRenderer.render(knowledge.architectureGraph);
+        if (mermaidFromGraph) {
+            const validation = validateDiagram(mermaidFromGraph);
+            if (validation.isValid) {
+                return `## 🏛️ System Architecture\n\n\`\`\`mermaid\n${mermaidFromGraph}\n\`\`\`\n`;
+            }
+        }
+    }
+
+    // 2. Fallback to module import dependency graph
     const graphData = extractDiagramEdges(files, maxNodes);
     if (!graphData.edges || graphData.edges.length === 0) {
         return "";
@@ -119,12 +133,7 @@ export const generateArchitectureSection = (files, maxNodes = 12) => {
         return "";
     }
 
-    return `## 🏛️ System Architecture
-
-\`\`\`mermaid
-${mermaidContent}
-\`\`\`
-`;
+    return `## 🏛️ System Architecture\n\n\`\`\`mermaid\n${mermaidContent}\n\`\`\`\n`;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -1,71 +1,37 @@
-import * as repositoryAnalyzer from "../analyzers/repository.analyzer.js";
-import * as embeddingService  from "../services/embedding.service.js";
-import * as retrievalService  from "../services/retrieval.service.js";
-import * as dependencyGraph   from "../analyzers/dependency.graph.js";
-import { config }             from "../config/app.config.js";
-import * as logger            from "../services/logger.service.js";
+/**
+ * Repository Context Builder — repositoryContext.builder.js (Production Modular V6)
+ *
+ * Assembles the structured prompt context document delivered to the AI model.
+ * Incorporates Tier-1 deterministic facts, Architecture Graph & relationship topology,
+ * contract inconsistency warnings, Common Fact Model endpoints, database models,
+ * and RAG semantic chunks (for large repositories).
+ */
+
+import { logger } from "../utils/logger.js";
+import { config } from "../config/env.js";
+import { dependencyGraph } from "../services/dependencyGraph.service.js";
+import { embeddingService } from "../services/embedding.service.js";
+import { retrievalService } from "../services/retrieval.service.js";
+
+import {
+    buildTier1Section,
+    buildFolderStructureSection,
+    shouldIncludeRawSource,
+    getLanguage,
+} from "./treeContext.builder.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-const ALLOWED_CATEGORIES = new Set([
-    "controllers", "controller",
-    "routes", "route",
-    "models", "model",
-    "middlewares", "middleware",
-    "config",
-    "services", "service",
-    "workers", "worker",
-    "pipelines", "pipeline"
-]);
-
-const FRONTEND_CATEGORIES = new Set([
-    "pages", "page",
-    "components", "component",
-    "hooks", "hook",
-    "context",
-    "store",
-    "views", "view",
-    "screens", "screen",
-    "layouts", "layout",
-    "utils", "util",
-    "helpers", "helper",
-    "lib",
-]);
-
-const ALLOWED_EXPLICIT_FILES = new Set([
-    "package.json",
-    "server.js",
-    "app.js",
-    "readme.md",
-]);
-
-const FRONTEND_EXPLICIT_FILES = new Set([
-    "package.json",
-    "app.jsx",
-    "app.tsx",
-    "app.js",
-    "main.jsx",
-    "main.tsx",
-    "index.jsx",
-    "index.tsx",
-    "readme.md",
-]);
-
-// Map operations back to their integration names for clear display
 const INTEGRATION_OPS_MAP = {
-    "Upload Image":         "Cloudinary (Image Upload)",
-    "Geocode Location":     "Mapbox (Geocoding)",
-    "Process Payment":      "Stripe/Razorpay (Payments)",
-    "Cache Data":           "Redis (Caching)",
-    "Background Jobs":      "BullMQ (Queue)",
-    "Generate Token":       "JWT (Token Generation)",
-    "Authenticate User":    "Passport (Authentication)",
-    "Send Email":           "Nodemailer (Email Service)",
-    "Firebase Integration": "Firebase",
-    "AI Generation":        "OpenAI/Gemini/Groq (AI Services)",
-    "External API Call":    "Axios/Fetch (API Client)",
+    sendEmail: "Send Email (Mail Service)",
+    chargeCard: "Process Payment (Stripe/Payment Gateway)",
+    generateToken: "Token Generation (Auth/JWT)",
+    verifyToken: "Token Verification (Auth/JWT)",
+    hashPassword: "Password Hashing (bcrypt/argon2)",
+    comparePassword: "Password Comparison (bcrypt/argon2)",
+    uploadToCloud: "Cloud Storage Upload",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,69 +39,79 @@ const INTEGRATION_OPS_MAP = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Builds a structured repository knowledge context document.
+ * Builds the complete prompt context for the LLM.
  *
- * Implements Size-Threshold Branching:
- * - Repos <= 40 files: Full deterministic AST + key raw source files (0 retrieval latency)
- * - Repos > 40 files : In-memory RAG via Gemini text-embedding-004 to pull top relevant chunks
+ * @param {object} repository - Scanned repository files and metadata
+ * @param {object} knowledge  - Output of repository.analyzer.js
+ * @returns {Promise<string>} Fully formatted context string
  */
-export const buildRepositoryContext = async (repository, precalculatedKnowledge) => {
+export const buildRepositoryContext = async (repository, knowledge) => {
     let context = "";
 
-    // 1. Run all repository intelligence analyzers
-    const knowledge = precalculatedKnowledge || repositoryAnalyzer.analyzeRepository(repository);
-    const projectType = knowledge.projectType || "backend";
-
-    // 2. Tier-1: Zero-LLM deterministic header — built from static analysis only.
-    // This section always appears first and never requires an AI call, so it
-    // cannot hallucinate. The LLM sees the framework, entry points, and tree
-    // before any generated text.
+    // 1. Tier-1 Zero-LLM Deterministic Header
     context += buildTier1Section(repository.files, knowledge);
 
-    // 3. Inject project type
-    context += `================================================================================\r\nPROJECT TYPE: ${projectType.toUpperCase()}\r\n================================================================================\r\n\r\n`;
-
-    // 4. Format PROJECT section
-    const packageInfo = knowledge.package;
-    if (packageInfo) {
-        context += buildProjectSection(packageInfo);
-        context += buildTechStackSection(packageInfo);
+    // 2. Monorepo Service Topology (if applicable)
+    if (knowledge.isMonorepo && knowledge.services?.length > 0) {
+        context += buildServicesSection(knowledge.services);
     }
 
-    // 5. Format FOLDER STRUCTURE section (derived from actual file paths)
+    // 3. Architecture Graph & Relationship Topology
+    if (knowledge.architectureGraph) {
+        context += buildArchitectureGraphSection(knowledge.architectureGraph, knowledge.conflicts || []);
+    }
+
+    // 4. Project Information
+    if (knowledge.package) {
+        context += buildProjectSection(knowledge.package);
+    }
+
+    // 5. Tech Stack & Dependencies
+    if (knowledge.package) {
+        context += buildTechStackSection(knowledge.package);
+        context += buildDependenciesSection(knowledge.package);
+    }
+
+    // 6. Folder Structure
     context += buildFolderStructureSection(repository.files);
 
-    // 6. Format APPLICATION FEATURES section
+    // 7. Inferred Application Features
     if (knowledge.features) {
         context += buildFeaturesSection(knowledge.features);
     }
 
-    // 7. Format DETERMINISTIC AST FACTS section (API calls, process.env, .env.example)
+    // 8. Deterministic AST Facts
     if (knowledge.ast) {
         context += buildAstSection(knowledge.ast);
     }
 
-    // 8. Format API OVERVIEW section (backend/fullstack only)
-    if (knowledge.routes && knowledge.routes.length > 0) {
+    // 9. API Overview
+    const endpointsFromFacts = (knowledge.facts || [])
+        .filter(f => f.type === "endpoint")
+        .sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+
+    if (endpointsFromFacts.length > 0) {
+        context += buildApiOverviewFromFacts(endpointsFromFacts);
+    } else if (knowledge.routes && knowledge.routes.length > 0) {
         context += buildApiOverviewSection(knowledge.routes);
     }
 
-    // 9. Format DATABASE MODELS section (backend/fullstack only)
+    // 10. Database Models
     if (knowledge.models && knowledge.models.length > 0) {
         context += buildModelsSection(knowledge.models);
     }
 
-    // 10. Format CONTROLLERS section (backend/fullstack only)
+    // 11. Controllers
     if (knowledge.controllers && knowledge.controllers.length > 0) {
         context += buildControllersSection(knowledge.controllers);
     }
 
-    // 11. Raw Source Inclusion: Branch by repository size
+    // 12. Raw Source / RAG Retrieval
+    const projectType = knowledge.projectType?.type || "backend";
     const RAG_THRESHOLD_FILE_COUNT = 40;
+
     if (repository.files && repository.files.length > RAG_THRESHOLD_FILE_COUNT) {
         try {
-            // Select only the top-N most-imported files for embedding.
-            // This limits embedding API calls to the architecturally important files.
             const topN = config.rag.topNFiles;
             const candidateFiles = dependencyGraph.selectTopFiles(repository.files, topN);
             logger.info(`RAG: selected ${candidateFiles.length}/${repository.files.length} files by centrality for embedding`);
@@ -156,9 +132,6 @@ export const buildRepositoryContext = async (repository, precalculatedKnowledge)
             context += buildRawSourceSection(repository.files, projectType);
         }
 
-        // Apply token budget: if context exceeds the limit for this repo's size tier,
-        // truncate at the char limit. We truncate from the end so the deterministic
-        // Tier-1 section (which comes first) is always preserved.
         const fileCount = repository.files.length;
         const budget = fileCount > 150
             ? config.tokenBudget.large
@@ -174,182 +147,100 @@ export const buildRepositoryContext = async (repository, precalculatedKnowledge)
         return context;
     }
 
-    // Default for small repos (<= 40 files)
     context += buildRawSourceSection(repository.files, projectType);
-
     return context;
 };
 
-/**
- * Tier-1 Zero-LLM Section
- *
- * Built entirely from static analysis — no AI calls, no retrieval.
- * Detects the framework, entry points, and scripts from the file list and
- * package.json. This section always appears first in the context so the model
- * sees deterministic facts before any retrieved or generated content.
- */
-function buildTier1Section(files, knowledge) {
-    const fileNames = new Set(
-        (files || []).map(f => f.path.replace(/\\/g, "/").split("/").pop().toLowerCase())
-    );
-    const allPaths = (files || []).map(f => f.path.replace(/\\/g, "/").toLowerCase());
+// ─────────────────────────────────────────────────────────────────────────────
+// Section Builders
+// ─────────────────────────────────────────────────────────────────────────────
 
-    // ── Framework detection ──────────────────────────────────────────────
-    // Check for framework-specific config files and package.json dependencies.
-    const deps = {
-        ...(knowledge.package?.project?.dependencies || {}),
-        ...(knowledge.package?.project?.devDependencies || {}),
-    };
+function buildArchitectureGraphSection(graph, conflicts = []) {
+    let section = `================================================================================\r\nARCHITECTURE GRAPH & RELATIONSHIP TOPOLOGY\r\n================================================================================\n`;
 
-    const frameworks = [];
-    if (fileNames.has("next.config.js") || fileNames.has("next.config.ts") || deps["next"]) {
-        frameworks.push("Next.js");
+    const nodes = graph.getAllNodes ? graph.getAllNodes() : (graph.nodes || []);
+    section += `Discovered Components (${nodes.length}):\n`;
+    for (const node of nodes) {
+        const fw = node.framework ? ` (${node.framework})` : "";
+        const lang = node.language && node.language !== "Unknown" ? ` [${node.language}]` : "";
+        section += `  • [${node.type.toUpperCase()}] ${node.label}${lang}${fw} — ${node.componentType || node.type}\n`;
     }
-    if (fileNames.has("vite.config.js") || fileNames.has("vite.config.ts") || deps["vite"]) {
-        frameworks.push("Vite");
+
+    const edges = graph.getAllEdges ? graph.getAllEdges() : (graph.edges || []);
+    if (edges.length > 0) {
+        section += `\nInter-Component Relationships & Calls (${edges.length}):\n`;
+        for (const edge of edges) {
+            const proto = edge.protocol ? ` via ${edge.protocol}` : "";
+            const details = edge.method && edge.path ? ` [${edge.method} ${edge.path}]` : edge.label ? ` [${edge.label}]` : "";
+            section += `  • ${edge.from} ──(${edge.type}${details}${proto})──> ${edge.to}\n`;
+        }
     }
-    if (fileNames.has("astro.config.mjs") || deps["astro"]) {
-        frameworks.push("Astro");
-    }
-    if (fileNames.has("nuxt.config.js") || deps["nuxt"] || deps["nuxt3"]) {
-        frameworks.push("Nuxt");
-    }
-    if (fileNames.has("svelte.config.js") || deps["svelte"] || deps["@sveltejs/kit"]) {
-        frameworks.push("SvelteKit");
-    }
-    if (deps["express"]) frameworks.push("Express");
-    if (deps["fastify"]) frameworks.push("Fastify");
-    if (deps["nestjs"] || deps["@nestjs/core"]) frameworks.push("NestJS");
-    if (deps["koa"])    frameworks.push("Koa");
 
-    // ── Entry point detection ────────────────────────────────────────────
-    const entryPointCandidates = [
-        "server.js", "server.ts", "app.js", "app.ts",
-        "index.js", "index.ts",
-        "main.js", "main.ts", "main.jsx", "main.tsx",
-        "src/index.js", "src/index.ts", "src/main.js", "src/main.ts",
-    ];
-    const entryPoints = entryPointCandidates.filter(ep =>
-        allPaths.some(p => p.endsWith(ep))
-    );
-
-    // ── Package scripts ──────────────────────────────────────────────────
-    const scripts = knowledge.package?.project?.scripts || {};
-    const scriptLines = Object.entries(scripts)
-        .map(([name, cmd]) => `  ${name.padEnd(14)} ${cmd}`)
-        .join("\n");
-
-    // ── Assemble section ─────────────────────────────────────────────────
-    let section = `================================================================================
-TIER-1 DETERMINISTIC FACTS (zero LLM calls — static analysis only)
-================================================================================\n`;
-
-    section += `Detected Frameworks: ${frameworks.length > 0 ? frameworks.join(", ") : "None detected"}\n`;
-    section += `Entry Points:        ${entryPoints.length > 0 ? entryPoints.join(", ") : "Not detected"}\n`;
-
-    if (scriptLines) {
-        section += `\nPackage Scripts:\n${scriptLines}\n`;
+    if (conflicts && conflicts.length > 0) {
+        section += `\n⚠️ CONTRACT & ENVIRONMENT INCONSISTENCIES (${conflicts.length}):\n`;
+        for (const c of conflicts) {
+            const title = c.title || c.value?.title || "Inconsistency";
+            const desc = c.description || c.value?.description || "";
+            const severity = (c.severity || c.value?.severity || "warning").toUpperCase();
+            section += `  • [${severity}] ${title}: ${desc}\n`;
+            if (c.expected || c.value?.expected) {
+                section += `      Expected: ${c.expected || c.value?.expected}\n      Actual:   ${c.actual || c.value?.actual}\n`;
+            }
+        }
     }
 
     section += "\n";
     return section;
 }
 
-function buildRagSourceSection(relevantChunks) {
-    let section = `================================================================================
-SEMANTICALLY RETRIEVED CODE CHUNKS (RAG Engine)
-================================================================================\n`;
+function buildServicesSection(services) {
+    let section = `================================================================================\r\nMONOREPO / POLYGLOT SERVICE TOPOLOGY\r\n================================================================================\n`;
+    section += `This repository contains ${services.length} independent services:\n\n`;
 
-    for (const chunk of relevantChunks) {
-        section += `\n================================================================================\n`;
-        section += `FILE: ${chunk.filePath} (Lines ${chunk.startLine}-${chunk.endLine}, Similarity Score: ${(chunk.score || 0).toFixed(3)})\n`;
-        section += `================================================================================\n`;
-        section += `\`\`\`\n`;
-        section += `${chunk.content}\n`;
-        section += `\`\`\`\n`;
+    for (const svc of services) {
+        section += `  Service: ${svc.name}\n`;
+        section += `    Path:      ${svc.path || "."}\n`;
+        section += `    Language:  ${svc.language || "Unknown"}\n`;
+        section += `    Ecosystem: ${svc.ecosystem || "unknown"}\n`;
+        if (svc.framework) {
+            section += `    Framework: ${svc.framework}\n`;
+        }
+        if (svc.evidence && svc.evidence.length > 0) {
+            section += `    Detected:  ${svc.evidence[0]}\n`;
+        }
+        section += "\n";
     }
 
     return section;
 }
 
+function buildApiOverviewFromFacts(endpointFacts) {
+    let section = `================================================================================\r\nAPI ENDPOINTS (extracted from source code / specs)\r\n================================================================================\n`;
 
+    const byService = {};
+    for (const ep of endpointFacts) {
+        const key = ep.service || "(root)";
+        if (!byService[key]) byService[key] = [];
+        byService[key].push(ep);
+    }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Section Builders
-// ─────────────────────────────────────────────────────────────────────────────
-
-function buildFolderStructureSection(files) {
-    // Build a set of unique directory paths from actual file paths
-    const dirSet = new Set();
-    const fileSet = new Set();
-
-    for (const file of files) {
-        const parts = file.path.replace(/\\/g, "/").split("/");
-        fileSet.add(parts[parts.length - 1]);
-        // Add each directory segment
-        for (let i = 0; i < parts.length - 1; i++) {
-            dirSet.add(parts.slice(0, i + 1).join("/"));
+    for (const [svcName, eps] of Object.entries(byService)) {
+        if (Object.keys(byService).length > 1) {
+            section += `\n  [${svcName}]\n`;
+        }
+        for (const ep of eps) {
+            const method  = (ep.method || "").padEnd(8);
+            const path    = ep.path || "/";
+            const handler = ep.handler ? ` → ${ep.handler}` : "";
+            const conf    = ep.confidence !== undefined
+                ? ` (confidence: ${(ep.confidence * 100).toFixed(0)}%)`
+                : "";
+            section += `  ${method} ${path}${handler}${conf}\n`;
         }
     }
 
-    // Build tree as sorted unique paths
-    const allPaths = [...dirSet].sort();
-    const allFiles = [...fileSet].sort();
-
-    // Show top-level structure concisely
-    const topLevelDirs = new Set();
-    const topLevelFiles = new Set();
-
-    for (const file of files) {
-        const parts = file.path.replace(/\\/g, "/").split("/");
-        if (parts.length === 1) {
-            topLevelFiles.add(parts[0]);
-        } else {
-            topLevelDirs.add(parts[0]);
-        }
-    }
-
-    // Build a simplified tree view
-    const treeLines = [];
-    const rootDirs = [...topLevelDirs].sort();
-    const rootFiles = [...topLevelFiles].sort();
-
-    // For each top-level dir, collect its immediate children
-    const dirChildren = {};
-    for (const file of files) {
-        const parts = file.path.replace(/\\/g, "/").split("/");
-        if (parts.length >= 2) {
-            const dir = parts[0];
-            const child = parts[1];
-            if (!dirChildren[dir]) dirChildren[dir] = new Set();
-            dirChildren[dir].add(child);
-        }
-    }
-
-    for (let i = 0; i < rootDirs.length; i++) {
-        const dir = rootDirs[i];
-        const isLast = i === rootDirs.length - 1 && rootFiles.length === 0;
-        treeLines.push(`${isLast ? "└──" : "├──"} ${dir}/`);
-        const children = dirChildren[dir] ? [...dirChildren[dir]].sort() : [];
-        for (let j = 0; j < children.length; j++) {
-            const child = children[j];
-            const childIsLast = j === children.length - 1;
-            const prefix = isLast ? "    " : "│   ";
-            treeLines.push(`${prefix}${childIsLast ? "└──" : "├──"} ${child}`);
-        }
-    }
-    for (const f of rootFiles) {
-        treeLines.push(`├── ${f}`);
-    }
-
-    return `================================================================================
-FOLDER STRUCTURE (actual files scanned)
-================================================================================
-\`\`\`
-${treeLines.join("\n")}
-\`\`\`
-
-`;
+    section += "\n";
+    return section;
 }
 
 function buildProjectSection(packageInfo) {
@@ -366,9 +257,9 @@ Description: ${proj.description || "No description provided."}
 
 function buildTechStackSection(packageInfo) {
     const tech = packageInfo.technology;
-    const db   = tech.database.length ? tech.database.join(", ") : "None";
-    const auth = tech.authentication.length ? tech.authentication.join(", ") : "None";
-    const stor = tech.storage.length ? tech.storage.join(", ") : "None";
+    const db   = tech.database?.length ? tech.database.join(", ") : "None";
+    const auth = tech.authentication?.length ? tech.authentication.join(", ") : "None";
+    const stor = tech.storage?.length ? tech.storage.join(", ") : "None";
 
     return `================================================================================
 TECH STACK
@@ -384,12 +275,26 @@ Package Manager: ${tech.packageManager}
 `;
 }
 
+function buildDependenciesSection(packageInfo) {
+    let section = `================================================================================
+DEPENDENCIES
+================================================================================
+`;
+    if (packageInfo.runtimeDependencies?.length > 0) {
+        section += `Runtime Dependencies:\n${packageInfo.runtimeDependencies.map(d => `  - ${d}`).join("\n")}\n\n`;
+    }
+    if (packageInfo.devDependencies?.length > 0) {
+        section += `Development Dependencies:\n${packageInfo.devDependencies.map(d => `  - ${d}`).join("\n")}\n\n`;
+    }
+    return section;
+}
+
 function buildFeaturesSection(featuresData) {
     let section = `================================================================================
 APPLICATION FEATURES
 ================================================================================\n`;
 
-    if (featuresData.features && featuresData.features.length > 0) {
+    if (featuresData.features?.length > 0) {
         for (const feat of featuresData.features) {
             section += `- **${feat.title}**: ${feat.description}\n`;
         }
@@ -401,7 +306,7 @@ APPLICATION FEATURES
 CAPABILITIES
 ================================================================================\n`;
 
-    if (featuresData.capabilities && featuresData.capabilities.length > 0) {
+    if (featuresData.capabilities?.length > 0) {
         for (const cap of featuresData.capabilities) {
             section += `- ${cap}\n`;
         }
@@ -417,7 +322,7 @@ function buildAstSection(ast) {
 DETERMINISTIC AST EXTRACTED FACTS
 ================================================================================\n`;
 
-    if (ast.apiCalls && ast.apiCalls.length > 0) {
+    if (ast.apiCalls?.length > 0) {
         section += `## Extracted Frontend API Call Sites:\n`;
         for (const call of ast.apiCalls) {
             section += `- Method: ${call.method} | Client: ${call.client} | URL: \`${call.url}\` (File: ${call.file})\n`;
@@ -425,7 +330,7 @@ DETERMINISTIC AST EXTRACTED FACTS
         section += "\n";
     }
 
-    if (ast.expressRoutes && ast.expressRoutes.length > 0) {
+    if (ast.expressRoutes?.length > 0) {
         section += `## Extracted Express Routes:\n`;
         for (const route of ast.expressRoutes) {
             section += `- ${route.method.padEnd(6)} ${route.path} (File: ${route.file})\n`;
@@ -433,7 +338,7 @@ DETERMINISTIC AST EXTRACTED FACTS
         section += "\n";
     }
 
-    if (ast.envVars && ast.envVars.length > 0) {
+    if (ast.envVars?.length > 0) {
         section += `## Environment Variables Referenced in Code (process.env):\n`;
         for (const envKey of ast.envVars) {
             section += `- ${envKey}\n`;
@@ -441,7 +346,7 @@ DETERMINISTIC AST EXTRACTED FACTS
         section += "\n";
     }
 
-    if (ast.envFileVars && ast.envFileVars.length > 0) {
+    if (ast.envFileVars?.length > 0) {
         section += `## Environment Variables Found in .env.example / .env.sample:\n`;
         for (const envItem of ast.envFileVars) {
             section += `- ${envItem.key} (File: ${envItem.sourceFile})\n`;
@@ -467,7 +372,7 @@ API OVERVIEW
     for (const [file, fileRoutes] of Object.entries(byFile)) {
         section += `## Router: ${file}\n\n`;
         for (const route of fileRoutes) {
-            const mwLine = route.middlewares.length > 0
+            const mwLine = route.middlewares?.length > 0
                 ? `  Middlewares: ${route.middlewares.join(", ")}\n`
                 : "";
             section +=
@@ -490,7 +395,7 @@ DATABASE MODELS
         section += `Source File: ${model.file}\n\n`;
 
         section += `### Fields:\n`;
-        if (model.fields && model.fields.length > 0) {
+        if (model.fields?.length > 0) {
             for (const field of model.fields) {
                 let details = `type: ${field.type}`;
                 if (field.required) details += ", required";
@@ -508,7 +413,7 @@ DATABASE MODELS
         }
 
         section += `\n### Indexes:\n`;
-        if (model.indexes && model.indexes.length > 0) {
+        if (model.indexes?.length > 0) {
             for (const idx of model.indexes) {
                 section += `  - ${idx}\n`;
             }
@@ -517,7 +422,7 @@ DATABASE MODELS
         }
 
         section += `\n### Hooks:\n`;
-        if (model.middleware && model.middleware.length > 0) {
+        if (model.middleware?.length > 0) {
             for (const hook of model.middleware) {
                 section += `  - ${hook}\n`;
             }
@@ -526,7 +431,7 @@ DATABASE MODELS
         }
 
         section += `\n### Plugins:\n`;
-        if (model.plugins && model.plugins.length > 0) {
+        if (model.plugins?.length > 0) {
             for (const plug of model.plugins) {
                 section += `  - ${plug}\n`;
             }
@@ -551,7 +456,6 @@ CONTROLLERS
         for (const exp of ctrl.exports || []) {
             section += `  ### Function: ${exp.name}\n`;
 
-            // Separate integrations and business operations
             const businessOps = [];
             const integrations = [];
 
@@ -565,8 +469,8 @@ CONTROLLERS
 
             const opsText = businessOps.length > 0 ? businessOps.join(", ") : "None";
             const intsText = integrations.length > 0 ? integrations.join(", ") : "None";
-            const modelsText = exp.models.length > 0 ? exp.models.join(", ") : "None";
-            const methodsText = exp.methods.length > 0 ? exp.methods.join(", ") : "None";
+            const modelsText = exp.models?.length > 0 ? exp.models.join(", ") : "None";
+            const methodsText = exp.methods?.length > 0 ? exp.methods.join(", ") : "None";
 
             section += `    - Business Operations:  ${opsText}\n`;
             section += `    - Database Models:      ${modelsText} (using ${methodsText})\n`;
@@ -578,25 +482,38 @@ CONTROLLERS
     return section;
 }
 
+function buildRagSourceSection(relevantChunks) {
+    let section = `================================================================================
+SEMANTICALLY RETRIEVED CODE CHUNKS (RAG Engine)
+================================================================================\n`;
+
+    for (const chunk of relevantChunks) {
+        section += `\n================================================================================\n`;
+        section += `FILE: ${chunk.filePath} (Lines ${chunk.startLine}-${chunk.endLine}, Similarity Score: ${(chunk.score || 0).toFixed(3)})\n`;
+        section += `================================================================================\n`;
+        section += `\`\`\`\n`;
+        section += `${chunk.content}\n`;
+        section += `\`\`\`\n`;
+    }
+
+    return section;
+}
+
 function buildRawSourceSection(files, projectType = "backend") {
     let section = `================================================================================
 RAW SOURCE CODE
 ================================================================================\n`;
 
     const isFrontend = projectType === "frontend";
-
-    // For frontend projects: pages/ and explicit entry files first (most informative),
-    // then other frontend categories. Cap at 10 files to avoid token overflow.
     const MAX_FRONTEND_FILES = 10;
     let codeFilesIncluded = 0;
 
-    // Prioritise pages for frontend (they reveal what screens the app has)
     const orderedFiles = isFrontend
         ? [
-            ...files.filter(f => (f.category || "").toLowerCase().startsWith("page")),
-            ...files.filter(f => !((f.category || "").toLowerCase().startsWith("page"))),
+            ...(files || []).filter(f => (f.category || "").toLowerCase().startsWith("page")),
+            ...(files || []).filter(f => !((f.category || "").toLowerCase().startsWith("page"))),
           ]
-        : files;
+        : (files || []);
 
     for (const file of orderedFiles) {
         if (isFrontend && codeFilesIncluded >= MAX_FRONTEND_FILES) break;
@@ -617,41 +534,4 @@ RAW SOURCE CODE
     }
 
     return section;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Filter Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-function shouldIncludeRawSource(file, projectType = "backend") {
-    const cat      = (file.category || "").toLowerCase();
-    const basename = file.path.split(/[/\\]/).pop().toLowerCase();
-
-    if (projectType === "frontend") {
-        if (FRONTEND_CATEGORIES.has(cat)) return true;
-        if (FRONTEND_EXPLICIT_FILES.has(basename)) return true;
-        return false;
-    }
-
-    if (ALLOWED_CATEGORIES.has(cat)) return true;
-    if (ALLOWED_EXPLICIT_FILES.has(basename)) return true;
-
-    return false;
-}
-
-function getLanguage(extension) {
-    const map = {
-        ".js": "javascript",
-        ".ts": "typescript",
-        ".jsx": "jsx",
-        ".tsx": "tsx",
-        ".json": "json",
-        ".md": "markdown",
-        ".html": "html",
-        ".css": "css",
-        ".scss": "scss",
-        ".yml": "yaml",
-        ".yaml": "yaml",
-    };
-    return map[extension] || "";
 }

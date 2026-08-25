@@ -99,9 +99,10 @@ test("detects CRUD, Authentication, and Image Upload capabilities from package &
     };
 
     const result = analyzeFeatures(knowledge);
-    expect(result.capabilities).toContain("CRUD");
-    expect(result.capabilities).toContain("Authentication");
-    expect(result.capabilities).toContain("Image Upload");
+    const capNames = result.capabilities.map(c => typeof c === "string" ? c : c.name);
+    expect(capNames).toContain("CRUD");
+    expect(capNames).toContain("Authentication");
+    expect(capNames).toContain("Image Upload");
 });
 
 test("detects Payments, Geolocation, and Email capabilities", () => {
@@ -121,9 +122,10 @@ test("detects Payments, Geolocation, and Email capabilities", () => {
     };
 
     const result = analyzeFeatures(knowledge);
-    expect(result.capabilities).toContain("Payments");
-    expect(result.capabilities).toContain("Geolocation");
-    expect(result.capabilities).toContain("Email");
+    const capNames = result.capabilities.map(c => typeof c === "string" ? c : c.name);
+    expect(capNames).toContain("Payments");
+    expect(capNames).toContain("Geolocation");
+    expect(capNames).toContain("Email");
 });
 
 test("detects Caching and Background Jobs capabilities", () => {
@@ -143,8 +145,9 @@ test("detects Caching and Background Jobs capabilities", () => {
     };
 
     const result = analyzeFeatures(knowledge);
-    expect(result.capabilities).toContain("Caching");
-    expect(result.capabilities).toContain("Background Jobs");
+    const capNames = result.capabilities.map(c => typeof c === "string" ? c : c.name);
+    expect(capNames).toContain("Caching");
+    expect(capNames).toContain("Background Jobs");
 });
 
 console.log("\n── High-Level Business Features Inference ──");
