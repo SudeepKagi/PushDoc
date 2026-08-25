@@ -6,6 +6,7 @@ import * as repositoryService from "../services/repository.service.js";
 import * as jobService from "../services/job.service.js";
 import * as logger from "../services/logger.service.js";
 import readmeQueue from "../queue/queue.js";
+import eventsService from "../services/events.service.js";
 import fs from "fs";
 import path from "path";
 
@@ -481,4 +482,39 @@ export const toggleRepository = async (req, res) => {
             message: error.message
         });
     }
+};
+
+/**
+ * Server-Sent Events (SSE) stream endpoint
+ * Pushes real-time job status updates and live terminal logs without polling
+ */
+export const streamEvents = (req, res) => {
+    const userId = req.user?.userId;
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+
+    if (typeof res.flushHeaders === "function") {
+        res.flushHeaders();
+    }
+
+    res.write(`event: connected\ndata: ${JSON.stringify({ message: "Connected to PushDoc real-time stream", userId })}\n\n`);
+
+    eventsService.addClient(userId, res);
+
+    // Heartbeat ping every 20s to keep connection alive through cloud reverse proxies
+    const keepAlive = setInterval(() => {
+        try {
+            res.write(": ping\n\n");
+        } catch {
+            clearInterval(keepAlive);
+        }
+    }, 20000);
+
+    req.on("close", () => {
+        clearInterval(keepAlive);
+        eventsService.removeClient(userId, res);
+    });
 };

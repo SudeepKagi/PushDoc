@@ -50,6 +50,12 @@ router.post(
     githubController.triggerManualBuild
 );
 
+router.get(
+    "/events/stream",
+    authMiddleware,
+    githubController.streamEvents
+);
+
 router.patch(
     "/repositories/:repoId/toggle",
     authMiddleware,

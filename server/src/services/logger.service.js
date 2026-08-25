@@ -1,6 +1,7 @@
 import { config } from "../config/app.config.js";
 import fs from "fs";
 import path from "path";
+import eventsService from "./events.service.js";
 
 const LEVELS = {
     DEBUG:   0,
@@ -53,6 +54,11 @@ const formatLog = (levelIcon, levelName, jobIdOrMsg, msg) => {
         message = msg;
         const line = redact(`[${timestamp}]${jobId} ${levelIcon} ${levelName}: ${message}`);
         writeLogToFile(jobIdOrMsg, line);
+        try {
+            eventsService.broadcastLog(jobIdOrMsg.toString(), line);
+        } catch {
+            // Ignore broadcast failure during startup or early log
+        }
         return line;
     }
 

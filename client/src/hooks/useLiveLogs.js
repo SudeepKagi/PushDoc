@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { fetchJobs, fetchJobLogs } from "../utils/api";
+import { BACKEND_URL } from "../constants/config";
 
 export default function useLiveLogs(token, isActive) {
     const [jobs, setJobs] = useState([]);
@@ -8,40 +9,20 @@ export default function useLiveLogs(token, isActive) {
     const [liveLogs, setLiveLogs] = useState([]);
     const [loadingJobs, setLoadingJobs] = useState(false);
     const logsContainerRef = useRef(null);
+    const activeJobRef = useRef(null);
 
-    const isFetchingJobsRef = useRef(false);
-    const isFetchingLogsRef = useRef(false);
-    const isRateLimitedRef = useRef(false);
-    const jobsRef = useRef([]);
-
-    // Keep jobsRef in sync with state
-    useEffect(() => {
-        jobsRef.current = jobs;
-    }, [jobs]);
-
-    // Fetch Jobs List safely
+    // Initial Hydration
     const loadJobsList = useCallback(async () => {
-        if (!token || isFetchingJobsRef.current || isRateLimitedRef.current) return;
-        isFetchingJobsRef.current = true;
+        if (!token) return;
         setLoadingJobs(true);
-
         try {
             const data = await fetchJobs(token);
             if (data && data.success) {
                 setJobs(data.jobs || []);
-                isRateLimitedRef.current = false;
-            } else if (data && data.status === 429) {
-                isRateLimitedRef.current = true;
-                setTimeout(() => { isRateLimitedRef.current = false; }, 10000);
             }
         } catch (err) {
-            if (err?.message?.includes("429")) {
-                isRateLimitedRef.current = true;
-                setTimeout(() => { isRateLimitedRef.current = false; }, 10000);
-            }
-            console.warn("Failed to load jobs list:", err.message);
+            console.warn("Failed to load initial jobs list:", err.message);
         } finally {
-            isFetchingJobsRef.current = false;
             setLoadingJobs(false);
         }
     }, [token]);
@@ -53,65 +34,87 @@ export default function useLiveLogs(token, isActive) {
         }
     }, [isActive, token, loadJobsList]);
 
-    // Poll jobs list if any job is currently in progress
+    // Track active job in a ref for real-time SSE log filtering
+    useEffect(() => {
+        activeJobRef.current = jobs[activeBuildIndex] || null;
+    }, [jobs, activeBuildIndex]);
+
+    // Fetch initial historical logs when active build changes
+    useEffect(() => {
+        if (!isActive || !token || jobs.length === 0) return;
+        const activeJob = jobs[activeBuildIndex];
+        if (!activeJob?._id) return;
+
+        let isMounted = true;
+        fetchJobLogs(activeJob._id, token)
+            .then(data => {
+                if (isMounted && data && data.success) {
+                    setLiveLogs(data.logs || []);
+                }
+            })
+            .catch(err => console.warn("Failed to fetch historical logs:", err.message));
+
+        return () => {
+            isMounted = false;
+        };
+    }, [isActive, token, activeBuildIndex, jobs.length]);
+
+    // Real-Time Server-Sent Events (SSE) stream (0 polling)
     useEffect(() => {
         if (!isActive || !token) return;
 
-        const interval = setInterval(() => {
-            const currentJobs = jobsRef.current || [];
-            const hasInProgress = currentJobs.some(job =>
-                ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(job.status)
-            );
-
-            if (hasInProgress) {
-                loadJobsList();
-            }
-        }, 4000);
-
-        return () => clearInterval(interval);
-    }, [isActive, token, loadJobsList]);
-
-    // Fetch Logs for the active job
-    const loadLogs = useCallback(async (jobId) => {
-        if (!token || !jobId || isFetchingLogsRef.current || isRateLimitedRef.current) return;
-        isFetchingLogsRef.current = true;
+        const sseUrl = `${BACKEND_URL}/github/events/stream?token=${encodeURIComponent(token)}`;
+        let eventSource = null;
 
         try {
-            const data = await fetchJobLogs(jobId, token);
-            if (data && data.success) {
-                setLiveLogs(data.logs || []);
-            }
+            eventSource = new EventSource(sseUrl);
+
+            // Job Status Transition Event (QUEUED -> CLONING -> GENERATING -> COMPLETED, etc.)
+            eventSource.addEventListener("job_update", (e) => {
+                try {
+                    const updatedJob = JSON.parse(e.data);
+                    if (!updatedJob?._id) return;
+
+                    setJobs(prevJobs => {
+                        const existingIdx = prevJobs.findIndex(j => j._id === updatedJob._id);
+                        if (existingIdx !== -1) {
+                            const newJobs = [...prevJobs];
+                            newJobs[existingIdx] = { ...newJobs[existingIdx], ...updatedJob };
+                            return newJobs;
+                        }
+                        return [updatedJob, ...prevJobs];
+                    });
+                } catch (err) {
+                    console.warn("Failed to parse SSE job_update event:", err.message);
+                }
+            });
+
+            // Live Log Stream Event (Terminal logs in real time)
+            eventSource.addEventListener("job_log", (e) => {
+                try {
+                    const { bullJobId, logLine } = JSON.parse(e.data);
+                    const currentActive = activeJobRef.current;
+                    if (currentActive && (currentActive.bullJobId === bullJobId || currentActive._id === bullJobId)) {
+                        setLiveLogs(prev => [...prev, logLine]);
+                    }
+                } catch (err) {
+                    console.warn("Failed to parse SSE job_log event:", err.message);
+                }
+            });
+
+            eventSource.onerror = () => {
+                // EventSource will automatically retry connection
+            };
         } catch (err) {
-            console.warn("Failed to load job logs:", err.message);
-        } finally {
-            isFetchingLogsRef.current = false;
+            console.warn("Failed to initialize SSE EventSource:", err.message);
         }
-    }, [token]);
 
-    // Load logs on activeBuildIndex change
-    useEffect(() => {
-        if (!isActive || !token || jobs.length === 0) return;
-        const activeJob = jobs[activeBuildIndex];
-        if (activeJob?._id) {
-            loadLogs(activeJob._id);
-        }
-    }, [isActive, token, activeBuildIndex, jobs.length, loadLogs]);
-
-    // Poll logs only while the active job is executing
-    useEffect(() => {
-        if (!isActive || !token || jobs.length === 0) return;
-        const activeJob = jobs[activeBuildIndex];
-        if (!activeJob) return;
-
-        const inProgress = ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(activeJob.status);
-        if (!inProgress) return;
-
-        const interval = setInterval(() => {
-            loadLogs(activeJob._id);
-        }, 4000);
-
-        return () => clearInterval(interval);
-    }, [isActive, token, activeBuildIndex, jobs, loadLogs]);
+        return () => {
+            if (eventSource) {
+                eventSource.close();
+            }
+        };
+    }, [isActive, token]);
 
     // Auto-scroll logs terminal
     useEffect(() => {

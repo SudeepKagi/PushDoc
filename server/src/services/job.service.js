@@ -1,29 +1,34 @@
 import Job from "../models/job.model.js";
 import Repository from "../models/repository.model.js";
+import eventsService from "./events.service.js";
 
 export const createJob = async ({
     repository,
     bullJobId,
     commitSha,
     branch,
+    status = "QUEUED",
 }) => {
-
-    return await Job.create({
+    const job = await Job.create({
         repository,
         bullJobId,
         commitSha,
         branch,
+        status,
         startedAt: new Date(),
     });
 
+    const populatedJob = await Job.findById(job._id).populate("repository");
+    eventsService.broadcastJobUpdate(null, populatedJob);
+
+    return populatedJob;
 };
 
 export const updateStatus = async (
     jobId,
     status
 ) => {
-
-    return await Job.findByIdAndUpdate(
+    const job = await Job.findByIdAndUpdate(
         jobId,
         {
             status,
@@ -31,8 +36,13 @@ export const updateStatus = async (
         {
             returnDocument: "after"
         }
-    );
+    ).populate("repository");
 
+    if (job) {
+        eventsService.broadcastJobUpdate(null, job);
+    }
+
+    return job;
 };
 
 export const completeJob = async (
@@ -44,18 +54,13 @@ export const completeJob = async (
         validationWarnings,
     } = {}
 ) => {
-
-    const job =
-        await Job.findById(jobId);
+    const job = await Job.findById(jobId).populate("repository");
 
     if (!job) return null;
 
     job.status = "COMPLETED";
-
     job.completedAt = new Date();
-
-    job.duration =
-        job.completedAt - job.startedAt;
+    job.duration = job.completedAt - job.startedAt;
 
     if (originalReadme !== undefined) job.originalReadme = originalReadme;
     if (generatedReadme !== undefined) job.generatedReadme = generatedReadme;
@@ -64,8 +69,9 @@ export const completeJob = async (
 
     await job.save();
 
-    return job;
+    eventsService.broadcastJobUpdate(null, job);
 
+    return job;
 };
 
 export const failJob = async (
@@ -78,19 +84,13 @@ export const failJob = async (
         validationWarnings,
     } = {}
 ) => {
-
-    const job =
-        await Job.findById(jobId);
+    const job = await Job.findById(jobId).populate("repository");
 
     if (!job) return null;
 
     job.status = "FAILED";
-
     job.completedAt = new Date();
-
-    job.duration =
-        job.completedAt - job.startedAt;
-
+    job.duration = job.completedAt - job.startedAt;
     job.error = error;
 
     if (originalReadme !== undefined) job.originalReadme = originalReadme;
@@ -100,8 +100,9 @@ export const failJob = async (
 
     await job.save();
 
-    return job;
+    eventsService.broadcastJobUpdate(null, job);
 
+    return job;
 };
 
 export const getJobsByInstallation = async (installationId) => {
