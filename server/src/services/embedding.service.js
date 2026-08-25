@@ -99,39 +99,53 @@ export const buildVectorIndex = async (chunks) => {
     }
 
     const ai = new GoogleGenAI({ apiKey });
-    const indexedChunks = [];
     const ttl = config.cache.embeddingTtlSeconds;
+    // Cap candidate chunks to top 25 to guarantee fast sub-5s index creation
+    const targetChunks = (chunks || []).slice(0, 25);
 
-    for (const chunk of chunks) {
-        try {
-            const sha = contentSha(chunk.content);
-            const cacheKey = `embed:${sha}`;
+    const BATCH_SIZE = 5;
+    const indexedChunks = [];
 
-            // Step 1: Check the cache. Returns the stored float array or null.
-            const cachedVector = await cache.get(cacheKey);
+    for (let i = 0; i < targetChunks.length; i += BATCH_SIZE) {
+        const batch = targetChunks.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(
+            batch.map(async (chunk) => {
+                try {
+                    const sha = contentSha(chunk.content);
+                    const cacheKey = `embed:${sha}`;
 
-            if (cachedVector) {
-                // Cache hit — use stored vector, skip the API call entirely.
-                indexedChunks.push({ ...chunk, vector: cachedVector });
-                continue;
+                    // Step 1: Check cache
+                    const cachedVector = await cache.get(cacheKey);
+                    if (cachedVector) {
+                        return { ...chunk, vector: cachedVector };
+                    }
+
+                    // Step 2: Call Gemini embedding API with 6s timeout guard
+                    const embedPromise = ai.models.embedContent({
+                        model: EMBEDDING_MODEL,
+                        contents: chunk.content,
+                    });
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("Embedding timeout")), 6000)
+                    );
+                    const response = await Promise.race([embedPromise, timeoutPromise]);
+
+                    const values = response?.embedding?.values;
+                    if (values) {
+                        await cache.set(cacheKey, values, ttl);
+                        return { ...chunk, vector: values };
+                    }
+                    return null;
+                } catch {
+                    return null;
+                }
+            })
+        );
+
+        for (const res of batchResults) {
+            if (res && res.vector) {
+                indexedChunks.push(res);
             }
-
-            // Step 2: Cache miss — call the Gemini embedding API.
-            const response = await ai.models.embedContent({
-                model: EMBEDDING_MODEL,
-                contents: chunk.content,
-            });
-
-            const values = response.embedding?.values;
-            if (values) {
-                // Step 3: Write to cache before returning so the next job can hit it.
-                await cache.set(cacheKey, values, ttl);
-                indexedChunks.push({ ...chunk, vector: values });
-            }
-        } catch {
-            // Ignore individual embedding failures to maintain resilience.
-            // A missing vector for one chunk just means it won't be retrieved;
-            // the rest of the index is still valid.
         }
     }
 
