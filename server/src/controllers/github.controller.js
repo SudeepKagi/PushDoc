@@ -343,12 +343,22 @@ export const triggerManualBuild = async (req, res) => {
 
         const bullJobId = `manual-${repository.githubId}-${Date.now()}`;
 
+        // Create tracking Job immediately in MongoDB so the UI tracks it in real-time
+        const trackingJob = await jobService.createJob({
+            repository: repository._id,
+            bullJobId,
+            commitSha,
+            branch,
+            status: "QUEUED",
+        });
+
         const job = await readmeQueue.add(
             "generate-readme",
             {
                 repositoryId: repository.githubId,
                 branch,
                 commitSha,
+                trackingJobId: trackingJob._id.toString(),
             },
             {
                 jobId: bullJobId,
@@ -362,12 +372,13 @@ export const triggerManualBuild = async (req, res) => {
             }
         );
 
-        logger.success(`Manual README generation job queued for ${repository.fullName} (Job ID: ${job.id})`);
+        logger.success(`Manual README generation job queued for ${repository.fullName} (Job ID: ${job.id}, DB Job ID: ${trackingJob._id})`);
 
         return res.status(200).json({
             success: true,
             message: "Verification job successfully queued",
             jobId: job.id,
+            trackingJobId: trackingJob._id,
         });
     } catch (error) {
         logger.error(`Manual trigger failed: ${error.message}`);

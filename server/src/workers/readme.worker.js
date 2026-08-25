@@ -33,6 +33,7 @@ const readmeWorker = new Worker(
                 repositoryId,
                 branch,
                 commitSha,
+                trackingJobId,
             } = job.data;
 
             logger.divider();
@@ -74,13 +75,19 @@ const readmeWorker = new Worker(
                 `Repository: ${repository.fullName}`
             );
 
-            trackingJob =
-                await jobService.createJob({
-                    repository: repository._id,
-                    bullJobId: jobId,
-                    commitSha,
-                    branch,
-                });
+            if (trackingJobId) {
+                trackingJob = await jobService.getJobById(trackingJobId);
+            }
+
+            if (!trackingJob) {
+                trackingJob =
+                    await jobService.createJob({
+                        repository: repository._id,
+                        bullJobId: jobId,
+                        commitSha,
+                        branch,
+                    });
+            }
 
             await jobService.updateStatus(
                 trackingJob._id,

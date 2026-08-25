@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card.jsx";
 import { Button } from "../components/ui/button.jsx";
 import { Badge } from "../components/ui/badge.jsx";
@@ -8,7 +8,7 @@ import {
     ArrowLeft, Play, RefreshCw, CheckCircle2, Clock, FileText, 
     Lock, Unlock, Sparkles, Terminal, Code2, GitCommit, 
     Copy, Check, Eye, GitCompare, FileCode, ExternalLink, AlertCircle,
-    Power, ShieldAlert, CheckCircle, AlertTriangle
+    Power, ShieldAlert, CheckCircle, AlertTriangle, XCircle
 } from "lucide-react";
 
 /**
@@ -31,10 +31,10 @@ function CommitGraphStatus({ status }) {
     const activeIndex = isCompleted ? stages.length - 1 : currentStageIndex >= 0 ? currentStageIndex : 0;
 
     return (
-        <div className="bg-surface-raised rounded-[6px] p-4 mb-6 space-y-4 border border-border">
+        <div className="bg-surface-raised rounded-[6px] p-4 mb-6 space-y-4 border border-border w-full min-w-0">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+                    <span className={`h-2 w-2 rounded-full ${isFailed ? "bg-destructive" : isCompleted ? "bg-success" : "bg-accent animate-pulse"}`} />
                     <span className="text-xs font-mono font-medium text-text-primary">Generation Pipeline</span>
                 </div>
                 <Badge variant={isFailed ? "destructive" : isCompleted ? "success" : "default"} className="font-mono text-xs">
@@ -43,9 +43,9 @@ function CommitGraphStatus({ status }) {
             </div>
 
             {/* Commit Graph Trail */}
-            <div className="relative flex items-center justify-between px-4 sm:px-6 py-4 overflow-x-auto">
+            <div className="relative flex items-center justify-between px-4 sm:px-6 py-4 overflow-x-auto min-w-0">
                 {/* Connecting Line */}
-                <div className="absolute left-10 right-10 top-1/2 -translate-y-1/2 h-[2px] bg-border z-0" />
+                <div className="absolute left-8 right-8 top-1/2 -translate-y-1/2 h-[2px] bg-border z-0" />
 
                 {stages.map((stage, idx) => {
                     const isPassed = idx < activeIndex || isCompleted;
@@ -56,11 +56,13 @@ function CommitGraphStatus({ status }) {
                             {/* Commit Node Dot */}
                             <div 
                                 className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${
-                                    isCurrent 
-                                        ? "bg-accent border-2 border-accent shadow-[0_0_0_4px_rgba(79,191,174,0.25)] animate-pulse" 
-                                        : isPassed 
-                                            ? "bg-accent border-2 border-accent" 
-                                            : "bg-surface border-2 border-text-muted"
+                                    isFailed && idx === activeIndex
+                                        ? "bg-destructive border-2 border-destructive"
+                                        : isCurrent 
+                                            ? "bg-accent border-2 border-accent shadow-[0_0_0_4px_rgba(79,191,174,0.25)] animate-pulse" 
+                                            : isPassed 
+                                                ? "bg-accent border-2 border-accent" 
+                                                : "bg-surface border-2 border-text-muted"
                                 }`}
                             />
 
@@ -90,22 +92,22 @@ function DiffViewer({ original = "", generated = "", onTriggerScan, isRunning = 
     const genLines = (generated || "").split("\n");
 
     return (
-        <div className="bg-bg rounded-[6px] overflow-hidden diff-view border border-border">
+        <div className="bg-bg rounded-[6px] overflow-hidden diff-view border border-border w-full min-w-0">
             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
                 {/* Original README Column */}
-                <div className="flex flex-col h-[500px]">
+                <div className="flex flex-col h-[520px] min-w-0">
                     <div className="px-3 py-2 bg-surface-raised border-b border-border flex items-center justify-between">
                         <span className="text-xs font-mono text-text-secondary font-medium">Original README</span>
                         <Badge variant="secondary" className="text-xs font-mono">{original ? `${origLines.length} lines` : "Empty"}</Badge>
                     </div>
-                    <div className="overflow-y-auto flex-1 p-2 space-y-0.5">
+                    <div className="overflow-y-auto flex-1 p-2 space-y-0.5 min-w-0">
                         {original ? (
                             origLines.map((line, i) => (
                                 <div key={i} className="flex items-start text-xs font-mono">
                                     <span className="w-8 text-right pr-2 text-text-muted border-r border-border select-none shrink-0">
                                         {i + 1}
                                     </span>
-                                    <span className="pl-2 whitespace-pre-wrap text-text-secondary">
+                                    <span className="pl-2 whitespace-pre-wrap break-all text-text-secondary">
                                         {line || " "}
                                     </span>
                                 </div>
@@ -119,7 +121,7 @@ function DiffViewer({ original = "", generated = "", onTriggerScan, isRunning = 
                 </div>
 
                 {/* Generated README Column with Real Diff Tints */}
-                <div className="flex flex-col h-[500px]">
+                <div className="flex flex-col h-[520px] min-w-0">
                     <div className="px-3 py-2 bg-surface-raised border-b border-border flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                             <span className="h-1.5 w-1.5 rounded-full bg-accent" />
@@ -127,7 +129,7 @@ function DiffViewer({ original = "", generated = "", onTriggerScan, isRunning = 
                         </div>
                         <Badge variant="accent" className="text-xs font-mono">{generated ? `${genLines.length} lines` : "Pending"}</Badge>
                     </div>
-                    <div className="overflow-y-auto flex-1 p-2 space-y-0.5">
+                    <div className="overflow-y-auto flex-1 p-2 space-y-0.5 min-w-0">
                         {generated ? (
                             genLines.map((line, i) => {
                                 const isAdded = !origLines.includes(line);
@@ -141,7 +143,7 @@ function DiffViewer({ original = "", generated = "", onTriggerScan, isRunning = 
                                         <span className="w-8 text-right pr-2 text-text-muted border-r border-border select-none shrink-0">
                                             {i + 1}
                                         </span>
-                                        <span className="pl-2 whitespace-pre-wrap">
+                                        <span className="pl-2 whitespace-pre-wrap break-all">
                                             {line || " "}
                                         </span>
                                     </div>
@@ -169,6 +171,9 @@ function DiffViewer({ original = "", generated = "", onTriggerScan, isRunning = 
     );
 }
 
+/**
+ * Robust markdown-to-HTML parser with non-overflowing table layout
+ */
 function renderMarkdown(rawContent) {
     if (!rawContent) return "";
     const content = rawContent.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
@@ -184,33 +189,59 @@ function renderMarkdown(rawContent) {
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;");
+
+        // Images / Shields
         t = t.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
-            '<img src="$2" alt="$1" class="max-h-6 inline-block align-middle my-0.5" loading="lazy"/>');
+            '<img src="$2" alt="$1" class="max-h-6 inline-block align-middle my-0.5 mr-1" loading="lazy"/>');
+
+        // Links
         t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
-            '<a href="$2" class="text-accent hover:underline font-medium" target="_blank" rel="noopener">$1</a>');
+            '<a href="$2" class="text-accent hover:underline font-medium break-all" target="_blank" rel="noopener">$1</a>');
+
+        // Inline code
         t = t.replace(/`([^`]+)`/g,
-            '<code class="bg-surface-raised text-text-primary px-1.5 py-0.5 rounded-[4px] text-xs font-mono">$1</code>');
+            '<code class="bg-surface-raised text-text-primary px-1.5 py-0.5 rounded-[4px] text-[11px] font-mono break-all">$1</code>');
+
+        // Bold & Italic
         t = t.replace(/\*\*\*([^*]+)\*\*\*/g, "<strong><em>$1</em></strong>");
         t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
         t = t.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+
+        // Restore HTML linebreaks if present
+        t = t.replace(/&lt;br\s*\/?&gt;/gi, "<br/>");
+
         return t;
     };
 
     const flushTable = () => {
         if (tableRows.length < 2) { tableRows = []; inTable = false; return; }
+
+        // Process header row
         const headerCells = tableRows[0]
-            .split("|").filter(c => c.trim())
-            .map(c => `<th class="p-2.5 border-b border-border font-semibold bg-surface-raised text-left text-xs whitespace-nowrap text-text-primary">${inline(c.trim())}</th>`)
+            .split("|")
+            .filter((c, idx, arr) => idx > 0 && idx < arr.length - 1 || c.trim())
+            .filter(c => c.trim())
+            .map(c => `<th class="p-2.5 border-b border-border font-semibold bg-surface-raised text-left text-xs whitespace-nowrap text-text-primary min-w-[100px]">${inline(c.trim())}</th>`)
             .join("");
-        const bodyHtml = tableRows.slice(2)
-            .filter(r => r.trim() && r.includes("|"))
-            .map(row =>
-                `<tr class="border-b border-border/50 hover:bg-surface-raised/50 transition-colors">${row.split("|").filter(c => c.trim())
-                    .map(c => `<td class="p-2.5 align-top text-xs font-sans text-text-secondary whitespace-normal break-words min-w-[120px]">${inline(c.trim())}</td>`)
-                    .join("")}</tr>`
-            ).join("");
-        html += `<div class="overflow-x-auto my-4 rounded-[6px] border border-border bg-surface shadow-sm"><table class="w-full text-xs border-collapse min-w-full table-auto"><thead><tr>${headerCells}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
-        tableRows = []; inTable = false;
+
+        // Process body rows (skip separator row at index 1)
+        const bodyRows = tableRows.slice(2);
+        const bodyHtml = bodyRows
+            .map(row => {
+                const cells = row.split("|")
+                    .filter((c, idx, arr) => idx > 0 && idx < arr.length - 1 || c.trim())
+                    .filter(c => c.trim());
+                if (cells.length === 0) return "";
+                return `<tr class="border-b border-border/40 hover:bg-surface-raised/40 transition-colors">${
+                    cells.map(c => `<td class="p-2.5 align-top text-xs font-sans text-text-secondary whitespace-normal break-words min-w-[120px] max-w-[360px]">${inline(c.trim())}</td>`).join("")
+                }</tr>`;
+            })
+            .filter(Boolean)
+            .join("");
+
+        html += `<div class="w-full my-4 overflow-x-auto rounded-[6px] border border-border bg-surface shadow-sm"><table class="w-full text-xs border-collapse table-auto min-w-[500px]"><thead><tr>${headerCells}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
+        tableRows = []; 
+        inTable = false;
     };
 
     for (let i = 0; i < lines.length; i++) {
@@ -226,14 +257,14 @@ function renderMarkdown(rawContent) {
                 inCodeBlock = false;
                 const escaped = codeLines.join("\n")
                     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                html += `<pre class="bg-surface-raised p-3.5 rounded-[6px] overflow-x-auto text-xs font-mono my-3 leading-relaxed text-text-primary border border-border">${escaped}</pre>`;
+                html += `<pre class="bg-surface-raised p-3.5 rounded-[6px] overflow-x-auto text-xs font-mono my-3 leading-relaxed text-text-primary border border-border w-full">${escaped}</pre>`;
                 codeLines = [];
             }
             continue;
         }
         if (inCodeBlock) { codeLines.push(line); continue; }
 
-        if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+        if (trimmed.startsWith("|") && (trimmed.endsWith("|") || trimmed.includes("|"))) {
             inTable = true;
             tableRows.push(trimmed);
             continue;
@@ -280,7 +311,7 @@ function renderMarkdown(rawContent) {
             continue;
         }
 
-        html += `<p class="my-1.5 text-xs leading-relaxed text-text-primary">${inline(trimmed)}</p>`;
+        html += `<p class="my-1.5 text-xs leading-relaxed text-text-primary break-words">${inline(trimmed)}</p>`;
     }
 
     if (inTable) flushTable();
@@ -298,18 +329,29 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
     const [isEnabling, setIsEnabling] = useState(false);
 
     // Robust ID matching between populated object and string ID
-    const matchingJobs = jobs.filter(j => {
-        const jRepoId = j.repository?._id?.toString() || j.repository?.toString();
-        const sRepoId = selectedRepo?._id?.toString();
-        return jRepoId === sRepoId;
-    });
+    const matchingJobs = useMemo(() => {
+        return (jobs || []).filter(j => {
+            const jRepoId = j.repository?._id?.toString() || j.repository?.toString();
+            const sRepoId = selectedRepo?._id?.toString();
+            return jRepoId === sRepoId;
+        });
+    }, [jobs, selectedRepo?._id]);
 
     // Pick latest job by creation date
     const latestJob = matchingJobs.length > 0 ? matchingJobs[0] : null;
 
-    // Check if the current job is genuinely fresh (< 3 minutes old) to prevent permanent stuck button
-    const isJobFresh = latestJob?.createdAt && (Date.now() - new Date(latestJob.createdAt).getTime() < 3 * 60 * 1000);
-    const isRunning = isTriggering || (isJobFresh && latestJob && ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(latestJob.status));
+    // Check if the current job is actively in progress
+    const isJobActive = latestJob && ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(latestJob.status);
+    const isRunning = isTriggering || isJobActive;
+
+    // Live polling when job is active
+    useEffect(() => {
+        if (!isJobActive || !refreshJobs) return;
+        const interval = setInterval(() => {
+            refreshJobs();
+        }, 2000);
+        return () => clearInterval(interval);
+    }, [isJobActive, refreshJobs]);
 
     // Fetch current live README from GitHub
     useEffect(() => {
@@ -345,7 +387,6 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
 
     const handleManualTrigger = async () => {
         if (!selectedRepo.isActive) {
-            // Auto-enable repository if disabled when user wants to synthesize
             if (toggleRepository) {
                 setIsEnabling(true);
                 try {
@@ -361,11 +402,13 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
         setIsTriggering(true);
         try {
             await triggerManualBuild(selectedRepo._id);
-            if (refreshJobs) await refreshJobs();
+            if (refreshJobs) {
+                await refreshJobs();
+            }
         } catch (err) {
             console.error("Trigger manual build error:", err);
         } finally {
-            setTimeout(() => setIsTriggering(false), 2000);
+            setTimeout(() => setIsTriggering(false), 1500);
         }
     };
 
@@ -394,10 +437,10 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
     const activeStatus = isTriggering ? "QUEUED" : latestJob?.status;
 
     return (
-        <div className="space-y-6 max-w-6xl mx-auto py-2 font-sans overflow-x-hidden">
+        <div className="space-y-6 max-w-6xl mx-auto py-2 font-sans w-full min-w-0 overflow-x-hidden">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full min-w-0">
+                <div className="min-w-0">
                     <Button
                         variant="ghost"
                         size="sm"
@@ -407,24 +450,24 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                         <ArrowLeft className="h-3.5 w-3.5" />
                         <span>Back to Repositories</span>
                     </Button>
-                    <div className="flex items-center gap-2">
-                        <h1 className="text-xl font-semibold tracking-tight text-text-primary font-mono">{selectedRepo.name}</h1>
-                        <Badge variant="outline" className="text-xs font-normal gap-1 font-mono">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h1 className="text-xl font-semibold tracking-tight text-text-primary font-mono truncate">{selectedRepo.name}</h1>
+                        <Badge variant="outline" className="text-xs font-normal gap-1 font-mono shrink-0">
                             {selectedRepo.private ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
                             {selectedRepo.private ? "Private" : "Public"}
                         </Badge>
                         <Badge 
                             variant={selectedRepo.isActive ? "success" : "secondary"} 
-                            className="text-[10px] font-mono cursor-pointer hover:opacity-80 transition-opacity"
+                            className="text-[10px] font-mono cursor-pointer hover:opacity-80 transition-opacity shrink-0"
                             onClick={handleEnableRepository}
                             title="Click to toggle active status"
                         >
                             {selectedRepo.isActive ? "Active" : "Disabled"}
                         </Badge>
                     </div>
-                    <p className="text-xs text-text-secondary mt-0.5 font-mono">{selectedRepo.fullName}</p>
+                    <p className="text-xs text-text-secondary mt-0.5 font-mono truncate">{selectedRepo.fullName}</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                     {activeMarkdown && (
                         <Button
                             variant="outline"
@@ -452,10 +495,10 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
 
             {/* Inactive Repository Warning Banner */}
             {!selectedRepo.isActive && (
-                <div className="p-3.5 bg-warning/10 border border-warning/30 rounded-[6px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-2 text-warning">
+                <div className="p-3.5 bg-warning/10 border border-warning/30 rounded-[6px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs w-full min-w-0">
+                    <div className="flex items-center gap-2 text-warning min-w-0">
                         <AlertTriangle className="h-4 w-4 shrink-0" />
-                        <div>
+                        <div className="min-w-0">
                             <span className="font-semibold text-text-primary">Repository is currently disabled. </span>
                             <span className="text-text-secondary">Enable this repository to trigger scans, synthesize READMEs, and receive automated commit syncs on push.</span>
                         </div>
@@ -473,16 +516,38 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                 </div>
             )}
 
+            {/* Job Failure Banner */}
+            {latestJob?.status === "FAILED" && !isRunning && (
+                <div className="p-3.5 bg-destructive/10 border border-destructive/30 rounded-[6px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs w-full min-w-0">
+                    <div className="flex items-center gap-2 text-destructive min-w-0">
+                        <XCircle className="h-4 w-4 shrink-0" />
+                        <div className="min-w-0">
+                            <span className="font-semibold">Last synthesis job failed: </span>
+                            <span className="text-text-secondary font-mono">{latestJob.error || "Unknown execution failure"}</span>
+                        </div>
+                    </div>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs px-3 rounded-[4px] gap-1.5 shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10"
+                        onClick={handleManualTrigger}
+                    >
+                        <RefreshCw className="h-3 w-3" />
+                        <span>Retry Synthesis</span>
+                    </Button>
+                </div>
+            )}
+
             {/* Signature Element: Commit-Graph Pipeline Trail */}
-            {(isTriggering || (latestJob && latestJob.status !== "COMPLETED" && latestJob.status !== "FAILED")) && (
+            {(isTriggering || (latestJob && latestJob.status !== "COMPLETED")) && (
                 <CommitGraphStatus status={activeStatus || "QUEUED"} />
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start w-full min-w-0">
                 {/* Main Review & Preview Card */}
-                <div className="lg:col-span-2 space-y-6 min-w-0">
-                    <Card className="bg-surface rounded-[6px] border border-border overflow-hidden">
-                        <CardHeader className="p-3 border-b border-border bg-surface-raised flex flex-row items-center justify-between gap-2">
+                <div className="lg:col-span-2 space-y-6 min-w-0 w-full">
+                    <Card className="bg-surface rounded-[6px] border border-border w-full min-w-0 overflow-hidden shadow-sm">
+                        <CardHeader className="p-3 border-b border-border bg-surface-raised flex flex-row flex-wrap items-center justify-between gap-2">
                             {/* Tab Switcher */}
                             <div className="flex items-center gap-1 bg-bg p-0.5 rounded-[4px]">
                                 <button
@@ -540,7 +605,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                             )}
                         </CardHeader>
 
-                        <CardContent className="p-4">
+                        <CardContent className="p-4 min-w-0 w-full">
                             {isRunning ? (
                                 <div className="h-[450px] flex flex-col justify-center space-y-4 p-6 animate-pulse">
                                     <div className="flex items-center gap-2">
@@ -577,7 +642,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                             ) : (
                                 <>
                                     {!isSynthesized && (
-                                        <div className="mb-3 p-2.5 bg-surface-raised rounded-[6px] border border-border flex items-center justify-between text-xs">
+                                        <div className="mb-3 p-2.5 bg-surface-raised rounded-[6px] border border-border flex items-center justify-between text-xs w-full min-w-0">
                                             <span className="text-text-secondary">
                                                 Showing current live README from GitHub. Click <strong className="text-text-primary">Re-synthesize README</strong> to generate grounded documentation.
                                             </span>
@@ -585,8 +650,8 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                                     )}
 
                                     {activeTab === "preview" && (
-                                        <div className="h-[550px] overflow-y-auto overflow-x-auto pr-2 font-sans space-y-2">
-                                            <div ref={containerRef} className="text-xs leading-relaxed text-text-primary break-words" />
+                                        <div className="h-[550px] overflow-y-auto overflow-x-auto pr-2 font-sans space-y-2 w-full min-w-0">
+                                            <div ref={containerRef} className="text-xs leading-relaxed text-text-primary break-words w-full min-w-0" />
                                         </div>
                                     )}
 
@@ -600,8 +665,8 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                                     )}
 
                                     {activeTab === "raw" && (
-                                        <div className="h-[550px] overflow-y-auto overflow-x-auto">
-                                            <pre className="p-3 bg-bg rounded-[6px] text-xs font-mono whitespace-pre-wrap leading-relaxed text-text-primary border border-border">
+                                        <div className="h-[550px] overflow-y-auto overflow-x-auto w-full min-w-0">
+                                            <pre className="p-3 bg-bg rounded-[6px] text-xs font-mono whitespace-pre-wrap leading-relaxed text-text-primary border border-border w-full">
                                                 {activeMarkdown}
                                             </pre>
                                         </div>
@@ -613,8 +678,8 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                 </div>
 
                 {/* Sidebar Properties */}
-                <div className="space-y-4 min-w-0 lg:sticky lg:top-4">
-                    <Card className="bg-surface rounded-[6px] border border-border">
+                <div className="space-y-4 min-w-0 w-full lg:sticky lg:top-4">
+                    <Card className="bg-surface rounded-[6px] border border-border w-full min-w-0 shadow-sm">
                         <CardHeader className="p-3 pb-2 border-b border-border bg-surface-raised">
                             <CardTitle className="text-xs font-semibold text-text-primary">Repository Properties</CardTitle>
                         </CardHeader>
@@ -647,7 +712,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-surface-raised rounded-[6px] border border-border">
+                    <Card className="bg-surface-raised rounded-[6px] border border-border w-full min-w-0 shadow-sm">
                         <CardHeader className="p-3 pb-1">
                             <CardTitle className="text-xs font-semibold text-text-primary">Review Mode</CardTitle>
                         </CardHeader>
