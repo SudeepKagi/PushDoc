@@ -9,6 +9,7 @@
 
 import * as logger from "../services/logger.service.js";
 import { config } from "../config/app.config.js";
+import * as dependencyGraph from "../analyzers/dependency.graph.js";
 import { selectTopFiles } from "../analyzers/dependency.graph.js";
 import * as embeddingService from "../services/embedding.service.js";
 import * as retrievalService from "../services/retrieval.service.js";
