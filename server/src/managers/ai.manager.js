@@ -24,8 +24,9 @@ import { AIProviderError } from "../utils/errors.js";
 
 const breakerOptions = {
     timeout: config.circuitBreaker.timeout,
-    errorThresholdPercentage: config.circuitBreaker.errorThresholdPercentage,
-    resetTimeout: config.circuitBreaker.resetTimeout,
+    errorThresholdPercentage: config.circuitBreaker.errorThresholdPercentage || 70,
+    resetTimeout: config.circuitBreaker.resetTimeout || 10_000,
+    volumeThreshold: config.circuitBreaker.volumeThreshold || 5,
 };
 
 // Build one breaker per provider at module load time.
@@ -67,10 +68,21 @@ export const generateReadme = async (prompt) => {
             try {
                 logger.debug(`Using API key ${keyNumber}/${provider.apiKeys.length} for ${provider.name}`);
 
-                // breaker.fire() calls the wrapped function. If the breaker is
-                // open, it throws an OpenCircuitError immediately (< 1ms) instead
-                // of attempting the actual provider call.
-                const response = await breaker.fire(prompt, apiKey);
+                let response;
+                if (breaker && !breaker.opened) {
+                    try {
+                        response = await breaker.fire(prompt, apiKey);
+                    } catch (fireErr) {
+                        if (fireErr.message?.includes("Breaker is open") || fireErr.name === "OpenCircuitError") {
+                            logger.warn(`${provider.name} breaker is open — attempting direct generation call`);
+                            response = await provider.provider.generate(prompt, apiKey);
+                        } else {
+                            throw fireErr;
+                        }
+                    }
+                } else {
+                    response = await provider.provider.generate(prompt, apiKey);
+                }
 
                 logger.success(`${provider.name} generated README successfully`);
                 return response;
@@ -78,13 +90,6 @@ export const generateReadme = async (prompt) => {
             } catch (error) {
                 logger.warn(`${provider.name} key ${keyNumber} failed: ${error.message}`);
                 lastError = error;
-
-                // If the breaker itself is open, stop trying keys for this provider
-                // immediately — the breaker will throw the same error for every key.
-                if (breaker.opened) {
-                    logger.warn(`${provider.name} circuit breaker is open — falling through to next provider`);
-                    break;
-                }
 
                 if (!shouldRetry(error)) {
                     logger.error(`Non-retryable error from ${provider.name}: ${error.message}`);
@@ -95,7 +100,7 @@ export const generateReadme = async (prompt) => {
             }
         }
 
-        logger.warn(`All ${provider.name} keys exhausted or breaker open — trying next provider`);
+        logger.warn(`All ${provider.name} keys exhausted — trying next provider`);
     }
 
     throw new AIProviderError(

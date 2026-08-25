@@ -638,7 +638,15 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                         </Button>
                     </div>
                     <pre className="max-h-60 overflow-y-auto whitespace-pre-wrap text-[11px] leading-relaxed text-text-secondary bg-surface p-2.5 rounded-[4px]">
-                        {jobLogs.length > 0 ? jobLogs.join("\n") : (latestJob?.error || "No logs recorded for this job execution.")}
+                        {jobLogs.length > 0
+                            ? jobLogs.map(l => {
+                                if (!l) return "";
+                                if (typeof l === "string") return l;
+                                const timeStr = l.timestamp ? new Date(l.timestamp).toLocaleTimeString() : "";
+                                const levelStr = l.level ? `[${l.level}] ` : "";
+                                return `${timeStr ? `[${timeStr}] ` : ""}${levelStr}${l.message || JSON.stringify(l)}`;
+                            }).join("\n")
+                            : (latestJob?.error || "No logs recorded for this job execution.")}
                     </pre>
                 </div>
             )}

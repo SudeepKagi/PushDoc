@@ -81,9 +81,11 @@ export const config = {
         // timeout: abort a single generate() call if it takes longer than this (ms).
         timeout: 60_000,
         // Open the breaker after this % of calls in the rolling window fail.
-        errorThresholdPercentage: 50,
+        errorThresholdPercentage: 70,
+        // Require at least 5 requests in the window before tripping.
+        volumeThreshold: 5,
         // After this many ms in the open state, try one request (half-open) to test recovery.
-        resetTimeout: 60_000,
+        resetTimeout: 10_000,
     },
     tokenBudget: {
         // Maximum context string length (chars, not tokens) per repo-size tier.
