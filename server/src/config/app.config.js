@@ -79,7 +79,7 @@ export const config = {
     circuitBreaker: {
         // opossum circuit breaker settings applied per AI provider.
         // timeout: abort a single generate() call if it takes longer than this (ms).
-        timeout: 30_000,
+        timeout: 60_000,
         // Open the breaker after this % of calls in the rolling window fail.
         errorThresholdPercentage: 50,
         // After this many ms in the open state, try one request (half-open) to test recovery.
