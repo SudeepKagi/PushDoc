@@ -27,16 +27,23 @@ const readmeWorker = new Worker(
         let originalReadme = "";
         let generatedReadme = "";
 
+        const {
+            repositoryId,
+            branch,
+            commitSha,
+            trackingJobId,
+        } = job.data || {};
+
         try {
-
-            const {
-                repositoryId,
-                branch,
-                commitSha,
-                trackingJobId,
-            } = job.data;
-
             logger.divider();
+
+            if (trackingJobId) {
+                try {
+                    trackingJob = await jobService.getJobById(trackingJobId);
+                } catch {
+                    // Continue
+                }
+            }
 
             if (!repositoryId || !branch || !commitSha) {
                 throw new ValidationError(
@@ -74,10 +81,6 @@ const readmeWorker = new Worker(
                 jobId,
                 `Repository: ${repository.fullName}`
             );
-
-            if (trackingJobId) {
-                trackingJob = await jobService.getJobById(trackingJobId);
-            }
 
             if (!trackingJob) {
                 trackingJob =
@@ -232,23 +235,25 @@ const readmeWorker = new Worker(
             );
 
         } catch (err) {
-
-            if (trackingJob) {
-
-                await jobService.failJob(
-                    trackingJob._id,
-                    err.message,
-                    {
-                        originalReadme,
-                        generatedReadme,
-                    }
-                );
-
+            const targetId = trackingJob?._id || trackingJobId;
+            if (targetId) {
+                try {
+                    await jobService.failJob(
+                        targetId,
+                        err.message || "Synthesis pipeline execution error",
+                        {
+                            originalReadme,
+                            generatedReadme,
+                        }
+                    );
+                } catch (failErr) {
+                    logger.error(jobId, `Failed to update job status to FAILED: ${failErr.message}`);
+                }
             }
 
             logger.error(
                 jobId,
-                err.message
+                `Pipeline Error: ${err.message}`
             );
 
             throw err;

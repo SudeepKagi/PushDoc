@@ -4,8 +4,9 @@ import connectDB from "./src/config/database.js";
 import { config, validateConfig } from "./src/config/app.config.js";
 import * as logger from "./src/services/logger.service.js";
 import { purgeStaleWorkspaces } from "./src/services/workspace.service.js";
+import { reapStaleJobs } from "./src/services/job.service.js";
 dotenv.config();
- 
+
 // Support embedded worker for single-instance cloud deployments (Render, Railway, Fly, Local)
 if (process.env.SEPARATE_WORKER !== "true") {
     import("./src/workers/readme.worker.js")
@@ -30,6 +31,10 @@ const startServer = async () => {
 
         // Clean up any workspaces left over from an unclean shutdown
         purgeStaleWorkspaces();
+
+        // Start background stale job reaper (auto-fails jobs stuck in QUEUED or hung states)
+        reapStaleJobs();
+        setInterval(reapStaleJobs, 30_000);
 
         const server = app.listen(PORT, "0.0.0.0", () => {
             logger.success(`Server running in ${config.env} mode on port ${PORT}`);

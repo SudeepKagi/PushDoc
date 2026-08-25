@@ -85,3 +85,18 @@ export const toggleRepositoryActive = async (repoId, token) => {
     const data = await res.json();
     return data;
 };
+
+export const cancelJob = async (jobId, token) => {
+    try {
+        const res = await fetch(`${BACKEND_URL}/github/jobs/${jobId}/cancel`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        const data = await res.json();
+        return data;
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+};

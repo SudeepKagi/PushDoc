@@ -390,6 +390,32 @@ export const triggerManualBuild = async (req, res) => {
     }
 };
 
+export const cancelJob = async (req, res) => {
+    try {
+        const { jobId } = req.params;
+        const job = await jobService.getJobById(jobId);
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: "Job not found",
+            });
+        }
+
+        const updated = await jobService.cancelJob(jobId, "Synthesis manually stopped by user.");
+
+        return res.status(200).json({
+            success: true,
+            message: "Synthesis successfully stopped",
+            job: updated,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 export const toggleRepository = async (req, res) => {
     try {
         const { repoId } = req.params;

@@ -3,12 +3,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../co
 import { Button } from "../components/ui/button.jsx";
 import { Badge } from "../components/ui/badge.jsx";
 import { Skeleton } from "../components/ui/skeleton.jsx";
-import { fetchRepoReadme } from "../utils/api.js";
+import { fetchRepoReadme, cancelJob, fetchJobLogs } from "../utils/api.js";
 import { 
     ArrowLeft, Play, RefreshCw, CheckCircle2, Clock, FileText, 
     Lock, Unlock, Sparkles, Terminal, Code2, GitCommit, 
     Copy, Check, Eye, GitCompare, FileCode, ExternalLink, AlertCircle,
-    Power, ShieldAlert, CheckCircle, AlertTriangle, XCircle
+    Power, ShieldAlert, CheckCircle, AlertTriangle, XCircle, Square
 } from "lucide-react";
 
 /**
@@ -403,6 +403,36 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
         }
     };
 
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [showLogsDrawer, setShowLogsDrawer] = useState(false);
+    const [jobLogs, setJobLogs] = useState([]);
+
+    useEffect(() => {
+        if (!latestJob?._id || !token) return;
+        fetchJobLogs(latestJob._id, token)
+            .then(data => {
+                if (data && data.success) {
+                    setJobLogs(data.logs || []);
+                }
+            })
+            .catch(() => {});
+    }, [latestJob?._id, latestJob?.status, token]);
+
+    const handleCancelJob = async () => {
+        if (!latestJob?._id || !token) return;
+        setIsCancelling(true);
+        try {
+            await cancelJob(latestJob._id, token);
+            if (refreshJobs) {
+                await refreshJobs();
+            }
+        } catch (err) {
+            console.error("Cancel job error:", err);
+        } finally {
+            setIsCancelling(false);
+        }
+    };
+
     // Active markdown content to display: synthesized README if available, otherwise live GitHub README
     const activeMarkdown = latestJob?.generatedReadme || liveReadme || "";
     const isSynthesized = !!latestJob?.generatedReadme;
@@ -470,6 +500,18 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                             <span>{copied ? "Copied" : "Copy README"}</span>
                         </Button>
                     )}
+                    {isRunning && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 font-medium text-xs h-8 rounded-[6px] text-destructive border-destructive/40 hover:bg-destructive/10"
+                            onClick={handleCancelJob}
+                            disabled={isCancelling}
+                        >
+                            <Square className="h-3 w-3 fill-current" />
+                            <span>{isCancelling ? "Stopping..." : "Stop Process"}</span>
+                        </Button>
+                    )}
                     <Button
                         size="sm"
                         className="gap-1.5 font-medium text-xs h-8 rounded-[6px]"
@@ -513,19 +555,53 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                     <div className="flex items-center gap-2 text-destructive min-w-0">
                         <XCircle className="h-4 w-4 shrink-0" />
                         <div className="min-w-0">
-                            <span className="font-semibold">Last synthesis job failed: </span>
+                            <span className="font-semibold">Synthesis failed: </span>
                             <span className="text-text-secondary font-mono">{latestJob.error || "Unknown execution failure"}</span>
                         </div>
                     </div>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs px-3 rounded-[4px] gap-1.5 shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10"
-                        onClick={handleManualTrigger}
-                    >
-                        <RefreshCw className="h-3 w-3" />
-                        <span>Retry Synthesis</span>
-                    </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs px-2.5 rounded-[4px] gap-1 shrink-0 border-destructive/40 text-text-primary hover:bg-surface-raised"
+                            onClick={() => setShowLogsDrawer(!showLogsDrawer)}
+                        >
+                            <Terminal className="h-3 w-3" />
+                            <span>{showLogsDrawer ? "Hide Logs" : "View Error Logs"}</span>
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs px-3 rounded-[4px] gap-1.5 shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10"
+                            onClick={handleManualTrigger}
+                        >
+                            <RefreshCw className="h-3 w-3" />
+                            <span>Retry Synthesis</span>
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Error Logs Terminal Drawer */}
+            {showLogsDrawer && (
+                <div className="bg-bg border border-border rounded-[6px] overflow-hidden p-3 font-mono text-xs text-text-primary shadow-sm space-y-2">
+                    <div className="flex items-center justify-between border-b border-border pb-2">
+                        <span className="font-semibold flex items-center gap-1.5 text-text-secondary">
+                            <Terminal className="h-3.5 w-3.5 text-accent" />
+                            Execution Logs (Job: {latestJob?.bullJobId || latestJob?._id})
+                        </span>
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 text-[10px] px-2"
+                            onClick={() => setShowLogsDrawer(false)}
+                        >
+                            Close
+                        </Button>
+                    </div>
+                    <pre className="max-h-60 overflow-y-auto whitespace-pre-wrap text-[11px] leading-relaxed text-text-secondary bg-surface p-2.5 rounded-[4px]">
+                        {jobLogs.length > 0 ? jobLogs.join("\n") : (latestJob?.error || "No logs recorded for this job execution.")}
+                    </pre>
                 </div>
             )}
 

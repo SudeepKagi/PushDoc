@@ -7,12 +7,6 @@
  * and RAG semantic chunks (for large repositories).
  */
 
-import { logger } from "../utils/logger.js";
-import { config } from "../config/env.js";
-import { dependencyGraph } from "../services/dependencyGraph.service.js";
-import { embeddingService } from "../services/embedding.service.js";
-import { retrievalService } from "../services/retrieval.service.js";
-
 import {
     buildTier1Section,
     buildFolderStructureSection,

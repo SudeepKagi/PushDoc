@@ -38,6 +38,12 @@ router.get(
     githubController.getJobLogs
 );
 
+router.post(
+    "/jobs/:jobId/cancel",
+    authMiddleware,
+    githubController.cancelJob
+);
+
 router.get(
     "/repositories/:repoId/readme",
     authMiddleware,

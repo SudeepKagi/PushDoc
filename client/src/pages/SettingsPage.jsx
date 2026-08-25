@@ -4,6 +4,7 @@ import { Button } from "../components/ui/button.jsx";
 import { Input } from "../components/ui/input.jsx";
 import { Label } from "../components/ui/label.jsx";
 import { Badge } from "../components/ui/badge.jsx";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select.jsx";
 import { Settings, Webhook, GitBranch, Copy, Check, Eye, EyeOff, RefreshCw, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
 import { BACKEND_URL } from "../constants/config.js";
 

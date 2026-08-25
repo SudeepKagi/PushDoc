@@ -118,11 +118,40 @@ export const getJobsByInstallation = async (installationId) => {
 };
 
 export const getJobById = async (jobId) => {
-
     return await Job.findById(jobId).populate("repository");
-
 };
 
 export const getJobCountForRepository = async (repoId) => {
     return await Job.countDocuments({ repository: repoId });
+};
+
+export const cancelJob = async (jobId, reason = "Synthesis stopped by user.") => {
+    return await failJob(jobId, reason);
+};
+
+export const reapStaleJobs = async () => {
+    try {
+        const twoMinutesAgo = new Date(Date.now() - 120_000);
+        const tenMinutesAgo = new Date(Date.now() - 600_000);
+
+        const staleQueued = await Job.find({
+            status: "QUEUED",
+            createdAt: { $lt: twoMinutesAgo },
+        }).populate("repository");
+
+        for (const job of staleQueued) {
+            await failJob(job._id, "Synthesis timed out: Worker did not pick up the job within 2 minutes. Please retry.");
+        }
+
+        const staleInProgress = await Job.find({
+            status: { $in: ["CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"] },
+            updatedAt: { $lt: tenMinutesAgo },
+        }).populate("repository");
+
+        for (const job of staleInProgress) {
+            await failJob(job._id, "Synthesis execution timed out after 10 minutes.");
+        }
+    } catch {
+        // Silently continue reaper loop
+    }
 };
