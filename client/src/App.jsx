@@ -235,6 +235,7 @@ export default function App() {
                                 selectedRepo={selectedRepo}
                                 setPage={setPage}
                                 triggerManualBuild={triggerManualBuild}
+                                toggleRepository={toggleRepository}
                                 jobs={jobs}
                                 token={token}
                                 refreshJobs={refreshJobs}

@@ -7,7 +7,8 @@ import { fetchRepoReadme } from "../utils/api.js";
 import { 
     ArrowLeft, Play, RefreshCw, CheckCircle2, Clock, FileText, 
     Lock, Unlock, Sparkles, Terminal, Code2, GitCommit, 
-    Copy, Check, Eye, GitCompare, FileCode, ExternalLink, AlertCircle
+    Copy, Check, Eye, GitCompare, FileCode, ExternalLink, AlertCircle,
+    Power, ShieldAlert, CheckCircle, AlertTriangle
 } from "lucide-react";
 
 /**
@@ -42,17 +43,16 @@ function CommitGraphStatus({ status }) {
             </div>
 
             {/* Commit Graph Trail */}
-            <div className="relative flex items-center justify-between px-6 py-4">
+            <div className="relative flex items-center justify-between px-4 sm:px-6 py-4 overflow-x-auto">
                 {/* Connecting Line */}
                 <div className="absolute left-10 right-10 top-1/2 -translate-y-1/2 h-[2px] bg-border z-0" />
 
                 {stages.map((stage, idx) => {
                     const isPassed = idx < activeIndex || isCompleted;
                     const isCurrent = idx === activeIndex && !isCompleted && !isFailed;
-                    const isFuture = idx > activeIndex && !isCompleted;
 
                     return (
-                        <div key={stage.key} className="relative z-10 flex flex-col items-center gap-2">
+                        <div key={stage.key} className="relative z-10 flex flex-col items-center gap-2 shrink-0">
                             {/* Commit Node Dot */}
                             <div 
                                 className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${
@@ -185,7 +185,7 @@ function renderMarkdown(rawContent) {
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;");
         t = t.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
-            '<img src="$2" alt="$1" style="display:inline;max-height:20px;margin:2px 3px 0;vertical-align:middle;" loading="lazy"/>');
+            '<img src="$2" alt="$1" class="max-h-6 inline-block align-middle my-0.5" loading="lazy"/>');
         t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
             '<a href="$2" class="text-accent hover:underline font-medium" target="_blank" rel="noopener">$1</a>');
         t = t.replace(/`([^`]+)`/g,
@@ -200,16 +200,16 @@ function renderMarkdown(rawContent) {
         if (tableRows.length < 2) { tableRows = []; inTable = false; return; }
         const headerCells = tableRows[0]
             .split("|").filter(c => c.trim())
-            .map(c => `<th class="p-2 border-b border-border font-semibold bg-surface-raised text-left text-xs">${inline(c.trim())}</th>`)
+            .map(c => `<th class="p-2.5 border-b border-border font-semibold bg-surface-raised text-left text-xs whitespace-nowrap text-text-primary">${inline(c.trim())}</th>`)
             .join("");
         const bodyHtml = tableRows.slice(2)
             .filter(r => r.trim() && r.includes("|"))
             .map(row =>
-                `<tr class="border-b border-border/50">${row.split("|").filter(c => c.trim())
-                    .map(c => `<td class="p-2 align-top text-xs font-sans">${inline(c.trim())}</td>`)
+                `<tr class="border-b border-border/50 hover:bg-surface-raised/50 transition-colors">${row.split("|").filter(c => c.trim())
+                    .map(c => `<td class="p-2.5 align-top text-xs font-sans text-text-secondary whitespace-normal break-words min-w-[120px]">${inline(c.trim())}</td>`)
                     .join("")}</tr>`
             ).join("");
-        html += `<div class="overflow-x-auto my-3"><table class="w-full text-xs border-collapse"><thead><tr>${headerCells}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
+        html += `<div class="overflow-x-auto my-4 rounded-[6px] border border-border bg-surface shadow-sm"><table class="w-full text-xs border-collapse min-w-full table-auto"><thead><tr>${headerCells}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
         tableRows = []; inTable = false;
     };
 
@@ -226,7 +226,7 @@ function renderMarkdown(rawContent) {
                 inCodeBlock = false;
                 const escaped = codeLines.join("\n")
                     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                html += `<pre class="bg-surface-raised p-3 rounded-[6px] overflow-x-auto text-xs font-mono my-3 leading-relaxed text-text-primary border border-border">${escaped}</pre>`;
+                html += `<pre class="bg-surface-raised p-3.5 rounded-[6px] overflow-x-auto text-xs font-mono my-3 leading-relaxed text-text-primary border border-border">${escaped}</pre>`;
                 codeLines = [];
             }
             continue;
@@ -248,19 +248,19 @@ function renderMarkdown(rawContent) {
         }
 
         if (trimmed.startsWith("#### ")) {
-            html += `<h4 class="text-xs font-semibold my-2 text-text-primary">${inline(trimmed.slice(5))}</h4>`;
+            html += `<h4 class="text-xs font-semibold my-2 text-text-primary tracking-tight">${inline(trimmed.slice(5))}</h4>`;
             continue;
         }
         if (trimmed.startsWith("### ")) {
-            html += `<h3 class="text-sm font-semibold my-3 text-text-primary">${inline(trimmed.slice(4))}</h3>`;
+            html += `<h3 class="text-sm font-semibold my-3 text-text-primary tracking-tight">${inline(trimmed.slice(4))}</h3>`;
             continue;
         }
         if (trimmed.startsWith("## ")) {
-            html += `<h2 class="text-base font-semibold border-b border-border pb-1 my-3 text-text-primary">${inline(trimmed.slice(3))}</h2>`;
+            html += `<h2 class="text-base font-semibold border-b border-border pb-1 my-3 text-text-primary tracking-tight">${inline(trimmed.slice(3))}</h2>`;
             continue;
         }
         if (trimmed.startsWith("# ")) {
-            html += `<h1 class="text-lg font-semibold border-b border-border pb-1.5 my-3 text-text-primary">${inline(trimmed.slice(2))}</h1>`;
+            html += `<h1 class="text-lg font-semibold border-b border-border pb-1.5 my-3 text-text-primary tracking-tight">${inline(trimmed.slice(2))}</h1>`;
             continue;
         }
 
@@ -271,12 +271,12 @@ function renderMarkdown(rawContent) {
 
         const olMatch = trimmed.match(/^(\d+)\.\s+(.+)/);
         if (olMatch) {
-            html += `<div class="flex gap-2 my-1 text-xs leading-relaxed"><span class="font-mono text-text-muted">${olMatch[1]}.</span><span>${inline(olMatch[2])}</span></div>`;
+            html += `<div class="flex gap-2 my-1 text-xs leading-relaxed"><span class="font-mono text-text-muted shrink-0">${olMatch[1]}.</span><span>${inline(olMatch[2])}</span></div>`;
             continue;
         }
 
         if (/^[-*+] /.test(trimmed)) {
-            html += `<div class="flex gap-2 my-1 text-xs leading-relaxed"><span class="text-text-muted">•</span><span>${inline(trimmed.slice(2))}</span></div>`;
+            html += `<div class="flex gap-2 my-1 text-xs leading-relaxed"><span class="text-accent shrink-0">•</span><span>${inline(trimmed.slice(2))}</span></div>`;
             continue;
         }
 
@@ -287,7 +287,7 @@ function renderMarkdown(rawContent) {
     return html;
 }
 
-export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, jobs = [], token, refreshJobs }) {
+export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, toggleRepository, jobs = [], token, refreshJobs }) {
     if (!selectedRepo) return null;
 
     const [isTriggering, setIsTriggering] = useState(false);
@@ -295,15 +295,21 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
     const [copied, setCopied] = useState(false);
     const [liveReadme, setLiveReadme] = useState("");
     const [loadingLiveReadme, setLoadingLiveReadme] = useState(false);
+    const [isEnabling, setIsEnabling] = useState(false);
 
     // Robust ID matching between populated object and string ID
-    const latestJob = jobs.find(j => {
+    const matchingJobs = jobs.filter(j => {
         const jRepoId = j.repository?._id?.toString() || j.repository?.toString();
         const sRepoId = selectedRepo?._id?.toString();
         return jRepoId === sRepoId;
     });
 
-    const isRunning = isTriggering || (latestJob && ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(latestJob.status));
+    // Pick latest job by creation date
+    const latestJob = matchingJobs.length > 0 ? matchingJobs[0] : null;
+
+    // Check if the current job is genuinely fresh (< 3 minutes old) to prevent permanent stuck button
+    const isJobFresh = latestJob?.createdAt && (Date.now() - new Date(latestJob.createdAt).getTime() < 3 * 60 * 1000);
+    const isRunning = isTriggering || (isJobFresh && latestJob && ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(latestJob.status));
 
     // Fetch current live README from GitHub
     useEffect(() => {
@@ -325,7 +331,33 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
         return () => { isMounted = false; };
     }, [selectedRepo?._id, token]);
 
+    const handleEnableRepository = async () => {
+        if (!toggleRepository || !selectedRepo?._id) return;
+        setIsEnabling(true);
+        try {
+            await toggleRepository(selectedRepo._id);
+        } catch (err) {
+            console.error("Failed to enable repository:", err);
+        } finally {
+            setIsEnabling(false);
+        }
+    };
+
     const handleManualTrigger = async () => {
+        if (!selectedRepo.isActive) {
+            // Auto-enable repository if disabled when user wants to synthesize
+            if (toggleRepository) {
+                setIsEnabling(true);
+                try {
+                    await toggleRepository(selectedRepo._id);
+                } catch (err) {
+                    console.error("Auto-enable repository error:", err);
+                } finally {
+                    setIsEnabling(false);
+                }
+            }
+        }
+
         setIsTriggering(true);
         try {
             await triggerManualBuild(selectedRepo._id);
@@ -362,7 +394,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
     const activeStatus = isTriggering ? "QUEUED" : latestJob?.status;
 
     return (
-        <div className="space-y-6 max-w-6xl mx-auto py-2 font-sans">
+        <div className="space-y-6 max-w-6xl mx-auto py-2 font-sans overflow-x-hidden">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -381,10 +413,18 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                             {selectedRepo.private ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
                             {selectedRepo.private ? "Private" : "Public"}
                         </Badge>
+                        <Badge 
+                            variant={selectedRepo.isActive ? "success" : "secondary"} 
+                            className="text-[10px] font-mono cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={handleEnableRepository}
+                            title="Click to toggle active status"
+                        >
+                            {selectedRepo.isActive ? "Active" : "Disabled"}
+                        </Badge>
                     </div>
                     <p className="text-xs text-text-secondary mt-0.5 font-mono">{selectedRepo.fullName}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     {activeMarkdown && (
                         <Button
                             variant="outline"
@@ -400,23 +440,48 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                         size="sm"
                         className="gap-1.5 font-medium text-xs h-8 rounded-[6px]"
                         onClick={handleManualTrigger}
-                        disabled={isRunning}
+                        disabled={isRunning || isEnabling}
                     >
-                        {isRunning ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-                        <span>{isRunning ? "Running Scan..." : isSynthesized ? "Re-synthesize README" : "Trigger Scan"}</span>
+                        {isRunning || isEnabling ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                        <span>
+                            {isEnabling ? "Enabling..." : isRunning ? "Running Scan..." : !selectedRepo.isActive ? "Enable & Synthesize" : isSynthesized ? "Re-synthesize README" : "Trigger Scan"}
+                        </span>
                     </Button>
                 </div>
             </div>
+
+            {/* Inactive Repository Warning Banner */}
+            {!selectedRepo.isActive && (
+                <div className="p-3.5 bg-warning/10 border border-warning/30 rounded-[6px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2 text-warning">
+                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                        <div>
+                            <span className="font-semibold text-text-primary">Repository is currently disabled. </span>
+                            <span className="text-text-secondary">Enable this repository to trigger scans, synthesize READMEs, and receive automated commit syncs on push.</span>
+                        </div>
+                    </div>
+                    <Button
+                        size="sm"
+                        variant="warning"
+                        className="h-7 text-xs px-3 rounded-[4px] gap-1.5 shrink-0 font-medium"
+                        onClick={handleEnableRepository}
+                        disabled={isEnabling}
+                    >
+                        <Power className="h-3 w-3" />
+                        <span>{isEnabling ? "Enabling..." : "Enable Repository"}</span>
+                    </Button>
+                </div>
+            )}
 
             {/* Signature Element: Commit-Graph Pipeline Trail */}
             {(isTriggering || (latestJob && latestJob.status !== "COMPLETED" && latestJob.status !== "FAILED")) && (
                 <CommitGraphStatus status={activeStatus || "QUEUED"} />
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 {/* Main Review & Preview Card */}
-                <div className="lg:col-span-2 space-y-6">
-                    <Card className="bg-surface rounded-[6px] border border-border">
+                <div className="lg:col-span-2 space-y-6 min-w-0">
+                    <Card className="bg-surface rounded-[6px] border border-border overflow-hidden">
                         <CardHeader className="p-3 border-b border-border bg-surface-raised flex flex-row items-center justify-between gap-2">
                             {/* Tab Switcher */}
                             <div className="flex items-center gap-1 bg-bg p-0.5 rounded-[4px]">
@@ -424,7 +489,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                                     onClick={() => setActiveTab("preview")}
                                     className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium font-sans rounded-[4px] transition-colors ${
                                         activeTab === "preview" 
-                                            ? "bg-surface text-text-primary font-semibold" 
+                                            ? "bg-surface text-text-primary font-semibold shadow-sm" 
                                             : "text-text-secondary hover:text-text-primary"
                                     }`}
                                 >
@@ -435,7 +500,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                                     onClick={() => setActiveTab("diff")}
                                     className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium font-sans rounded-[4px] transition-colors ${
                                         activeTab === "diff" 
-                                            ? "bg-surface text-text-primary font-semibold" 
+                                            ? "bg-surface text-text-primary font-semibold shadow-sm" 
                                             : "text-text-secondary hover:text-text-primary"
                                     }`}
                                 >
@@ -446,7 +511,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                                     onClick={() => setActiveTab("raw")}
                                     className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium font-sans rounded-[4px] transition-colors ${
                                         activeTab === "raw" 
-                                            ? "bg-surface text-text-primary font-semibold" 
+                                            ? "bg-surface text-text-primary font-semibold shadow-sm" 
                                             : "text-text-secondary hover:text-text-primary"
                                     }`}
                                 >
@@ -514,14 +579,14 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                                     {!isSynthesized && (
                                         <div className="mb-3 p-2.5 bg-surface-raised rounded-[6px] border border-border flex items-center justify-between text-xs">
                                             <span className="text-text-secondary">
-                                                Showing current live README from GitHub. Click <strong className="text-text-primary">Trigger Scan</strong> to synthesize AST-grounded documentation.
+                                                Showing current live README from GitHub. Click <strong className="text-text-primary">Re-synthesize README</strong> to generate grounded documentation.
                                             </span>
                                         </div>
                                     )}
 
                                     {activeTab === "preview" && (
-                                        <div className="h-[500px] overflow-y-auto pr-2 font-sans">
-                                            <div ref={containerRef} className="text-xs leading-relaxed text-text-primary" />
+                                        <div className="h-[550px] overflow-y-auto overflow-x-auto pr-2 font-sans space-y-2">
+                                            <div ref={containerRef} className="text-xs leading-relaxed text-text-primary break-words" />
                                         </div>
                                     )}
 
@@ -535,7 +600,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                                     )}
 
                                     {activeTab === "raw" && (
-                                        <div className="h-[500px] overflow-y-auto">
+                                        <div className="h-[550px] overflow-y-auto overflow-x-auto">
                                             <pre className="p-3 bg-bg rounded-[6px] text-xs font-mono whitespace-pre-wrap leading-relaxed text-text-primary border border-border">
                                                 {activeMarkdown}
                                             </pre>
@@ -548,7 +613,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                 </div>
 
                 {/* Sidebar Properties */}
-                <div className="space-y-4">
+                <div className="space-y-4 min-w-0 lg:sticky lg:top-4">
                     <Card className="bg-surface rounded-[6px] border border-border">
                         <CardHeader className="p-3 pb-2 border-b border-border bg-surface-raised">
                             <CardTitle className="text-xs font-semibold text-text-primary">Repository Properties</CardTitle>
@@ -560,17 +625,24 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                             </div>
                             <div className="flex justify-between items-center py-1 border-b border-border">
                                 <span className="text-text-secondary">Last Scanned</span>
-                                <span className="font-mono text-text-primary">{displayLastRun}</span>
+                                <span className="font-mono text-text-primary text-[11px]">{displayLastRun}</span>
                             </div>
                             <div className="flex justify-between items-center py-1 border-b border-border">
                                 <span className="text-text-secondary">Scan Duration</span>
                                 <span className="font-mono text-text-primary">{displayDuration}</span>
                             </div>
                             <div className="flex justify-between items-center py-1">
-                                <span className="text-text-secondary">Auto-Commit</span>
-                                <Badge variant={selectedRepo.isActive ? "success" : "secondary"} className="font-mono text-xs">
-                                    {selectedRepo.isActive ? "Active" : "Disabled"}
-                                </Badge>
+                                <span className="text-text-secondary">Repository Status</span>
+                                <Button
+                                    variant={selectedRepo.isActive ? "outline" : "default"}
+                                    size="sm"
+                                    className="h-6 text-[11px] px-2 rounded-[4px] gap-1 font-mono"
+                                    onClick={handleEnableRepository}
+                                    disabled={isEnabling}
+                                >
+                                    <Power className="h-3 w-3" />
+                                    <span>{isEnabling ? "Updating..." : selectedRepo.isActive ? "Active" : "Enable"}</span>
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>
@@ -580,7 +652,7 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                             <CardTitle className="text-xs font-semibold text-text-primary">Review Mode</CardTitle>
                         </CardHeader>
                         <CardContent className="p-3 pt-0 text-xs text-text-secondary leading-relaxed font-sans">
-                            PushDoc generates README diffs directly from your codebase AST. Review additions in the diff tab before automatic push verification.
+                            PushDoc extracts common facts and generates README diffs directly from your codebase AST. Review additions in the diff tab before automatic push verification.
                         </CardContent>
                     </Card>
                 </div>
