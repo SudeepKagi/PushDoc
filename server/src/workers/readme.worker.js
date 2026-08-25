@@ -11,8 +11,17 @@ import * as readmePipeline from "../pipelines/readme.pipeline.js";
 import * as readmeService from "../services/readme.service.js";
 import * as logger from "../services/logger.service.js";
 import * as workspaceService from "../services/workspace.service.js";
-import * as readmeValidator from "../validators/readme.validator.js";
 import { ValidationError } from "../utils/errors.js";
+
+const isJobCancelled = async (trackingJobId) => {
+    if (!trackingJobId) return false;
+    try {
+        const job = await jobService.getJobById(trackingJobId);
+        return job?.status === "FAILED";
+    } catch {
+        return false;
+    }
+};
 
 const readmeWorker = new Worker(
     "readme-generation",
@@ -43,6 +52,11 @@ const readmeWorker = new Worker(
                 } catch {
                     // Continue
                 }
+            }
+
+            if (trackingJob && await isJobCancelled(trackingJob._id)) {
+                logger.info(jobId, "Job cancelled before execution started — aborting.");
+                return;
             }
 
             if (!repositoryId || !branch || !commitSha) {
@@ -141,6 +155,11 @@ const readmeWorker = new Worker(
                 "Repository cloned"
             );
 
+            if (await isJobCancelled(trackingJob._id)) {
+                logger.info(jobId, "Job cancelled by user — stopping pipeline after clone.");
+                return;
+            }
+
             // Capture original README text if it exists BEFORE writing anything new
             originalReadme = readmeService.readExistingReadme(repositoryPath);
             if (originalReadme) {
@@ -152,7 +171,12 @@ const readmeWorker = new Worker(
                 "READING"
             );
 
-            const { readme, knowledge } =
+            await jobService.updateStatus(
+                trackingJob._id,
+                "GENERATING"
+            );
+
+            const { readme, knowledge, criticReport } =
                 await readmePipeline.generateReadme(
                     repositoryPath,
                     jobId
@@ -164,6 +188,11 @@ const readmeWorker = new Worker(
                 jobId,
                 "README generated"
             );
+
+            if (await isJobCancelled(trackingJob._id)) {
+                logger.info(jobId, "Job cancelled by user — stopping pipeline before write.");
+                return;
+            }
 
             await jobService.updateStatus(
                 trackingJob._id,
@@ -187,7 +216,8 @@ const readmeWorker = new Worker(
 
             const committed =
                 await gitService.commitChanges(
-                    repositoryPath
+                    repositoryPath,
+                    token
                 );
 
             if (committed) {
@@ -204,7 +234,8 @@ const readmeWorker = new Worker(
 
                 await gitService.pushChanges(
                     repositoryPath,
-                    branch
+                    branch,
+                    token
                 );
 
                 logger.success(
@@ -221,11 +252,20 @@ const readmeWorker = new Worker(
 
             }
 
+            if (await isJobCancelled(trackingJob._id)) {
+                logger.info(jobId, "Job was marked failed/cancelled — skipping completeJob.");
+                return;
+            }
+
             await jobService.completeJob(
                 trackingJob._id,
                 {
                     originalReadme,
                     generatedReadme,
+                    validationWarnings: criticReport?.isClean === false
+                        ? (criticReport.violations || []).map(v => `${v.type}: ${v.value}`)
+                        : [],
+                    validationScore: criticReport?.score ?? 100,
                 }
             );
 

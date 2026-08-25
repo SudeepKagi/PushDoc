@@ -34,7 +34,9 @@ export const redact = (str) => {
 
 const writeLogToFile = (jobId, logLine) => {
     try {
-        const logDir = path.join("temp", "logs");
+        const logDir = config?.workspace?.root
+            ? path.join(config.workspace.root, "logs")
+            : path.join("temp", "logs");
         if (!fs.existsSync(logDir)) {
             fs.mkdirSync(logDir, { recursive: true });
         }

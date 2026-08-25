@@ -65,7 +65,8 @@ export const createAuthenticatedCloneUrl = (
 };
 
 export const commitChanges = async (
-    repositoryPath
+    repositoryPath,
+    token
 ) => {
     validateRepoPath(repositoryPath);
     try {
@@ -88,13 +89,14 @@ export const commitChanges = async (
 
         return true;
     } catch (error) {
-        throw handleGitError(error);
+        throw handleGitError(error, token);
     }
 };
 
 export const pushChanges = async (
     repositoryPath,
-    branch
+    branch,
+    token
 ) => {
     validateRepoPath(repositoryPath);
     if (!branch) {
@@ -116,6 +118,6 @@ export const pushChanges = async (
             branchName
         );
     } catch (error) {
-        throw handleGitError(error);
+        throw handleGitError(error, token);
     }
 };

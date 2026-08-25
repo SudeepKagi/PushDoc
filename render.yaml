@@ -10,8 +10,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: EMBEDDED_WORKER
-        value: "true"
+      - key: SEPARATE_WORKER
+        value: "false"
       - key: PORT
         value: 10000
       - key: MONGODB_URI
@@ -24,14 +24,22 @@ services:
         sync: false
       - key: GITHUB_CLIENT_SECRET
         sync: false
+      - key: GITHUB_REDIRECT_URI
+        sync: false
+      - key: GITHUB_APP_NAME
+        sync: false
       - key: GITHUB_WEBHOOK_SECRET
         sync: false
+      - key: GITHUB_PRIVATE_KEY_PATH
+        value: /etc/secrets/pushdoc-private-key.pem
       - key: JWT_SECRET
         generateValue: true
       - key: GEMINI_API_KEY
         sync: false
       - key: GROQ_API_KEY
         sync: false
+      - key: CORS_ORIGIN
+        value: https://push-doc.vercel.app,https://pushdoc-client.onrender.com
     healthCheckPath: /
 
   # ── 2. PushDoc Frontend Static Site ─────────────────────────────────────────

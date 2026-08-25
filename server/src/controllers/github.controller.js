@@ -7,6 +7,7 @@ import * as jobService from "../services/job.service.js";
 import * as logger from "../services/logger.service.js";
 import readmeQueue from "../queue/queue.js";
 import eventsService from "../services/events.service.js";
+import { config } from "../config/app.config.js";
 import fs from "fs";
 import path from "path";
 
@@ -223,7 +224,11 @@ export const getJobLogs = async (req, res) => {
             return res.status(404).json({ success: false, message: "Job not found" });
         }
 
-        const logFilePath = path.join("temp", "logs", `${job.bullJobId}.log`);
+        const configuredLogPath = config?.workspace?.root
+            ? path.join(config.workspace.root, "logs", `${job.bullJobId}.log`)
+            : path.join("temp", "logs", `${job.bullJobId}.log`);
+        const fallbackLogPath = path.join("temp", "logs", `${job.bullJobId}.log`);
+        const logFilePath = fs.existsSync(configuredLogPath) ? configuredLogPath : fallbackLogPath;
         let logLines = [];
 
         if (fs.existsSync(logFilePath)) {

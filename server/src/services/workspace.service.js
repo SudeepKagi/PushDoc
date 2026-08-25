@@ -177,6 +177,25 @@ export function purgeStaleWorkspaces() {
             }
         }
 
+        // Also purge stale log files older than 24 hours
+        const logsDir = path.join(WORKSPACE_ROOT, "logs");
+        if (fs.existsSync(logsDir)) {
+            const logEntries = fs.readdirSync(logsDir, { withFileTypes: true });
+            const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+            for (const logEntry of logEntries) {
+                if (!logEntry.isFile() || !logEntry.name.endsWith(".log")) continue;
+                const logFilePath = path.join(logsDir, logEntry.name);
+                try {
+                    const stat = fs.statSync(logFilePath);
+                    if (now - stat.mtimeMs > TWENTY_FOUR_HOURS_MS) {
+                        fs.unlinkSync(logFilePath);
+                    }
+                } catch {
+                    // Ignore
+                }
+            }
+        }
+
         if (purged > 0) {
             logger.success(`Workspace purge complete — removed ${purged} stale workspace(s)`);
         }

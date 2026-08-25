@@ -1,6 +1,7 @@
 import Job from "../models/job.model.js";
 import Repository from "../models/repository.model.js";
 import eventsService from "./events.service.js";
+import readmeQueue from "../queue/queue.js";
 
 export const createJob = async ({
     repository,
@@ -126,7 +127,21 @@ export const getJobCountForRepository = async (repoId) => {
 };
 
 export const cancelJob = async (jobId, reason = "Synthesis stopped by user.") => {
-    return await failJob(jobId, reason);
+    const job = await failJob(jobId, reason);
+    if (job?.bullJobId) {
+        try {
+            const bullJob = await readmeQueue.getJob(job.bullJobId);
+            if (bullJob) {
+                const state = await bullJob.getState();
+                if (state === "waiting" || state === "delayed") {
+                    await bullJob.remove();
+                }
+            }
+        } catch {
+            // Best-effort queue cleanup
+        }
+    }
+    return job;
 };
 
 export const reapStaleJobs = async () => {

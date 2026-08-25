@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 import os from "os";
+import fs from "fs";
 
 dotenv.config();
 
@@ -124,6 +125,22 @@ export const validateConfig = () => {
     if (missing.length > 0) {
         throw new Error(
             `[ConfigError] Missing required environment variables: ${missing.join(", ")}. Please configure them in your .env file.`
+        );
+    }
+
+    if (!process.env.GITHUB_PRIVATE_KEY && !process.env.GITHUB_PRIVATE_KEY_PATH) {
+        // In local development, check if default pem file exists
+        const localKeyPath = path.resolve("keys", "pushdoc.2026-06-29.private-key.pem");
+        if (!fs.existsSync(localKeyPath)) {
+            throw new Error(
+                `[ConfigError] Missing GITHUB_PRIVATE_KEY or GITHUB_PRIVATE_KEY_PATH. Please configure your GitHub App private key.`
+            );
+        }
+    }
+
+    if (!config.redis.url && !process.env.REDIS_HOST) {
+        throw new Error(
+            `[ConfigError] Missing REDIS_URL or REDIS_HOST. Please configure Redis connection.`
         );
     }
 
