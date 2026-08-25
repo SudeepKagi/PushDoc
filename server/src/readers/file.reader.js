@@ -4,7 +4,14 @@ import path from "path";
 import {
     MAX_CHARACTERS,
     MAX_LINES,
+    MAX_FILE_SIZE,
 } from "./ignore.rules.js";
+
+const MANIFEST_FILENAMES = new Set([
+    "package.json", "requirements.txt", "pyproject.toml", "Pipfile",
+    "pom.xml", "build.gradle", "build.gradle.kts", "go.mod", "Cargo.toml", "composer.json",
+    "Gemfile", "pubspec.yaml", "mix.exs",
+]);
 
 export const readFile = (
     repositoryPath,
@@ -19,6 +26,19 @@ export const readFile = (
     const stats =
         fs.statSync(absolutePath);
 
+    const isManifest = MANIFEST_FILENAMES.has(path.basename(relativePath));
+
+    if (!isManifest && stats.size > MAX_FILE_SIZE) {
+        return {
+            path: relativePath,
+            content: `// [File omitted: size (${Math.round(stats.size / 1024)} KB) exceeds MAX_FILE_SIZE limit]`,
+            extension: path.extname(relativePath),
+            size: stats.size,
+            lines: 1,
+            truncated: true,
+        };
+    }
+
     let content =
         fs.readFileSync(
             absolutePath,
@@ -30,7 +50,7 @@ export const readFile = (
     const lines =
         content.split("\n");
 
-    if (lines.length > MAX_LINES) {
+    if (!isManifest && lines.length > MAX_LINES) {
 
         content =
             lines
@@ -41,6 +61,7 @@ export const readFile = (
     }
 
     if (
+        !isManifest &&
         content.length >
         MAX_CHARACTERS
     ) {

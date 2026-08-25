@@ -137,6 +137,7 @@ export default function BuildLogsPage({
                                 {jobs.map((job, idx) => {
                                     const isCompleted = job.status === "COMPLETED";
                                     const isFailed = job.status === "FAILED";
+                                    const isCancelled = job.status === "CANCELLED";
                                     const isSelected = activeBuildIndex === idx;
                                     const isInProgress = ["QUEUED", "CLONING", "READING", "GENERATING", "WRITING", "COMMITTING", "PUSHING"].includes(job.status);
 
@@ -160,7 +161,7 @@ export default function BuildLogsPage({
                                             </TableCell>
                                             <TableCell>
                                                 <Badge 
-                                                    variant={isCompleted ? "success" : isFailed ? "destructive" : "secondary"} 
+                                                    variant={isCompleted ? "success" : isFailed ? "destructive" : isCancelled ? "outline" : "secondary"} 
                                                     className="text-xs font-mono gap-1.5"
                                                 >
                                                     {isInProgress && (

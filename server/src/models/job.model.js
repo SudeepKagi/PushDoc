@@ -36,6 +36,7 @@ const jobSchema = new mongoose.Schema(
                 "PUSHING",
                 "COMPLETED",
                 "FAILED",
+                "CANCELLED",
             ],
             default: "QUEUED",
         },

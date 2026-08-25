@@ -111,6 +111,20 @@ export const buildRepositoryContext = async (repository, knowledge) => {
     const projectType = knowledge.projectType?.type || "backend";
     const RAG_THRESHOLD_FILE_COUNT = 40;
 
+    const applyTokenBudget = (ctx, fileCount) => {
+        const budget = fileCount > 150
+            ? config.tokenBudget?.large || 160_000
+            : fileCount > 40
+                ? config.tokenBudget?.medium || 120_000
+                : config.tokenBudget?.small || 80_000;
+
+        if (ctx.length > budget) {
+            logger.warn(`Context (${ctx.length} chars) exceeded budget (${budget} chars) — truncating`);
+            return ctx.slice(0, budget);
+        }
+        return ctx;
+    };
+
     if (repository.files && repository.files.length > RAG_THRESHOLD_FILE_COUNT) {
         try {
             const topN = config.rag?.topNFiles || 15;
@@ -133,23 +147,11 @@ export const buildRepositoryContext = async (repository, knowledge) => {
             context += buildRawSourceSection(repository.files, projectType);
         }
 
-        const fileCount = repository.files.length;
-        const budget = fileCount > 150
-            ? config.tokenBudget?.large || 160_000
-            : fileCount > 40
-                ? config.tokenBudget?.medium || 120_000
-                : config.tokenBudget?.small || 80_000;
-
-        if (context.length > budget) {
-            logger.warn(`Context (${context.length} chars) exceeded budget (${budget} chars) — truncating`);
-            context = context.slice(0, budget);
-        }
-
-        return context;
+        return applyTokenBudget(context, repository.files.length);
     }
 
     context += buildRawSourceSection(repository.files, projectType);
-    return context;
+    return applyTokenBudget(context, (repository.files || []).length);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

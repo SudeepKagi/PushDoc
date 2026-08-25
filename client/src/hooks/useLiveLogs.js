@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { fetchJobs, fetchJobLogs } from "../utils/api";
 import { BACKEND_URL } from "../constants/config";
 
-export default function useLiveLogs(token, isActive) {
+export default function useLiveLogs(token, isActive, onAuthError) {
     const [jobs, setJobs] = useState([]);
     const [activeBuildIndex, setActiveBuildIndex] = useState(0);
     const [logsSearchQuery, setLogsSearchQuery] = useState("");
@@ -65,15 +65,21 @@ export default function useLiveLogs(token, isActive) {
         };
     }, [isActive, token, activeBuildIndex, jobs.length]);
 
-    // Real-Time Server-Sent Events (SSE) stream (0 polling)
+    // Real-Time Server-Sent Events (SSE) stream
     useEffect(() => {
         if (!isActive || !token) return;
 
         const sseUrl = `${BACKEND_URL}/github/events/stream?token=${encodeURIComponent(token)}`;
         let eventSource = null;
+        let consecutiveFailures = 0;
+        let lastFailureAt = 0;
 
         try {
             eventSource = new EventSource(sseUrl);
+
+            eventSource.addEventListener("connected", () => {
+                consecutiveFailures = 0;
+            });
 
             // Job Status Transition Event (QUEUED -> CLONING -> GENERATING -> COMPLETED, etc.)
             eventSource.addEventListener("job_update", (e) => {
@@ -109,7 +115,14 @@ export default function useLiveLogs(token, isActive) {
             });
 
             eventSource.onerror = () => {
-                // EventSource will automatically retry connection
+                const now = Date.now();
+                consecutiveFailures = (now - lastFailureAt < 2500) ? consecutiveFailures + 1 : 1;
+                lastFailureAt = now;
+
+                if (consecutiveFailures >= 3) {
+                    eventSource.close();
+                    onAuthError?.();
+                }
             };
         } catch (err) {
             console.warn("Failed to initialize SSE EventSource:", err.message);
@@ -120,7 +133,7 @@ export default function useLiveLogs(token, isActive) {
                 eventSource.close();
             }
         };
-    }, [isActive, token]);
+    }, [isActive, token, onAuthError]);
 
     // Auto-scroll logs terminal
     useEffect(() => {

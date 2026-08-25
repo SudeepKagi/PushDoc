@@ -8,7 +8,12 @@ import { reapStaleJobs } from "./src/services/job.service.js";
 dotenv.config();
 
 // Support embedded worker for single-instance cloud deployments (Render, Railway, Fly, Local)
-if (process.env.SEPARATE_WORKER !== "true") {
+const separateWorker = ["true", "1", "yes"].includes(
+    (process.env.SEPARATE_WORKER || "").toLowerCase().trim()
+);
+logger.info(`Worker mode: ${separateWorker ? "separate (dedicated worker process expected)" : "embedded (running in this web process)"}`);
+
+if (!separateWorker) {
     import("./src/workers/readme.worker.js")
         .then(() => logger.info("Embedded README worker initialized in-process"))
         .catch(err => logger.error(`Failed to start embedded worker: ${err.message}`));

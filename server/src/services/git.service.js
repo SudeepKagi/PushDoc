@@ -10,12 +10,17 @@ const validateRepoPath = (repositoryPath) => {
     }
 };
 
+const GIT_TIMEOUT_MS = 90_000;
+
 const handleGitError = (error, token) => {
     let msg = error.message || "Unknown Git error";
-    if (token) {
-        const tokenRegex = new RegExp(token, "g");
-        msg = msg.replace(tokenRegex, "REDACTED_TOKEN");
-        msg = msg.replace(/x-access-token:[^@]+@/g, "x-access-token:REDACTED@");
+    try {
+        if (token) {
+            msg = msg.split(token).join("REDACTED_TOKEN");
+            msg = msg.replace(/x-access-token:[^@]+@/g, "x-access-token:REDACTED@");
+        }
+    } catch {
+        msg = "Git operation failed (error message redaction failed — see server logs)";
     }
     return new GitError(msg);
 };
@@ -28,7 +33,7 @@ export const cloneRepository = async (
 ) => {
     validateRepoPath(repositoryPath);
     try {
-        const git = simpleGit();
+        const git = simpleGit({ timeout: { block: GIT_TIMEOUT_MS } });
         // Shallow clone: only fetch the tip commit of the target branch.
         // This keeps disk usage minimal (5–20 MB vs hundreds of MB for full clones)
         // which is critical on ephemeral cloud filesystems (Render, Railway, Fly).
@@ -66,16 +71,17 @@ export const createAuthenticatedCloneUrl = (
 
 export const commitChanges = async (
     repositoryPath,
-    token
+    token,
+    filename = "README.md"
 ) => {
     validateRepoPath(repositoryPath);
     try {
-        const git = simpleGit(repositoryPath);
+        const git = simpleGit(repositoryPath, { timeout: { block: GIT_TIMEOUT_MS } });
 
         await git.addConfig("user.name", "PushDoc");
         await git.addConfig("user.email", "bot@pushdoc.app");
 
-        await git.add("README.md");
+        await git.add(filename);
 
         const status = await git.status();
 
@@ -84,7 +90,7 @@ export const commitChanges = async (
         }
 
         await git.commit(
-            "docs: update README.md by PushDoc"
+            `docs: update ${filename} by PushDoc`
         );
 
         return true;
@@ -112,7 +118,7 @@ export const pushChanges = async (
     }
 
     try {
-        const git = simpleGit(repositoryPath);
+        const git = simpleGit(repositoryPath, { timeout: { block: GIT_TIMEOUT_MS } });
         await git.push(
             "origin",
             branchName

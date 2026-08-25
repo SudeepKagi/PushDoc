@@ -27,6 +27,7 @@ function CommitGraphStatus({ status }) {
     const currentStageIndex = stages.findIndex(stage => stage.states.includes(status));
     const isCompleted = status === "COMPLETED";
     const isFailed = status === "FAILED";
+    const isCancelled = status === "CANCELLED";
 
     const activeIndex = isCompleted ? stages.length - 1 : currentStageIndex >= 0 ? currentStageIndex : 0;
 
@@ -34,10 +35,10 @@ function CommitGraphStatus({ status }) {
         <div className="bg-surface-raised rounded-[6px] p-4 mb-6 space-y-4 border border-border w-full min-w-0">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full ${isFailed ? "bg-destructive" : isCompleted ? "bg-success" : "bg-accent animate-pulse"}`} />
+                    <span className={`h-2 w-2 rounded-full ${isFailed ? "bg-destructive" : isCancelled ? "bg-text-muted" : isCompleted ? "bg-success" : "bg-accent animate-pulse"}`} />
                     <span className="text-xs font-mono font-medium text-text-primary">Generation Pipeline</span>
                 </div>
-                <Badge variant={isFailed ? "destructive" : isCompleted ? "success" : "default"} className="font-mono text-xs">
+                <Badge variant={isFailed ? "destructive" : isCancelled ? "secondary" : isCompleted ? "success" : "default"} className="font-mono text-xs">
                     {status || "QUEUED"}
                 </Badge>
             </div>
@@ -586,13 +587,13 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
                 </div>
             )}
 
-            {/* Job Failure Banner */}
-            {latestJob?.status === "FAILED" && !isRunning && (
-                <div className="p-3.5 bg-destructive/10 border border-destructive/30 rounded-[6px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs w-full min-w-0">
-                    <div className="flex items-center gap-2 text-destructive min-w-0">
-                        <XCircle className="h-4 w-4 shrink-0" />
+            {/* Job Failure / Cancellation Banner */}
+            {(latestJob?.status === "FAILED" || latestJob?.status === "CANCELLED") && !isRunning && (
+                <div className={`p-3.5 ${latestJob.status === "CANCELLED" ? "bg-surface-raised border-border" : "bg-destructive/10 border-destructive/30"} border rounded-[6px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs w-full min-w-0`}>
+                    <div className={`flex items-center gap-2 ${latestJob.status === "CANCELLED" ? "text-text-secondary" : "text-destructive"} min-w-0`}>
+                        {latestJob.status === "CANCELLED" ? <AlertCircle className="h-4 w-4 shrink-0 text-text-muted" /> : <XCircle className="h-4 w-4 shrink-0" />}
                         <div className="min-w-0">
-                            <span className="font-semibold">Synthesis failed: </span>
+                            <span className="font-semibold text-text-primary">{latestJob.status === "CANCELLED" ? "Synthesis cancelled: " : "Synthesis failed: "}</span>
                             <span className="text-text-secondary font-mono">{latestJob.error || "Unknown execution failure"}</span>
                         </div>
                     </div>

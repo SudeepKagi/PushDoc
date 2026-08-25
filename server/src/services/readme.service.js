@@ -16,14 +16,24 @@ export const readExistingReadme = (repositoryPath) => {
     }
 };
 
+export const findExistingReadmeFilename = (repositoryPath) => {
+    try {
+        if (!fs.existsSync(repositoryPath)) return null;
+        const files = fs.readdirSync(repositoryPath);
+        return files.find(f => /^readme(\.md|\.markdown)?$/i.test(f)) || null;
+    } catch {
+        return null;
+    }
+};
+
 export const writeReadme = async (
     repositoryPath,
     markdown
 ) => {
-
+    const existingName = findExistingReadmeFilename(repositoryPath) || "README.md";
     const readmePath = path.join(
         repositoryPath,
-        "README.md"
+        existingName
     );
 
     fs.writeFileSync(
@@ -32,6 +42,5 @@ export const writeReadme = async (
         "utf8"
     );
 
-    return readmePath;
-
+    return { readmePath, filename: existingName };
 };

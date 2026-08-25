@@ -61,7 +61,8 @@ const handlePushEvent = async (payload) => {
         return;
     }
 
-    if (latestCommit.message.startsWith("docs: update README")) {
+    const commitMsg = latestCommit?.message || "";
+    if (commitMsg.startsWith("docs: update README")) {
         logger.info("Skipping bot-generated README commit to avoid infinite generation loops");
         return;
     }
@@ -102,8 +103,20 @@ const handlePushEvent = async (payload) => {
         }
     }
 
-    // Generate unique timestamped BullMQ jobId
-    const jobId = `push-${repository.githubId}-${Date.now()}`;
+    // Stable jobId per repository so burst pushes debounce/coalesce onto latest commit
+    const jobId = `push-${repository.githubId}`;
+
+    try {
+        const existing = await readmeQueue.getJob(jobId);
+        if (existing) {
+            const state = await existing.getState();
+            if (state === "waiting" || state === "delayed") {
+                await existing.remove();
+            }
+        }
+    } catch (err) {
+        logger.warn(`Could not check/replace pending job for ${repository.fullName}: ${err.message}`);
+    }
 
     await readmeQueue.add(
         "generate-readme",

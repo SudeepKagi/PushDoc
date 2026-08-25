@@ -7,6 +7,7 @@ import * as critic from "../analyzers/critic.js";
 import * as diagramService from "../services/diagram.service.js";
 import * as aiService from "../services/ai.service.js";
 import * as validatorService from "../services/validator.service.js";
+import { validateReadme } from "../validators/readme.validator.js";
 import * as logger from "../services/logger.service.js";
 
 export const generateReadme = async (
@@ -107,6 +108,19 @@ export const generateReadme = async (
         knowledge
     );
 
+    const structuralReport = validateReadme(sanitizedReadme, knowledge);
+    if (structuralReport.warnings.length > 0) {
+        logger.warn(
+            jobId,
+            `Structural validator found ${structuralReport.warnings.length} issue(s) (score ${structuralReport.score}/100): ${structuralReport.warnings.join(" | ")}`
+        );
+    } else {
+        logger.info(
+            jobId,
+            "Structural validation passed — clean syntax and complete section coverage"
+        );
+    }
+
     logger.info(
         jobId,
         "Running post-generation critic hallucination pass..."
@@ -136,6 +150,7 @@ export const generateReadme = async (
         knowledge,
         facts,
         criticReport,
+        structuralReport,
     };
 
 };

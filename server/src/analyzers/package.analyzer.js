@@ -119,8 +119,12 @@ function analyzeNodejs(byName, files, ecosystem) {
     if (!pkgFile) return buildUnknownResult(ecosystem, files);
 
     let pkg;
-    try { pkg = JSON.parse(pkgFile.content); }
-    catch { return null; }
+    try {
+        pkg = JSON.parse(pkgFile.content);
+    } catch (err) {
+        console.warn(`[package.analyzer] Failed to parse package.json: ${err.message}`);
+        return buildUnknownResult(ecosystem, files);
+    }
 
     const runtimeDeps = pkg.dependencies    || {};
     const devDeps     = pkg.devDependencies || {};

@@ -60,7 +60,7 @@ export default function App() {
         rerunJob,
         loadingJobs,
         refreshJobs
-    } = useLiveLogs(token, page === "logs" || page === "detail");
+    } = useLiveLogs(token, page === "logs" || page === "detail", logout);
 
     // Settings page state
     const [webhookSecret, setWebhookSecret] = useState(() => {

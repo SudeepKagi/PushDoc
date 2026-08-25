@@ -6,6 +6,8 @@ class EventsService extends EventEmitter {
         this.setMaxListeners(200);
         // Map of userId string -> Set of active Express Response streams
         this.clients = new Map();
+        // Map of bullJobId -> userId string to route log lines securely to the owner
+        this.jobOwners = new Map();
     }
 
     /**
@@ -71,18 +73,27 @@ class EventsService extends EventEmitter {
     }
 
     broadcastJobUpdate(userId, job) {
-        if (userId) {
-            this.sendToUser(userId, "job_update", job);
+        const ownerId = userId || job?.repository?.installation?.user?.toString() || job?.repository?.installation?.user?._id?.toString();
+        if (job?.bullJobId && ownerId) {
+            this.jobOwners.set(job.bullJobId, ownerId);
         }
-        // Always broadcast so any open dashboard tabs tracking this repository receive the update
-        this.broadcast("job_update", job);
+
+        if (ownerId) {
+            this.sendToUser(ownerId, "job_update", job);
+        }
+
+        if (job?.bullJobId && ["COMPLETED", "FAILED", "CANCELLED"].includes(job?.status)) {
+            setTimeout(() => this.jobOwners.delete(job.bullJobId), 15_000).unref?.();
+        }
     }
 
     /**
-     * Stream a real-time log line to open terminals
+     * Stream a real-time log line to open terminals for the job owner
      */
     broadcastLog(bullJobId, logLine) {
-        this.broadcast("job_log", { bullJobId, logLine });
+        const ownerId = this.jobOwners.get(bullJobId);
+        if (!ownerId) return;
+        this.sendToUser(ownerId, "job_log", { bullJobId, logLine });
     }
 }
 

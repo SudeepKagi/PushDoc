@@ -19,7 +19,10 @@ export const createJob = async ({
         startedAt: new Date(),
     });
 
-    const populatedJob = await Job.findById(job._id).populate("repository");
+    const populatedJob = await Job.findById(job._id).populate({
+        path: "repository",
+        populate: { path: "installation" },
+    });
     eventsService.broadcastJobUpdate(null, populatedJob);
 
     return populatedJob;
@@ -37,7 +40,10 @@ export const updateStatus = async (
         {
             returnDocument: "after"
         }
-    ).populate("repository");
+    ).populate({
+        path: "repository",
+        populate: { path: "installation" },
+    });
 
     if (job) {
         eventsService.broadcastJobUpdate(null, job);
@@ -55,7 +61,10 @@ export const completeJob = async (
         validationWarnings,
     } = {}
 ) => {
-    const job = await Job.findById(jobId).populate("repository");
+    const job = await Job.findById(jobId).populate({
+        path: "repository",
+        populate: { path: "installation" },
+    });
 
     if (!job) return null;
 
@@ -85,7 +94,10 @@ export const failJob = async (
         validationWarnings,
     } = {}
 ) => {
-    const job = await Job.findById(jobId).populate("repository");
+    const job = await Job.findById(jobId).populate({
+        path: "repository",
+        populate: { path: "installation" },
+    });
 
     if (!job) return null;
 
@@ -112,14 +124,20 @@ export const getJobsByInstallation = async (installationId) => {
     const repoIds = repos.map(r => r._id);
 
     return await Job.find({ repository: { $in: repoIds } })
-        .populate("repository")
+        .populate({
+            path: "repository",
+            populate: { path: "installation" },
+        })
         .sort({ createdAt: -1 })
         .limit(50);
 
 };
 
 export const getJobById = async (jobId) => {
-    return await Job.findById(jobId).populate("repository");
+    return await Job.findById(jobId).populate({
+        path: "repository",
+        populate: { path: "installation" },
+    });
 };
 
 export const getJobCountForRepository = async (repoId) => {
@@ -127,7 +145,20 @@ export const getJobCountForRepository = async (repoId) => {
 };
 
 export const cancelJob = async (jobId, reason = "Synthesis stopped by user.") => {
-    const job = await failJob(jobId, reason);
+    const job = await Job.findById(jobId).populate({
+        path: "repository",
+        populate: { path: "installation" },
+    });
+    if (!job) return null;
+
+    job.status = "CANCELLED";
+    job.completedAt = new Date();
+    job.duration = job.completedAt - job.startedAt;
+    job.error = reason;
+    await job.save();
+
+    eventsService.broadcastJobUpdate(null, job);
+
     if (job?.bullJobId) {
         try {
             const bullJob = await readmeQueue.getJob(job.bullJobId);

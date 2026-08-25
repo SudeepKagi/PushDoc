@@ -17,7 +17,7 @@ const isJobCancelled = async (trackingJobId) => {
     if (!trackingJobId) return false;
     try {
         const job = await jobService.getJobById(trackingJobId);
-        return job?.status === "FAILED";
+        return job?.status === "CANCELLED";
     } catch {
         return false;
     }
@@ -176,7 +176,7 @@ const readmeWorker = new Worker(
                 "GENERATING"
             );
 
-            const { readme, knowledge, criticReport } =
+            const { readme, knowledge, criticReport, structuralReport } =
                 await readmePipeline.generateReadme(
                     repositoryPath,
                     jobId
@@ -199,14 +199,14 @@ const readmeWorker = new Worker(
                 "WRITING"
             );
 
-            await readmeService.writeReadme(
+            const { readmePath, filename } = await readmeService.writeReadme(
                 repositoryPath,
                 readme
             );
 
             logger.success(
                 jobId,
-                "README written"
+                `README written to ${filename}`
             );
 
             await jobService.updateStatus(
@@ -217,7 +217,8 @@ const readmeWorker = new Worker(
             const committed =
                 await gitService.commitChanges(
                     repositoryPath,
-                    token
+                    token,
+                    filename
                 );
 
             if (committed) {
@@ -232,10 +233,15 @@ const readmeWorker = new Worker(
                     "PUSHING"
                 );
 
+                // Fetch fresh token before push in case token expired during long generation (PD-13)
+                const pushToken = await githubService.getInstallationAccessToken(
+                    repository.installation.installationId
+                ).catch(() => token);
+
                 await gitService.pushChanges(
                     repositoryPath,
                     branch,
-                    token
+                    pushToken
                 );
 
                 logger.success(
@@ -253,19 +259,29 @@ const readmeWorker = new Worker(
             }
 
             if (await isJobCancelled(trackingJob._id)) {
-                logger.info(jobId, "Job was marked failed/cancelled — skipping completeJob.");
+                logger.info(jobId, "Job was marked cancelled — skipping completeJob.");
                 return;
             }
+
+            const allWarnings = [
+                ...(criticReport?.isClean === false
+                    ? (criticReport.violations || []).map(v => `${v.type}: ${v.value}`)
+                    : []),
+                ...(structuralReport?.warnings || []),
+            ];
+
+            const lowestScore = Math.min(
+                criticReport?.score ?? 100,
+                structuralReport?.score ?? 100
+            );
 
             await jobService.completeJob(
                 trackingJob._id,
                 {
                     originalReadme,
                     generatedReadme,
-                    validationWarnings: criticReport?.isClean === false
-                        ? (criticReport.violations || []).map(v => `${v.type}: ${v.value}`)
-                        : [],
-                    validationScore: criticReport?.score ?? 100,
+                    validationWarnings: allWarnings,
+                    validationScore: lowestScore,
                 }
             );
 

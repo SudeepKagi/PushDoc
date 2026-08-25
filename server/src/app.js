@@ -35,8 +35,8 @@ app.use(cors({
             return callback(null, true);
         }
 
-        // Allow by default while reflecting request origin for credentials
-        return callback(null, true);
+        // Reject anything that didn't match the allowlist above
+        return callback(new Error(`Origin ${origin} not allowed by CORS`), false);
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -53,10 +53,6 @@ app.use(
 if (config.env !== "production") {
     app.use(morgan("dev"));
 }
-
-
-// Trust reverse proxy for accurate client IP identification on Render/Vercel
-app.set("trust proxy", 1);
 
 // Rate limit for auth endpoints (60 requests per 15 minutes)
 const authLimiter = rateLimit({
