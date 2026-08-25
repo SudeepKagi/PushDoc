@@ -214,34 +214,46 @@ function renderMarkdown(rawContent) {
     };
 
     const flushTable = () => {
-        if (tableRows.length < 2) { tableRows = []; inTable = false; return; }
+        if (tableRows.length === 0) { inTable = false; return; }
 
         const parseRow = (rowStr) => {
             let cells = rowStr.trim().split("|");
             if (cells[0] === "") cells.shift();
-            if (cells[cells.length - 1] === "") cells.pop();
+            if (cells.length > 0 && cells[cells.length - 1] === "") cells.pop();
             return cells;
         };
 
-        // Process header row
-        const headerCells = parseRow(tableRows[0])
-            .map(c => `<th class="p-2.5 border-b border-border font-semibold bg-surface-raised text-left text-xs whitespace-nowrap text-text-primary min-w-[100px]">${inline(c.trim())}</th>`)
-            .join("");
+        // If only 1 row or no separator row, render as clean navigation pills
+        if (tableRows.length === 1 || (tableRows.length === 2 && !tableRows[1].includes("-"))) {
+            const items = parseRow(tableRows[0]).filter(c => c.trim());
+            html += `<div class="flex flex-wrap gap-2 my-3 p-2 bg-surface-raised/60 rounded-[6px] border border-border/50">${
+                items.map(item => `<span class="px-2.5 py-1 text-[11px] font-medium bg-surface text-text-primary rounded-[4px] border border-border/60 shadow-xs">${inline(item.trim())}</span>`).join("")
+            }</div>`;
+            tableRows = [];
+            inTable = false;
+            return;
+        }
 
-        // Process body rows (skip separator row at index 1)
-        const bodyRows = tableRows.slice(2);
-        const bodyHtml = bodyRows
-            .map(row => {
-                const cells = parseRow(row);
-                if (cells.length === 0) return "";
-                return `<tr class="border-b border-border/40 hover:bg-surface-raised/40 transition-colors">${
-                    cells.map(c => `<td class="p-2.5 align-top text-xs font-sans text-text-secondary whitespace-normal break-words min-w-[120px] max-w-[360px]">${inline(c.trim()) || "&nbsp;"}</td>`).join("")
-                }</tr>`;
-            })
-            .filter(Boolean)
-            .join("");
+        const rawRows = tableRows.map(parseRow);
+        const maxCols = Math.max(...rawRows.map(r => r.length), 1);
+        const hasSeparator = tableRows.length > 1 && /^\|?(\s*:?-+:?\s*\|?)+$/.test(tableRows[1].trim());
+        const headerRow = rawRows[0];
+        const bodyRows = hasSeparator ? rawRows.slice(2) : rawRows.slice(1);
 
-        html += `<div class="w-full my-4 overflow-x-auto rounded-[6px] border border-border bg-surface shadow-sm"><table class="w-full text-xs border-collapse table-auto" style="min-width: max-content;"><thead><tr>${headerCells}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
+        const headerHtml = headerRow.map((c) => {
+            const colspan = (headerRow.length === 1 && maxCols > 1) ? ` colspan="${maxCols}"` : "";
+            return `<th${colspan} class="p-2.5 border-b border-border font-semibold bg-surface-raised text-left text-xs text-text-primary whitespace-nowrap" style="min-width: 140px;">${inline(c.trim())}</th>`;
+        }).join("");
+
+        const bodyHtml = bodyRows.map(row => {
+            if (row.length === 0 || row.every(c => !c.trim())) return "";
+            while (row.length < maxCols) row.push("");
+            return `<tr class="border-b border-border/40 hover:bg-surface-raised/40 transition-colors">${
+                row.map(c => `<td class="p-2.5 align-top text-xs font-sans text-text-secondary whitespace-normal break-words" style="min-width: 140px; max-width: 340px;">${inline(c.trim()) || "&nbsp;"}</td>`).join("")
+            }</tr>`;
+        }).filter(Boolean).join("");
+
+        html += `<div class="w-full my-4 overflow-x-auto rounded-[6px] border border-border bg-surface shadow-sm" style="max-width: 100%;"><table class="w-full text-xs border-collapse table-auto" style="min-width: max-content;"><thead><tr>${headerHtml}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
         tableRows = []; 
         inTable = false;
     };
@@ -363,6 +375,29 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
 
         return () => { isMounted = false; };
     }, [selectedRepo?._id, token]);
+
+    // Active scan self-healing: refresh jobs every 3s while scan is running
+    useEffect(() => {
+        if (!isRunning || !refreshJobs) return;
+        const interval = setInterval(() => {
+            refreshJobs();
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [isRunning, refreshJobs]);
+
+    // When latestJob reaches COMPLETED, clear isTriggering and immediately pull fresh README
+    useEffect(() => {
+        if (latestJob?.status === "COMPLETED" && selectedRepo?._id && token) {
+            setIsTriggering(false);
+            fetchRepoReadme(selectedRepo._id, token)
+                .then(data => {
+                    if (data?.success && data.readme) {
+                        setLiveReadme(data.readme);
+                    }
+                })
+                .catch(() => {});
+        }
+    }, [latestJob?.status, selectedRepo?._id, token]);
 
     const handleEnableRepository = async () => {
         if (!toggleRepository || !selectedRepo?._id) return;

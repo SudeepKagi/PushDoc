@@ -73,14 +73,9 @@ class EventsService extends EventEmitter {
     broadcastJobUpdate(userId, job) {
         if (userId) {
             this.sendToUser(userId, "job_update", job);
-            return;
         }
-        const ownerId = job?.repository?.installation?.user?.toString() || job?.repository?.installation?.toString();
-        if (ownerId) {
-            this.sendToUser(ownerId, "job_update", job);
-        } else {
-            this.broadcast("job_update", job);
-        }
+        // Always broadcast so any open dashboard tabs tracking this repository receive the update
+        this.broadcast("job_update", job);
     }
 
     /**
