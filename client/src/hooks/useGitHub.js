@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import { exchangeOAuthCode as apiExchangeCode, syncRepositories as apiSyncRepos, getLoginUrl, toggleRepositoryActive as apiToggleRepoActive } from "../utils/api";
-
+import {
+    exchangeOAuthCode as apiExchangeCode,
+    syncRepositories as apiSyncRepos,
+    getLoginUrl,
+    toggleRepositoryActive as apiToggleRepoActive,
+    fetchCurrentUser,
+    logoutUser
+} from "../utils/api";
 
 export default function useGitHub() {
     const [repos, setRepos] = useState([]);
@@ -12,14 +18,14 @@ export default function useGitHub() {
         const saved = localStorage.getItem("user");
         return saved ? JSON.parse(saved) : null;
     });
-    const [token, setToken] = useState(() => {
-        return localStorage.getItem("token") || null;
-    });
+
+    // token represents active auth state for UI components that check `token`
+    const token = user ? "cookie_authenticated" : null;
 
     const clearError = () => setError(null);
 
     const handleAuthError = useCallback((err) => {
-        // If the server responds with 401 the JWT has expired — log out
+        // If the server responds with 401 the session has expired — log out
         if (err?.status === 401 || err?.message?.includes("401")) {
             logout();
         } else {
@@ -34,10 +40,9 @@ export default function useGitHub() {
             const data = await apiExchangeCode(code);
             if (data.success) {
                 setUser(data.user);
-                setToken(data.token);
                 localStorage.setItem("user", JSON.stringify(data.user));
-                localStorage.setItem("token", data.token);
-                await triggerSync(data.token);
+                localStorage.removeItem("token"); // Remove legacy tokens
+                await triggerSync();
             } else {
                 setError(data.message || "GitHub login failed. Please try again.");
             }
@@ -48,15 +53,12 @@ export default function useGitHub() {
         }
     };
 
-    const triggerSync = async (authToken) => {
+    const triggerSync = async () => {
         setSyncing(true);
         setError(null);
         try {
-            const activeToken = authToken || token;
-            if (!activeToken) return;
-            const data = await apiSyncRepos(activeToken);
+            const data = await apiSyncRepos();
             if (data.success && data.repositories) {
-                // Use data as-is — no hardcoded fallbacks
                 setRepos(data.repositories);
                 if (data.repositories.length > 0 && !selectedRepo) {
                     setSelectedRepo(data.repositories[0]);
@@ -75,48 +77,54 @@ export default function useGitHub() {
         window.location.href = getLoginUrl();
     };
 
-    const logout = () => {
+    const logout = async () => {
+        await logoutUser();
         setUser(null);
-        setToken(null);
         setRepos([]);
         setSelectedRepo(null);
         localStorage.removeItem("user");
         localStorage.removeItem("token");
     };
 
-    // Look for GitHub OAuth Callback Code or Token in URL query parameters
+    // Verify session on boot and check for OAuth callback params
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
-        const urlToken = params.get("token");
         const urlUsername = params.get("username");
         const urlAvatar = params.get("avatarUrl");
         const code = params.get("code");
 
-        if (urlToken) {
-            const parsedUser = { username: urlUsername, avatarUrl: urlAvatar };
-            setUser(parsedUser);
-            setToken(urlToken);
-            localStorage.setItem("user", JSON.stringify(parsedUser));
-            localStorage.setItem("token", urlToken);
-            triggerSync(urlToken);
-            // Clean URL query parameters
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } else if (code && !authCode) {
+        // Clean up legacy localStorage tokens
+        localStorage.removeItem("token");
+
+        if (code && !authCode) {
             setAuthCode(code);
             exchangeOAuthCode(code);
-            // Clean URL query parameters
             window.history.replaceState({}, document.title, window.location.pathname);
-        } else if (token && repos.length === 0) {
-            // Auto sync if token exists
-            triggerSync(token);
+        } else if (urlUsername) {
+            const parsedUser = { username: urlUsername, avatarUrl: urlAvatar };
+            setUser(parsedUser);
+            localStorage.setItem("user", JSON.stringify(parsedUser));
+            triggerSync();
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+            // Check active cookie session with /auth/me
+            fetchCurrentUser().then(data => {
+                if (data.success && data.user) {
+                    setUser(data.user);
+                    localStorage.setItem("user", JSON.stringify(data.user));
+                    triggerSync();
+                } else if (data.status === 401) {
+                    setUser(null);
+                    localStorage.removeItem("user");
+                }
+            });
         }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const toggleRepository = async (repoId) => {
-        if (!token) return;
         setError(null);
         try {
-            const data = await apiToggleRepoActive(repoId, token);
+            const data = await apiToggleRepoActive(repoId);
             if (data.success && data.repository) {
                 setRepos(prev => prev.map(r => r._id === repoId ? data.repository : r));
                 setSelectedRepo(prev => prev && prev._id === repoId ? data.repository : prev);

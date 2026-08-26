@@ -63,9 +63,7 @@ export default function App() {
     } = useLiveLogs(token, page === "logs" || page === "detail", logout);
 
     // Settings page state
-    const [webhookSecret, setWebhookSecret] = useState(() => {
-        return localStorage.getItem("pushdoc_webhook_secret") || "whsec_9e8d4a1b6c72e30f" + Math.random().toString(36).substring(2, 10);
-    });
+    const [webhookSecret] = useState("••••••••••••••••");
     const [webhookSecretVisible, setWebhookSecretVisible] = useState(false);
     const [settingsBranch, setSettingsBranch] = useState("main");
     const [settingsPath, setSettingsPath] = useState("README.md");

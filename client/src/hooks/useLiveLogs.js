@@ -41,12 +41,12 @@ export default function useLiveLogs(token, isActive, onAuthError) {
 
     // Fetch initial historical logs when active build changes
     useEffect(() => {
-        if (!isActive || !token || jobs.length === 0) return;
+        if (!isActive || jobs.length === 0) return;
         const activeJob = jobs[activeBuildIndex];
         if (!activeJob?._id) return;
 
         let isMounted = true;
-        fetchJobLogs(activeJob._id, token)
+        fetchJobLogs(activeJob._id)
             .then(data => {
                 if (isMounted && data && data.success) {
                     const fetched = data.logs || [];
@@ -63,19 +63,20 @@ export default function useLiveLogs(token, isActive, onAuthError) {
         return () => {
             isMounted = false;
         };
-    }, [isActive, token, activeBuildIndex, jobs.length]);
+    }, [isActive, activeBuildIndex, jobs.length]);
 
-    // Real-Time Server-Sent Events (SSE) stream
+    // Real-Time Server-Sent Events (SSE) stream via Secure HttpOnly Cookie
     useEffect(() => {
-        if (!isActive || !token) return;
+        if (!isActive) return;
 
-        const sseUrl = `${BACKEND_URL}/github/events/stream?token=${encodeURIComponent(token)}`;
+        const sseUrl = `${BACKEND_URL}/github/events/stream`;
         let eventSource = null;
         let consecutiveFailures = 0;
         let lastFailureAt = 0;
 
         try {
-            eventSource = new EventSource(sseUrl);
+            // Automatically sends HttpOnly auth_token cookie with SSE request
+            eventSource = new EventSource(sseUrl, { withCredentials: true });
 
             eventSource.addEventListener("connected", () => {
                 consecutiveFailures = 0;
@@ -133,7 +134,7 @@ export default function useLiveLogs(token, isActive, onAuthError) {
                 eventSource.close();
             }
         };
-    }, [isActive, token, onAuthError]);
+    }, [isActive, onAuthError]);
 
     // Auto-scroll logs terminal
     useEffect(() => {

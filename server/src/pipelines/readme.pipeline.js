@@ -83,15 +83,15 @@ export const generateReadme = async (
 
     let combinedReadme = rawReadme;
     if (architectureSection && !combinedReadme.includes("```mermaid")) {
-        if (combinedReadme.includes("## 📁 Project Structure")) {
+        if (combinedReadme.includes("## Project Structure")) {
             combinedReadme = combinedReadme.replace(
-                /(## 📁 Project Structure[\s\S]*?)(---|\n## )/,
+                /(## Project Structure[\s\S]*?)(---|\n## )/,
                 `$1\n---\n\n${architectureSection}\n\n$2`
             );
-        } else if (combinedReadme.includes("## ⚙️ Installation")) {
+        } else if (combinedReadme.includes("## Installation")) {
             combinedReadme = combinedReadme.replace(
-                "## ⚙️ Installation",
-                `${architectureSection}\n---\n\n## ⚙️ Installation`
+                "## Installation",
+                `${architectureSection}\n---\n\n## Installation`
             );
         } else {
             combinedReadme = `${combinedReadme}\n\n---\n\n${architectureSection}`;

@@ -4,28 +4,51 @@ export const getLoginUrl = () => {
     return `${BACKEND_URL}/auth/github/login`;
 };
 
-export const exchangeOAuthCode = async (code) => {
-    const res = await fetch(`${BACKEND_URL}/auth/github/callback?code=${code}`);
-    const data = await res.json();
-    return data;
+export const fetchCurrentUser = async () => {
+    try {
+        const res = await fetch(`${BACKEND_URL}/auth/me`, {
+            credentials: "include",
+        });
+        if (!res.ok) return { success: false, status: res.status };
+        const data = await res.json();
+        return data;
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
 };
 
-export const syncRepositories = async (token) => {
-    const res = await fetch(`${BACKEND_URL}/github/repositories/sync`, {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
+export const logoutUser = async () => {
+    try {
+        const res = await fetch(`${BACKEND_URL}/auth/logout`, {
+            method: "POST",
+            credentials: "include",
+        });
+        return await res.json();
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+};
+
+export const exchangeOAuthCode = async (code) => {
+    const res = await fetch(`${BACKEND_URL}/auth/github/callback?code=${code}`, {
+        credentials: "include",
     });
     const data = await res.json();
     return data;
 };
 
-export const fetchJobs = async (token) => {
+export const syncRepositories = async () => {
+    const res = await fetch(`${BACKEND_URL}/github/repositories/sync`, {
+        credentials: "include",
+    });
+    const data = await res.json();
+    return data;
+};
+
+export const fetchJobs = async () => {
     try {
         const res = await fetch(`${BACKEND_URL}/github/jobs`, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
+            credentials: "include",
         });
         if (!res.ok) {
             return { success: false, status: res.status };
@@ -37,12 +60,10 @@ export const fetchJobs = async (token) => {
     }
 };
 
-export const fetchJobLogs = async (jobId, token) => {
+export const fetchJobLogs = async (jobId) => {
     try {
         const res = await fetch(`${BACKEND_URL}/github/jobs/${jobId}/logs`, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
+            credentials: "include",
         });
         if (!res.ok) {
             return { success: false, status: res.status };
@@ -54,45 +75,37 @@ export const fetchJobLogs = async (jobId, token) => {
     }
 };
 
-export const fetchRepoReadme = async (repoId, token) => {
+export const fetchRepoReadme = async (repoId) => {
     const res = await fetch(`${BACKEND_URL}/github/repositories/${repoId}/readme`, {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
+        credentials: "include",
     });
     const data = await res.json();
     return data;
 };
 
-export const triggerManualBuild = async (repoId, token) => {
+export const triggerManualBuild = async (repoId) => {
     const res = await fetch(`${BACKEND_URL}/github/repositories/${repoId}/trigger`, {
         method: "POST",
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
+        credentials: "include",
     });
     const data = await res.json();
     return data;
 };
 
-export const toggleRepositoryActive = async (repoId, token) => {
+export const toggleRepositoryActive = async (repoId) => {
     const res = await fetch(`${BACKEND_URL}/github/repositories/${repoId}/toggle`, {
         method: "PATCH",
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
+        credentials: "include",
     });
     const data = await res.json();
     return data;
 };
 
-export const cancelJob = async (jobId, token) => {
+export const cancelJob = async (jobId) => {
     try {
         const res = await fetch(`${BACKEND_URL}/github/jobs/${jobId}/cancel`, {
             method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
+            credentials: "include",
         });
         const data = await res.json();
         return data;

@@ -792,6 +792,87 @@ export default function DetailPage({ selectedRepo, setPage, triggerManualBuild, 
 
                 {/* Sidebar Properties */}
                 <div className="space-y-4 min-w-0 w-full lg:sticky lg:top-4">
+                    {/* Documentation Quality & Validation Card */}
+                    {latestJob?.validationScore !== undefined && latestJob?.status === "COMPLETED" && (
+                        <Card className="bg-surface rounded-[6px] border border-border w-full min-w-0 shadow-sm overflow-hidden">
+                            <CardHeader className="p-3 pb-2 border-b border-border bg-surface-raised flex flex-row items-center justify-between">
+                                <CardTitle className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
+                                    Documentation Quality
+                                </CardTitle>
+                                <Badge 
+                                    variant={latestJob.validationScore >= 90 ? "success" : latestJob.validationScore >= 75 ? "default" : "destructive"} 
+                                    className="font-mono text-xs px-2"
+                                >
+                                    {latestJob.validationScore}/100
+                                </Badge>
+                            </CardHeader>
+                            <CardContent className="p-3 space-y-3 text-xs font-sans">
+                                {/* Quality Progress Bar */}
+                                <div className="space-y-1">
+                                    <div className="flex justify-between text-[11px] text-text-secondary">
+                                        <span>Audit Score</span>
+                                        <span className="font-mono font-medium text-text-primary">{latestJob.validationScore}%</span>
+                                    </div>
+                                    <div className="w-full bg-bg rounded-full h-1.5 overflow-hidden">
+                                        <div 
+                                            className={`h-full rounded-full transition-all duration-500 ${
+                                                latestJob.validationScore >= 90 
+                                                    ? "bg-success" 
+                                                    : latestJob.validationScore >= 75 
+                                                        ? "bg-accent" 
+                                                        : "bg-destructive"
+                                            }`}
+                                            style={{ width: `${latestJob.validationScore}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Badge Preview */}
+                                <div className="bg-bg p-2 rounded-[4px] border border-border flex items-center justify-between gap-2">
+                                    <img 
+                                        src={`https://img.shields.io/badge/PushDoc%20Quality-${latestJob.validationScore}%2F100-${latestJob.validationScore >= 90 ? "brightgreen" : latestJob.validationScore >= 75 ? "yellow" : "red"}`} 
+                                        alt="PushDoc Quality Badge" 
+                                        className="h-5 shrink-0"
+                                    />
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 text-[10px] px-1.5 gap-1 text-text-muted hover:text-text-primary"
+                                        onClick={() => {
+                                            const badgeMd = `[![PushDoc Quality Score](https://img.shields.io/badge/PushDoc%20Quality-${latestJob.validationScore}%2F100-${latestJob.validationScore >= 90 ? "brightgreen" : latestJob.validationScore >= 75 ? "yellow" : "red"})](https://github.com/SudeepKagi/PushDoc)`;
+                                            navigator.clipboard.writeText(badgeMd);
+                                            alert("Quality Badge Markdown copied to clipboard!");
+                                        }}
+                                    >
+                                        <Copy className="h-3 w-3" />
+                                        <span>Copy Badge</span>
+                                    </Button>
+                                </div>
+
+                                {/* Warnings or Clean Confirmation */}
+                                {latestJob.validationWarnings && latestJob.validationWarnings.length > 0 ? (
+                                    <div className="space-y-1.5 pt-1">
+                                        <span className="text-[11px] font-medium text-text-secondary">Validation Notices:</span>
+                                        <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
+                                            {latestJob.validationWarnings.map((warning, wIdx) => (
+                                                <div key={wIdx} className="text-[10px] text-text-muted bg-surface-raised p-1.5 rounded-[4px] border border-border/60 flex items-start gap-1.5">
+                                                    <AlertTriangle className="h-3 w-3 text-warning shrink-0 mt-0.5" />
+                                                    <span className="leading-tight">{warning}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-1.5 text-[11px] text-success bg-success/10 p-2 rounded-[4px] border border-success/20">
+                                        <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+                                        <span>All structural and groundedness checks passed cleanly.</span>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
+
                     <Card className="bg-surface rounded-[6px] border border-border w-full min-w-0 shadow-sm">
                         <CardHeader className="p-3 pb-2 border-b border-border bg-surface-raised">
                             <CardTitle className="text-xs font-semibold text-text-primary">Repository Properties</CardTitle>

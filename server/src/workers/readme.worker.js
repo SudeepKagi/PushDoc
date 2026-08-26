@@ -12,6 +12,7 @@ import * as readmeService from "../services/readme.service.js";
 import * as logger from "../services/logger.service.js";
 import * as workspaceService from "../services/workspace.service.js";
 import { ValidationError } from "../utils/errors.js";
+import { lifecycle } from "../services/lifecycle.service.js";
 
 const isJobCancelled = async (trackingJobId) => {
     if (!trackingJobId) return false;
@@ -176,17 +177,45 @@ const readmeWorker = new Worker(
                 "GENERATING"
             );
 
-            const { readme, knowledge, criticReport, structuralReport } =
+            const { readme, knowledge, criticReport, structuralReport, metrics } =
                 await readmePipeline.generateReadme(
                     repositoryPath,
                     jobId
                 );
 
-            generatedReadme = readme;
+            const allWarnings = [
+                ...(criticReport?.isClean === false
+                    ? (criticReport.violations || []).map(v => `${v.type}: ${v.value}`)
+                    : []),
+                ...(structuralReport?.warnings || []),
+            ];
+
+            const lowestScore = Math.min(
+                criticReport?.score ?? 100,
+                structuralReport?.score ?? 100
+            );
+
+            // Inject Quality Badge into README below the primary title
+            const badgeColor = lowestScore >= 90 ? "brightgreen" : lowestScore >= 75 ? "yellow" : "red";
+            const qualityBadge = `[![PushDoc Quality Score](https://img.shields.io/badge/PushDoc%20Quality-${lowestScore}%2F100-${badgeColor})](https://github.com/SudeepKagi/PushDoc)`;
+
+            let finalReadme = readme;
+            if (!finalReadme.includes("PushDoc%20Quality")) {
+                const lines = finalReadme.split("\n");
+                const h1Index = lines.findIndex(line => line.startsWith("# "));
+                if (h1Index !== -1) {
+                    lines.splice(h1Index + 1, 0, "", qualityBadge);
+                    finalReadme = lines.join("\n");
+                } else {
+                    finalReadme = `${qualityBadge}\n\n${finalReadme}`;
+                }
+            }
+
+            generatedReadme = finalReadme;
 
             logger.success(
                 jobId,
-                "README generated"
+                `README generated (Quality: ${lowestScore}/100 | Critic: ${criticReport?.score ?? 100} | Structural: ${structuralReport?.score ?? 100} | Total: ${metrics?.TOTAL ?? 0}ms)`
             );
 
             if (await isJobCancelled(trackingJob._id)) {
@@ -201,7 +230,7 @@ const readmeWorker = new Worker(
 
             const { readmePath, filename } = await readmeService.writeReadme(
                 repositoryPath,
-                readme
+                finalReadme
             );
 
             logger.success(
@@ -262,18 +291,6 @@ const readmeWorker = new Worker(
                 logger.info(jobId, "Job was marked cancelled — skipping completeJob.");
                 return;
             }
-
-            const allWarnings = [
-                ...(criticReport?.isClean === false
-                    ? (criticReport.violations || []).map(v => `${v.type}: ${v.value}`)
-                    : []),
-                ...(structuralReport?.warnings || []),
-            ];
-
-            const lowestScore = Math.min(
-                criticReport?.score ?? 100,
-                structuralReport?.score ?? 100
-            );
 
             await jobService.completeJob(
                 trackingJob._id,
@@ -343,6 +360,11 @@ readmeWorker.on("error", (err) => {
     if (err.code !== "ECONNRESET" && err.code !== "EPIPE") {
         logger.error(`Worker Redis Error: ${err.message}`);
     }
+});
+
+// Register graceful worker cleanup with lifecycle manager
+lifecycle.addCleanupHook("BullMQ Worker (readmeWorker)", async () => {
+    await readmeWorker.close();
 });
 
 export default readmeWorker;
