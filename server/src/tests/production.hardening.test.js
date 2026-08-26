@@ -31,18 +31,36 @@ describe("Production Hardening Test Suite", () => {
     });
 
     test("validateConfig detects missing or insecure JWT_SECRET", () => {
-        const originalSecret = config.jwt.secret;
+        const originalConfig = {
+            env: config.env,
+            mongodbUri: config.mongodb.uri,
+            github: { ...config.github },
+            jwtSecret: config.jwt.secret,
+        };
+
         try {
+            // This test must not depend on a developer's local .env file.
+            config.mongodb.uri = "mongodb://localhost:27017/pushdoc-test";
+            Object.assign(config.github, {
+                appId: "test-app-id",
+                clientId: "test-client-id",
+                clientSecret: "test-client-secret",
+                redirectUri: "http://localhost:3000/auth/github/callback",
+                webhookSecret: "test-webhook-secret",
+                appName: "pushdoc-test",
+            });
+
             config.jwt.secret = "";
             assert.throws(() => validateConfig(), /Missing required environment variables: JWT_SECRET/);
 
             config.jwt.secret = "change-me-to-a-long-random-string";
-            const originalEnv = config.env;
             config.env = "production";
             assert.throws(() => validateConfig(), /JWT_SECRET is set to an insecure default/);
-            config.env = originalEnv;
         } finally {
-            config.jwt.secret = originalSecret;
+            config.env = originalConfig.env;
+            config.mongodb.uri = originalConfig.mongodbUri;
+            Object.assign(config.github, originalConfig.github);
+            config.jwt.secret = originalConfig.jwtSecret;
         }
     });
 
