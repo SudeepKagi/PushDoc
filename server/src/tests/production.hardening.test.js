@@ -6,10 +6,10 @@ import { config, validateConfig } from "../config/app.config.js";
 import redisConnection from "../queue/connection.js";
 import readmeQueue from "../queue/queue.js";
 
-after(() => {
+after(async () => {
     // Importing the production Express app also constructs its queue clients.
-    // Explicitly close them so this HTTP test cannot keep the test worker alive.
-    readmeQueue.disconnect();
+    // Await Queue.close() so its Redis handles cannot keep the CI test worker alive.
+    await readmeQueue.close();
     redisConnection.disconnect();
 });
 
