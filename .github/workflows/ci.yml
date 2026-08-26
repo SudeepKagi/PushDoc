@@ -1,0 +1,55 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+      - audit/**
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Test, build, and audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+            client/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install server dependencies
+        run: npm ci
+        working-directory: server
+
+      - name: Install client dependencies
+        run: npm ci
+        working-directory: client
+
+      - name: Run server tests
+        run: npm test
+
+      - name: Build client production bundle
+        run: npm run build
+
+      - name: Audit production dependencies
+        run: |
+          npm audit --omit=dev
+          npm audit --omit=dev --prefix server
+          npm audit --omit=dev --prefix client
