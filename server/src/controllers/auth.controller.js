@@ -39,8 +39,9 @@ export const githubCallback = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
-        // Redirect to frontend WITHOUT any token in URL
-        const frontendUrl = `${config.frontend.url}/?username=${result.user.username}&avatarUrl=${encodeURIComponent(result.user.avatarUrl || '')}`;
+        // Pass token in redirect URL for cross-origin deployments (e.g. Vercel frontend + Render backend)
+        // where modern privacy browsers (Brave Shields, Safari ITP, Firefox, Chrome Privacy Sandbox) block cross-site cookies
+        const frontendUrl = `${config.frontend.url}/?token=${result.token}&username=${encodeURIComponent(result.user.username)}&avatarUrl=${encodeURIComponent(result.user.avatarUrl || '')}`;
         return res.redirect(frontendUrl);
 
     } catch (error) {

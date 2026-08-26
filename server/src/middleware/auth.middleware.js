@@ -7,9 +7,12 @@ const authMiddleware = (req, res, next) => {
         // 1. Primary & Secure: HttpOnly Cookie
         if (req.cookies && req.cookies.auth_token) {
             token = req.cookies.auth_token;
-        // 2. Standard API Header: Authorization: Bearer <token> (Postman, cURL, Mobile, CLI)
+        // 2. Standard API Header: Authorization: Bearer <token> (Cross-origin SPA, Postman, cURL, Mobile, CLI)
         } else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
             token = req.headers.authorization.split(" ")[1];
+        // 3. Query param token: for browser EventSource / SSE connections where browsers cannot set headers
+        } else if (req.query && req.query.token) {
+            token = req.query.token;
         }
 
         if (!token) {

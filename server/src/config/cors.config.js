@@ -8,7 +8,14 @@ export const getAllowedOrigins = () => {
     return new Set(origins.filter(Boolean));
 };
 
-export const isAllowedOrigin = (origin) => Boolean(origin) && getAllowedOrigins().has(origin);
+export const isAllowedOrigin = (origin) => {
+    if (!origin) return false;
+    if (getAllowedOrigins().has(origin)) return true;
+    if (/^https:\/\/push-doc(-[a-zA-Z0-9]+)*\.vercel\.app$/.test(origin)) {
+        return true;
+    }
+    return false;
+};
 
 const corsError = (origin) => {
     const error = new Error(`Origin ${origin} is not allowed by CORS`);
