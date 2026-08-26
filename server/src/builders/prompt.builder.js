@@ -1,141 +1,219 @@
 /**
- * Prompt Builder
+ * Prompt Builder (Production-Grade Truth Hierarchy Architecture)
  *
- * Builds the final generation prompt for the README. Accepts a pre-computed
- * `facts` object (from facts.extractor.js) as an optional second argument.
- * When provided, it injects a GROUNDING CONSTRAINT block that lists the exact
- * identifiers the model may reference — packages, routes, env vars, scripts.
- * This is the primary hallucination-prevention mechanism on the generation side
- * (the critic handles detection on the output side).
+ * Implements a strict Truth Hierarchy, Hard Fact Policy, and Separation of Concerns:
+ *   1. Truth Hierarchy (Level 1: Verified, Level 2: Derived, Level 3: Unknown).
+ *   2. Hard Fact Policy: Disallow speculation, generic boilerplate, and unsupported claims.
+ *   3. Separation of Concerns: Correctness > Completeness > Technical Precision > Style > Marketing.
+ *   4. Zero Mermaid Generation: Prohibit AI from generating ```mermaid blocks (handled deterministically by pipeline).
+ *   5. Generic & Reusable: No hard-coded project claims; derived solely from supplied context.
+ *   6. Strict Badge & Example Rules: Every badge, command, and snippet must be grounded in verified evidence.
+ *   7. Pre-Generation Mental Checklist: Forces internal verification against schema constraints.
+ *   8. Deterministic Validation Cooperation: Output structured to maximize score against validators and critic.
  */
 
 /**
- * Builds a machine-readable grounding constraint block from the facts object.
+ * Builds a machine-readable grounding constraint block from facts and knowledge.
  *
- * The block lists the exact identifiers that were extracted from static analysis.
- * The model is instructed that it may only reference identifiers from this list.
- * If the facts object is null or empty, returns an empty string so the prompt
- * degrades gracefully to the original behavior.
- *
- * @param {object|null} facts - Output of extractFacts()
- * @returns {string} Grounding constraint prompt block, or "" if facts is empty
+ * @param {object|null} facts     - Output of extractFacts()
+ * @param {object|null} knowledge - Full repository knowledge tree (optional)
+ * @returns {string} Grounding constraint prompt block
  */
-const buildGroundingConstraint = (facts) => {
-    if (!facts) return "";
+const buildGroundingConstraint = (facts, knowledge = null) => {
+    if (!facts && !knowledge) return "";
 
     const lines = [];
 
-    // Only inject the block if there is at least one non-empty fact category.
-    const hasPackages = (facts.dependencies?.length ?? 0) > 0;
-    const hasRoutes   = (facts.routes?.length ?? 0) > 0;
-    const hasEnvVars  = (facts.envFileVars?.length ?? 0) > 0;
-    const hasScripts  = (facts.scripts?.length ?? 0) > 0;
-
-    if (!hasPackages && !hasRoutes && !hasEnvVars && !hasScripts) return "";
-
-    lines.push(`
-========================
-GROUNDING CONSTRAINT — CRITICAL
-========================
-
-The following identifiers were extracted from this repository's code by static
-analysis. They are the ONLY values you may use when writing the README.
-Do NOT invent, assume, or guess any identifier not on these lists.
-If a list is empty, omit that section from the README entirely.
-`);
-
-    if (hasPackages) {
-        lines.push(`CONFIRMED PACKAGES (from package.json — these are the ONLY packages you may mention):`);
-        lines.push(facts.dependencies.join(", "));
+    // 1. Confirmed Project Name
+    const projectName = facts?.projectName || knowledge?.package?.project?.name || "";
+    if (projectName) {
+        lines.push(`CONFIRMED PROJECT NAME:`);
+        lines.push(`  ${projectName}`);
         lines.push("");
     }
 
-    if (hasRoutes) {
+    // 2. Confirmed Packages
+    const dependencies = facts?.dependencies || knowledge?.package?.runtimeDependencies || Object.keys(knowledge?.package?.project?.dependencies || {});
+    const devDependencies = facts?.devDependencies || knowledge?.package?.devDependencies || Object.keys(knowledge?.package?.project?.devDependencies || {});
+    const allPackages = [...new Set([...dependencies, ...devDependencies])];
+
+    if (allPackages.length > 0) {
+        lines.push(`CONFIRMED PACKAGES (from package manifests — these are the ONLY packages you may reference):`);
+        lines.push(`  ${allPackages.join(", ")}`);
+        lines.push("");
+    }
+
+    // 3. Confirmed API Routes
+    const routes = facts?.routes || knowledge?.routes || [];
+    if (routes.length > 0) {
         lines.push(`CONFIRMED API ROUTES (from route files — these are the ONLY endpoints you may document):`);
-        for (const r of facts.routes) {
-            lines.push(`  ${r.method.padEnd(7)} ${r.path}`);
+        for (const r of routes) {
+            const authInfo = r.auth ? ` [Auth: ${r.auth}]` : "";
+            lines.push(`  ${(r.method || "GET").padEnd(7)} ${r.path}${authInfo}`);
         }
         lines.push("");
     }
 
-    if (hasEnvVars) {
-        lines.push(`CONFIRMED ENV VARS (from .env.example — these are the ONLY variable names you may mention):`);
-        lines.push(facts.envFileVars.join(", "));
+    // 4. Confirmed Environment Variables
+    const envVars = facts?.envFileVars?.length > 0 ? facts.envFileVars : facts?.envVars || [];
+    if (envVars.length > 0) {
+        lines.push(`CONFIRMED ENVIRONMENT VARIABLES (from .env.example / config — these are the ONLY env keys you may document):`);
+        lines.push(`  ${envVars.join(", ")}`);
         lines.push("");
     }
 
-    if (hasScripts) {
-        lines.push(`CONFIRMED SCRIPTS (from package.json — these are the ONLY scripts you may document):`);
-        for (const s of facts.scripts) {
-            lines.push(`  ${s.name.padEnd(14)} ${s.command}`);
+    // 5. Confirmed Scripts
+    const scripts = facts?.scripts || Object.entries(knowledge?.package?.project?.scripts || {}).map(([name, command]) => ({ name, command }));
+    if (scripts.length > 0) {
+        lines.push(`CONFIRMED SCRIPTS (from package.json / manifests — these are the ONLY scripts you may document):`);
+        for (const s of scripts) {
+            lines.push(`  ${s.name.padEnd(16)} ${s.command}`);
         }
         lines.push("");
     }
 
-    const hasFeatures = (facts.features?.length ?? 0) > 0;
-    if (hasFeatures) {
-        lines.push(`CONFIRMED CORE CAPABILITIES (ensure your Features section documents these capabilities):`);
-        for (const f of facts.features) {
-            lines.push(`- **${f.title}**: ${f.description || ""}`);
+    // 6. Confirmed Database Models
+    const models = facts?.models || knowledge?.models || [];
+    if (models.length > 0) {
+        lines.push(`CONFIRMED DATABASE MODELS (from schema definitions):`);
+        for (const m of models) {
+            const fields = (m.fields || []).map(f => (typeof f === "string" ? f : f.name)).slice(0, 8).join(", ");
+            lines.push(`  Model: ${m.name}${fields ? ` (Key Fields: ${fields})` : ""}`);
         }
         lines.push("");
     }
 
-    return lines.join("\n");
+    // 7. Confirmed Capabilities
+    const features = facts?.features || knowledge?.features?.features || [];
+    if (features.length > 0) {
+        lines.push(`CONFIRMED CODE CAPABILITIES (derived deterministically from codebase AST analysis):`);
+        for (const f of features) {
+            lines.push(`  - **${f.title}**: ${f.description || ""}`);
+        }
+        lines.push("");
+    }
+
+    if (lines.length === 0) return "";
+
+    return [
+        "========================",
+        "VERIFIED REPOSITORY FACTS (GROUND TRUTH)",
+        "========================",
+        "",
+        "The following identifiers were deterministically extracted from static code analysis.",
+        "They constitute the absolute boundaries of what you may state as verified fact.",
+        "",
+        ...lines,
+    ].join("\n");
 };
 
 /**
- * @param {string} repositoryContext - Assembled context string from the context builder
- * @param {object|null} facts        - Output of extractFacts(); if null, the constraint
- *                                     block is omitted and the original behavior is preserved
+ * Builds the final prompt for the AI model.
+ *
+ * @param {string} repositoryContext - Assembled context string from repositoryContext.builder.js
+ * @param {object|null} facts        - Output of extractFacts()
+ * @param {object|null} [knowledge]  - Full repository knowledge object
  * @returns {string} Full generation prompt
  */
-export const buildPrompt = (repositoryContext, facts = null) => {
+export const buildPrompt = (repositoryContext, facts = null, knowledge = null) => {
 
-    const groundingBlock = buildGroundingConstraint(facts);
+    const groundingBlock = buildGroundingConstraint(facts, knowledge);
 
     return `
-You are a Principal Technical Writer, Open-Source Lead, and Software Architect.
+You are a Principal Technical Writer, Software Architect, and Open-Source Lead.
 
-Your task is to generate a WORLD-CLASS, HIGH-IMPACT, BEAUTIFULLY FORMATTED README.md for this GitHub repository. The README should match the standard of premier open-source projects (like Next.js, Supabase, Prisma, and Tailwind CSS) — visually stunning, technically rigorous, deeply informative, and immediate to understand.
+Your task is to generate a polished, technically precise, and rigorously grounded README.md for this repository.
+Prioritize correctness over marketing:
+Correctness > Completeness > Technical Precision > Style > Marketing
 
-========================
-STEP 1 — UNDERSTAND THE SYSTEM & PURPOSE
-========================
-
-Read the entire REPOSITORY CONTEXT carefully before drafting:
-1. What core problem does this project solve for engineers or end-users?
-2. What are the key architectural pillars? (e.g. AST parsing, BullMQ/Redis worker pipelines, hybrid cookie+bearer auth, SSE streaming, circuit breakers, AI inference)
-3. For FULLSTACK / BACKEND projects: Trace the end-to-end request/event lifecycle from ingress (webhooks/API routes) to workers to storage to UI.
-4. For FRONTEND projects: Analyze component hierarchies, user flows, and state management.
-
-Craft an opening tagline and executive description that captures the true value proposition and architectural sophistication.
-- NEVER write: "An Express.js application for managing jobs" or "A React boilerplate".
-- ALWAYS write: "PushDoc is an autonomous GitHub App and developer platform that synthesizes production-grade, AST-verified documentation for your codebases using multi-model AI orchestration."
+Never attempt to improve the perceived sophistication of the project by adding unsupported claims.
 
 ========================
-CRITICAL GROUNDING RULES
+NON-NEGOTIABLE TRUTH POLICY
 ========================
 
-1. Use ONLY the repository context provided below. Do NOT invent facts.
-2. NEVER fabricate:
-   - Environment variable names (use ONLY verified keys from .env.example / context)
-   - API endpoints (use ONLY verified paths extracted from route files)
-   - Folder/file names (use ONLY files that appear in the context)
-   - Database fields (use ONLY confirmed fields from model schemas)
-3. If a section's data is missing from the context, omit that section cleanly.
-4. Do NOT use placeholders like "[Insert URL here]" or "[TODO]".
+The repository context contains verified information extracted from the actual codebase, manifests, and AST parsers.
+You must treat it as the absolute source of truth.
+
+TRUTH HIERARCHY:
+
+1. LEVEL 1 — VERIFIED FACT
+   A fact explicitly present in the repository context (e.g. package manifests, route definitions, schemas, .env.example).
+   You MAY state it directly as established fact.
+
+2. LEVEL 2 — DERIVED FACT
+   A conclusion that follows directly and unambiguously from verified facts (e.g. presence of BullMQ and Redis implies background queue processing).
+   You MAY state it only when the relationship is direct and self-evident from the code.
+
+3. LEVEL 3 — UNKNOWN
+   Anything not explicitly established by static analysis or safely derivable.
+   You MUST NOT claim, assume, or invent it.
+
+NEVER:
+- invent technologies, frameworks, or libraries
+- invent dependencies or package versions
+- invent API routes, HTTP methods, or request payloads
+- invent environment variables or configuration defaults
+- invent database models, fields, or relationships
+- invent CLI commands, terminal flags, or scripts
+- invent performance numbers, benchmarks, or uptime figures
+- invent security guarantees or encryption methods unless verified in code
+- invent deployment platforms (Render, AWS, Vercel) unless configured in manifests
+- invent external URLs, documentation links, or repository paths
+- invent features not grounded in code, workers, or routes
+- invent authentication requirements unless verified by route middleware or auth facts
+
+If information is unknown or unverified:
+OMIT IT.
+Do NOT replace unknown information with a plausible assumption.
+
+Never use speculative or boilerplate phrases when describing this repository:
+- "typically"
+- "usually"
+- "likely"
+- "probably"
+- "you can"
+- "for example"
+- "in a typical setup"
+
+The README must describe THIS specific repository, not what a typical project of this type would contain.
+
+========================
+CLAIM COVERAGE & EXAMPLES RULES
+========================
+
+1. CLAIM COVERAGE:
+   Every factual statement in the README must be traceable to one or more pieces of repository evidence.
+   Before finalizing any sentence, internally ask:
+   "What repository evidence supports this statement?"
+   If no evidence exists, remove the sentence.
+
+2. EXAMPLES RULE:
+   Every command, API example, environment variable, configuration example, script, filename, and code snippet must correspond to verified repository data.
+   Never create illustrative mock examples that look like real repository behavior (e.g. mock curl requests to unverified paths).
+   If a command or example cannot be verified, omit it.
+
+========================
+ARCHITECTURE DIAGRAM RULE
+========================
+
+Do NOT generate a \`\`\`mermaid code block.
+The architecture diagram is generated deterministically by the application pipeline after AI generation.
+You may describe the architecture in 2-3 sentences of prose under ## 🏛️ System Architecture, but do NOT create a \`\`\`mermaid block.
+
 ${groundingBlock}
+
 ========================
-STYLE & FORMATTING REQUIREMENTS — MANDATORY
+STYLE & SECTION REQUIREMENTS
 ========================
 
 1. TITLE & HERO BANNER:
    - Level 1 heading with an appropriate high-tech emoji (e.g. # 🚀 [Project Name] or # ⚡ [Project Name]).
    - A bold, punchy blockquote hook summarizing the project's mission:
-     > **[Bold Catchy One-liner]** — [2-sentence comprehensive executive summary describing the problem it solves and key technical pillars].
+     > **[Bold Catchy One-liner]** — [2-sentence comprehensive executive summary describing the problem it solves and key technical pillars grounded in code].
    - SHIELDS.IO BADGES:
-     Generate a clean row of badges for all confirmed primary frameworks, runtime, database, cache, queues, and AI providers.
+     Generate a clean row of badges ONLY for technologies explicitly confirmed in the repository manifests or code.
+     Never infer a technology from naming, comments, or common conventions.
      Format: \`![Label](https://img.shields.io/badge/Label-Color?style=for-the-badge&logo=LogoName&logoColor=white)\`
      Output all badges together on 1-2 clean lines separated by spaces.
      Reference badges:
@@ -163,7 +241,7 @@ STYLE & FORMATTING REQUIREMENTS — MANDATORY
    - Write 5 to 8 comprehensive feature cards. Each feature must have:
      - A bold emoji title representing a major capability.
      - A 2-sentence explanation detailing the underlying technical mechanism (referencing actual workers, services, or AST parsers) and the concrete benefit to the user.
-     - Document all core capabilities discovered in the codebase (e.g. AST analysis, background queues, AI fallback, live logs, security/sanitization, webhook automation).
+     - Document all core capabilities confirmed in the codebase (e.g. AST analysis, background queues, AI fallback, live logs, security/sanitization, webhook automation).
 
 4. TECH STACK TABLE:
    - 3-column markdown table:
@@ -172,7 +250,8 @@ STYLE & FORMATTING REQUIREMENTS — MANDATORY
 
 5. SYSTEM ARCHITECTURE:
    - Include the section header \`## 🏛️ System Architecture\`.
-   - Write a 2-3 sentence overview explaining the high-level architecture, event lifecycle, and data flow. (The automated Mermaid diagram will seamlessly pair with this overview).
+   - Write a 2-3 sentence overview explaining the high-level architecture, event lifecycle, and data flow.
+   - Do NOT output a \`\`\`mermaid code block; the pipeline will inject the validated Mermaid flowchart immediately beneath your overview.
 
 6. PROJECT STRUCTURE:
    - Render in a clean ASCII tree format inside a code fence (\`\`\`...\`\`\`).
@@ -180,29 +259,53 @@ STYLE & FORMATTING REQUIREMENTS — MANDATORY
    - NEVER collapse multiple directories or files onto a single line.
 
 7. INSTALLATION & SETUP:
+   - Only document prerequisites that are verified by package manifests, Dockerfiles, or database dependencies.
    - Numbered step-by-step instructions:
-     1. **Prerequisites** (Node.js, Redis, MongoDB, Git).
+     1. **Prerequisites** (verified dependencies only).
      2. **Clone & Install Dependencies** (Provide multiline bash code blocks with clean newlines — NEVER combine commands on one line).
      3. **Environment Setup** (Instructions to copy \`.env.example\` to \`.env\`).
-     4. **Running Locally** (Show exact development commands).
-     5. **Production Build** (Show build commands).
+     4. **Running Locally** (Show exact development commands verified from package scripts).
+     5. **Production Build** (Show build commands verified from package scripts).
 
 8. ENVIRONMENT VARIABLES:
    - Clean 4-column markdown table:
      | Variable | Description | Example / Default | Required |
    - Wrap variable names in backticks (\`PORT\`, \`MONGODB_URI\`).
+   - ONLY include variable names present in the confirmed environment variables list.
 
 9. API REFERENCE:
    - Clean 4-column markdown table:
      | Method | Endpoint | Description | Auth Required |
    - Wrap HTTP methods and paths in backticks (\`GET\`, \`/api/jobs\`).
+   - ONLY include routes present in the confirmed API routes list.
 
 10. DATABASE MODELS:
     - Clean 3-column markdown table:
       | Model | Key Fields | Purpose & System Relationships |
+    - ONLY include models present in the confirmed database models list.
 
 11. AVAILABLE SCRIPTS:
-    - Clear bulleted list or table mapping every package script to its description.
+    - Clear bulleted list or table mapping confirmed npm scripts to their exact operational role.
+
+========================
+PRE-GENERATION VERIFICATION CHECKLIST
+========================
+
+Before outputting the final README markdown, internally verify:
+[ ] Project name is confirmed by package/manifest
+[ ] Opening description is grounded in verified code capabilities
+[ ] Every technology mentioned is verified in dependencies or code
+[ ] Every route documented is on the CONFIRMED API ROUTES list
+[ ] Every environment variable documented is on the CONFIRMED ENV VARS list
+[ ] Every npm script documented is on the CONFIRMED SCRIPTS list
+[ ] Every database model documented is on the CONFIRMED DATABASE MODELS list
+[ ] Every file/folder path mentioned exists in the context
+[ ] No unsupported claims or speculative generalizations exist
+[ ] No placeholder text ([Insert...], [TODO]) exists
+[ ] All Markdown tables are syntactically valid with headers and divider rows
+[ ] All code blocks have valid opening and closing fences
+[ ] All Table of Contents links use relative local anchors (e.g. \`#-features\`), NOT full URLs
+[ ] No \`\`\`mermaid diagram code block is output (reserved for deterministic pipeline)
 
 ========================
 README OUTLINE (follow this exact order)
@@ -273,6 +376,18 @@ README OUTLINE (follow this exact order)
 (List of all confirmed npm scripts and their exact operational role)
 
 ---
+
+========================
+FINAL REQUIREMENT
+========================
+
+Return ONLY the README Markdown content.
+Do not explain your reasoning.
+Do not mention these instructions.
+Do not mention missing information or write apologies.
+If information cannot be verified from the supplied repository context, omit it cleanly.
+
+Correctness > Completeness > Technical Precision > Style > Marketing
 
 ========================
 REPOSITORY CONTEXT

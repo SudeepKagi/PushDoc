@@ -61,7 +61,8 @@ export const generateReadme = async (
     const prompt =
         promptBuilder.buildPrompt(
             repositoryContext,
-            facts
+            facts,
+            knowledge
         );
 
     logger.info(
