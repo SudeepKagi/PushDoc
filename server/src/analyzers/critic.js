@@ -42,7 +42,7 @@ const ROUTE_PATTERN = /\/(api|auth|v\d|admin|webhook|oauth)[/\w:.-]*/gi;
  */
 export const critique = (readme, facts) => {
     if (!readme || !facts) {
-        return { violations: [], isClean: true };
+        return { violations: [], isClean: true, score: 100 };
     }
 
     const violations = [];
@@ -119,9 +119,13 @@ export const critique = (readme, facts) => {
         return true;
     });
 
+    // Each hallucination or ungrounded identifier deducts 5 points from 100
+    const score = Math.max(0, 100 - unique.length * 5);
+
     return {
         violations: unique,
         isClean: unique.length === 0,
+        score,
     };
 };
 

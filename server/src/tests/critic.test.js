@@ -10,8 +10,8 @@ import { critique } from "../analyzers/critic.js";
 
 describe("Critic Hallucination Scanner", () => {
     test("handles null or empty input safely", () => {
-        assert.deepEqual(critique(null, null), { violations: [], isClean: true });
-        assert.deepEqual(critique("", {}), { violations: [], isClean: true });
+        assert.deepEqual(critique(null, null), { violations: [], isClean: true, score: 100 });
+        assert.deepEqual(critique("", {}), { violations: [], isClean: true, score: 100 });
     });
 
     test("passes clean markdown with known identifiers", () => {
