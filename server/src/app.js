@@ -2,9 +2,13 @@ import express from "express";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
+import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import { config } from "./config/app.config.js";
 import { corsOptions } from "./config/cors.config.js";
 import { requireTrustedOriginForCookieSession } from "./middleware/csrf.middleware.js";
+import * as logger from "./services/logger.service.js";
+import { publicErrorMessage } from "./utils/http-response.js";
 
 import indexRouter from "./routes/index.route.js";
 import githubRouter from "./routes/github.route.js";
@@ -17,6 +21,19 @@ const app = express();
 // Trust Render's (and similar hosts') reverse proxy so express-rate-limit
 // identifies real client IPs from X-Forwarded-For, not the proxy's IP.
 app.set("trust proxy", 1);
+
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "https://avatars.githubusercontent.com", "https://img.shields.io"],
+            connectSrc: ["'self'", "https://api.github.com"],
+        },
+    },
+    crossOriginEmbedderPolicy: false,
+}));
 
 app.use(cors(corsOptions));
 
@@ -54,5 +71,15 @@ app.use("/", indexRouter);
 app.use("/github", apiLimiter, requireTrustedOriginForCookieSession, githubRouter);
 app.use("/auth", authLimiter, requireTrustedOriginForCookieSession, authRouter);
 app.use("/webhooks", webhookRouter);
+
+// Centralized error handling middleware
+app.use((err, req, res, next) => {
+    const status = err.status || err.statusCode || 500;
+    logger.error(null, `[API Error] ${req.method} ${req.originalUrl}: ${err.message}`);
+    res.status(status).json({
+        success: false,
+        message: publicErrorMessage(err, status),
+    });
+});
 
 export default app;

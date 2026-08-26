@@ -43,10 +43,11 @@ export const getInstallationRepositories = async (installationId) => {
             await githubApp.getInstallationOctokit(
                 installationId
             );
-        const response = await installationOctokit.request(
-            "GET /installation/repositories"
+        const repositories = await installationOctokit.paginate(
+            "GET /installation/repositories",
+            { per_page: 100 }
         );
-        return response.data.repositories;
+        return repositories;
     } catch (error) {
         throw new GitHubError(`Failed to fetch installation repositories: ${error.message}`, error.status || 502);
     }

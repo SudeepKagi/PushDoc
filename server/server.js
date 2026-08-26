@@ -1,10 +1,11 @@
 import dotenv from "dotenv";
 import app from "./src/app.js";
-import connectDB from "./src/config/database.js";
+import connectDB, { disconnectDB } from "./src/config/database.js";
 import { config, validateConfig } from "./src/config/app.config.js";
 import * as logger from "./src/services/logger.service.js";
 import { purgeStaleWorkspaces } from "./src/services/workspace.service.js";
 import { reapStaleJobs } from "./src/services/job.service.js";
+import { lifecycle } from "./src/services/lifecycle.service.js";
 dotenv.config();
 
 // Support embedded worker for single-instance cloud deployments (Render, Railway, Fly, Local)
@@ -34,34 +35,24 @@ const startServer = async () => {
     try {
         await connectDB();
 
+        // Register database cleanup hook for graceful shutdown
+        lifecycle.addCleanupHook("MongoDB Connection", disconnectDB);
+
         // Clean up any workspaces left over from an unclean shutdown
         purgeStaleWorkspaces();
 
         // Start background stale job reaper (auto-fails jobs stuck in QUEUED or hung states)
         reapStaleJobs();
-        setInterval(reapStaleJobs, 30_000);
+        const reaperInterval = setInterval(reapStaleJobs, 30_000);
+        lifecycle.addCleanupHook("Job Reaper Interval", () => clearInterval(reaperInterval));
 
         const server = app.listen(PORT, "0.0.0.0", () => {
+            lifecycle.setReady();
             logger.success(`Server running in ${config.env} mode on port ${PORT}`);
         });
 
-        // ── Graceful shutdown ────────────────────────────────────
-        const shutdown = (signal) => {
-            logger.info(`${signal} received — shutting down gracefully`);
-            server.close(() => {
-                logger.info("HTTP server closed");
-                process.exit(0);
-            });
-
-            // Force-kill if server hasn't closed within 10 s
-            setTimeout(() => {
-                logger.error("Forced shutdown after timeout");
-                process.exit(1);
-            }, 10_000);
-        };
-
-        process.on("SIGTERM", () => shutdown("SIGTERM"));
-        process.on("SIGINT",  () => shutdown("SIGINT"));
+        // ── Graceful shutdown via LifecycleManager ───────────────
+        lifecycle.initSignalHandlers(server);
 
         // ── Unhandled rejection guard ────────────────────────────
         process.on("unhandledRejection", (reason) => {

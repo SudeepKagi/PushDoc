@@ -25,6 +25,10 @@ export const config = {
         webhookSecret: process.env.GITHUB_WEBHOOK_SECRET,
         appName: process.env.GITHUB_APP_NAME,
     },
+    jwt: {
+        secret: process.env.JWT_SECRET,
+        expiresIn: "7d",
+    },
     ai: {
         geminiKeys: [
             process.env.GEMINI_API_KEY,
@@ -115,6 +119,7 @@ export const validateConfig = () => {
         "GITHUB_REDIRECT_URI": config.github.redirectUri,
         "GITHUB_WEBHOOK_SECRET": config.github.webhookSecret,
         "GITHUB_APP_NAME": config.github.appName,
+        "JWT_SECRET": config.jwt.secret,
     };
 
     const missing = [];
@@ -128,6 +133,12 @@ export const validateConfig = () => {
         throw new Error(
             `[ConfigError] Missing required environment variables: ${missing.join(", ")}. Please configure them in your .env file.`
         );
+    }
+
+    if (config.jwt.secret && (config.jwt.secret === "change-me-to-a-long-random-string" || config.jwt.secret.length < 16)) {
+        if (config.env === "production") {
+            throw new Error("[ConfigError] JWT_SECRET is set to an insecure default or is shorter than 16 characters in production.");
+        }
     }
 
     if (!process.env.GITHUB_PRIVATE_KEY && !process.env.GITHUB_PRIVATE_KEY_PATH) {
