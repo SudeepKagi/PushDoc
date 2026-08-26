@@ -90,4 +90,34 @@ Send requests to /api/checkout and /auth/login for authentication.
         assert.ok(routeViolations.includes("/api/checkout"));
         assert.ok(routeViolations.includes("/auth/login"));
     });
+
+    test("does not flag backticked env vars, HTTP methods, models, and fields as packages", () => {
+        const facts = {
+            dependencies: ["express", "mongoose"],
+            devDependencies: [],
+            routes: [{ method: "GET", path: "/api/users" }],
+            envVars: ["MONGODB_URI", "PORT", "JWT_SECRET"],
+            envFileVars: ["MONGODB_URI", "PORT", "JWT_SECRET"],
+            models: [
+                { name: "User", fields: ["username", "email", "status"] },
+                { name: "Installation", fields: ["installationId", "accountLogin"] }
+            ],
+            scripts: [{ name: "start", command: "node server.js" }],
+        };
+
+        const readme = `
+# PushDoc
+Configure \`MONGODB_URI\` and \`PORT\` in your environment.
+Run with \`start\` in \`production\` mode.
+Uses HTTP \`GET\` and \`POST\` requests.
+Stores \`User\` and \`Installation\` with \`username\`, \`status\`, \`installationId\`, and \`accountLogin\`.
+Built files are saved to \`dist\`.
+`;
+
+        const report = critique(readme, facts);
+        const pkgViolations = report.violations.filter(v => v.type === "package");
+        assert.equal(pkgViolations.length, 0);
+        assert.equal(report.score, 100);
+        assert.equal(report.isClean, true);
+    });
 });

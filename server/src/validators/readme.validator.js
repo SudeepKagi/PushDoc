@@ -109,8 +109,22 @@ export const validateReadme = (readmeMarkdown, knowledge = {}) => {
     let featureHits = 0;
     const inferredFeatures = features.features || [];
     for (const feat of inferredFeatures) {
-        const regex = new RegExp(escapeRegex(feat.title), "i");
-        if (regex.test(readmeMarkdown)) {
+        const titleRegex = new RegExp(escapeRegex(feat.title), "i");
+        const coreSubject = feat.title.replace(/\s+(Management|System|Processing|Service)$/i, "").trim();
+        const coreRegex = new RegExp(`\\b${escapeRegex(coreSubject)}\\b`, "i");
+
+        const domainPatterns = [];
+        if (/background/i.test(feat.title)) domainPatterns.push(/\b(queue|worker|bullmq|background)\b/i);
+        if (/installation/i.test(feat.title)) domainPatterns.push(/\b(installation|install)\b/i);
+        if (/job/i.test(feat.title)) domainPatterns.push(/\b(job|build|logs?)\b/i);
+        if (/repo/i.test(feat.title)) domainPatterns.push(/\b(repositor(y|ies)|repos?)\b/i);
+        if (/auth/i.test(feat.title)) domainPatterns.push(/\b(auth|login|jwt|token)\b/i);
+
+        const hasMatch = titleRegex.test(readmeMarkdown) ||
+                         (coreSubject.length > 2 && coreRegex.test(readmeMarkdown)) ||
+                         domainPatterns.some(p => p.test(readmeMarkdown));
+
+        if (hasMatch) {
             featureHits++;
         } else {
             warnings.push(`Inferred feature "${feat.title}" is missing or not documented in the README.`);

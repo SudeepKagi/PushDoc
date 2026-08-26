@@ -126,7 +126,7 @@ export const generateReadme = async (
         "Running post-generation critic hallucination pass..."
     );
 
-    const criticReport = critic.critique(sanitizedReadme, facts);
+    const criticReport = critic.critique(sanitizedReadme, facts, knowledge);
 
     if (!criticReport.isClean) {
         logger.warn(

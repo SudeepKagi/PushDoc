@@ -72,6 +72,15 @@ If a list is empty, omit that section from the README entirely.
         lines.push("");
     }
 
+    const hasFeatures = (facts.features?.length ?? 0) > 0;
+    if (hasFeatures) {
+        lines.push(`CONFIRMED CORE CAPABILITIES (ensure your Features section documents these capabilities):`);
+        for (const f of facts.features) {
+            lines.push(`- **${f.title}**: ${f.description || ""}`);
+        }
+        lines.push("");
+    }
+
     return lines.join("\n");
 };
 

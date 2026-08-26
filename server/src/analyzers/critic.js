@@ -31,6 +31,24 @@ const CODE_SPAN_PATTERN = /`([^`\s]+)`/g;
 // Requires at least one slash and one non-whitespace char after it.
 const ROUTE_PATTERN = /\/(api|auth|v\d|admin|webhook|oauth)[/\w:.-]*/gi;
 
+const COMMON_DEV_TOKENS = new Set([
+    "true", "false", "null", "undefined",
+    "string", "number", "boolean", "object", "array", "date", "id", "uuid",
+    "json", "jwt", "url", "uri", "http", "https", "rest", "api", "cors", "csrf", "sse",
+    "ast", "sha", "sha256", "hmac", "token", "session", "cookie", "bearer",
+    "dist", "src", "build", "public", "bin", "lib", "main", "master", "dev", "start", "test",
+    "development", "production", "staging", "server", "client", "readme", "docker",
+    "git", "bash", "sh", "env", "node", "npm", "yarn", "pnpm", "npx",
+    "status", "branch", "repo", "repository", "job", "worker", "pipeline",
+    "controller", "service", "model", "schema", "view", "component", "hook",
+    "util", "utils", "config", "middleware", "route", "routes", "endpoint", "endpoints",
+    "header", "headers", "body", "query", "params", "param", "res", "req", "next",
+    "error", "message", "success", "data", "state", "user", "admin", "auth",
+    "login", "logout", "email", "name", "password", "port", "host", "origin"
+]);
+
+const HTTP_METHODS = new Set(["get", "post", "put", "patch", "delete", "options", "head", "connect", "trace"]);
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -40,7 +58,7 @@ const ROUTE_PATTERN = /\/(api|auth|v\d|admin|webhook|oauth)[/\w:.-]*/gi;
  * @param {object} facts  - Output of extractFacts()
  * @returns {{ violations: Array<{ type: string, value: string }>, isClean: boolean }}
  */
-export const critique = (readme, facts) => {
+export const critique = (readme, facts, knowledge = null) => {
     if (!readme || !facts) {
         return { violations: [], isClean: true, score: 100 };
     }
@@ -48,13 +66,23 @@ export const critique = (readme, facts) => {
     const violations = [];
 
     // Build lookup sets for O(1) membership checks.
-    const knownEnvVars = new Set(facts.envVars.map(v => v.toUpperCase()));
+    const knownEnvVars = new Set((facts.envVars || []).map(v => v.toUpperCase()));
     const knownPackages = new Set([
-        ...facts.dependencies,
-        ...facts.devDependencies,
+        ...(facts.dependencies || []),
+        ...(facts.devDependencies || []),
     ].map(p => p.toLowerCase()));
     const knownRoutes = new Set(
-        facts.routes.map(r => normalisePath(r.path))
+        (facts.routes || []).map(r => normalisePath(r.path))
+    );
+    const allModels = facts.models || knowledge?.models || [];
+    const knownModels = new Set(
+        allModels.map(m => (m.name || "").toLowerCase())
+    );
+    const knownFields = new Set(
+        allModels.flatMap(m => (m.fields || []).map(f => (typeof f === "string" ? f : f.name || "").toLowerCase()))
+    );
+    const knownScripts = new Set(
+        (facts.scripts || []).map(s => (s.name || "").toLowerCase())
     );
 
     // ── Check 1: Env var names ─────────────────────────────────────────────
@@ -79,17 +107,40 @@ export const critique = (readme, facts) => {
 
     // ── Check 2: Package names in code spans ──────────────────────────────
     // Scan backtick spans for npm package names. Flag any that are not in
-    // the known package list. We only flag names that look like npm packages
-    // (contain no spaces, no slashes other than scoped package prefix @scope/).
+    // the known package list. Exclude env vars, HTTP methods, database fields,
+    // and common developer tokens so they aren't falsely flagged as npm packages.
     if (knownPackages.size > 0) {
         CODE_SPAN_PATTERN.lastIndex = 0;
         while ((match = CODE_SPAN_PATTERN.exec(readme)) !== null) {
-            const token = match[1].toLowerCase();
+            const rawToken = match[1];
+            const token = rawToken.toLowerCase();
             const looksLikePackage = !token.includes("/") || token.startsWith("@");
             // Only flag multi-char, non-command tokens (skip `npm`, `git`, file names)
             const isCommand = ["npm", "npx", "git", "node", "yarn", "pnpm", "cd", "ls"].includes(token);
             const isFilename = token.includes(".");
-            if (looksLikePackage && !isCommand && !isFilename && token.length > 2) {
+
+            const isEnvVar = knownEnvVars.has(token.toUpperCase()) ||
+                             knownEnvVars.has(rawToken.toUpperCase()) ||
+                             token.includes("_") ||
+                             (rawToken === rawToken.toUpperCase() && rawToken.length >= 3);
+            const isHttpMethod = HTTP_METHODS.has(token);
+            const isModelOrField = knownModels.has(token) || knownFields.has(token);
+            const isScript = knownScripts.has(token);
+            const isCommonDevToken = COMMON_DEV_TOKENS.has(token);
+            const isCodeIdentifier = /[a-z][A-Z]|[A-Z]{2,}[a-z]/.test(rawToken);
+
+            if (
+                looksLikePackage &&
+                !isCommand &&
+                !isFilename &&
+                token.length > 2 &&
+                !isEnvVar &&
+                !isHttpMethod &&
+                !isModelOrField &&
+                !isScript &&
+                !isCommonDevToken &&
+                !isCodeIdentifier
+            ) {
                 if (!knownPackages.has(token)) {
                     violations.push({ type: "package", value: token });
                 }
