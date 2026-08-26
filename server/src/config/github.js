@@ -13,7 +13,21 @@ let app;
 
 const loadPrivateKey = () => {
     if (process.env.GITHUB_PRIVATE_KEY) {
-        return process.env.GITHUB_PRIVATE_KEY.replace(/\\n/g, "\n");
+        let key = process.env.GITHUB_PRIVATE_KEY.trim();
+        // Strip surrounding quotes if configured with quotes in cloud environment
+        if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+            key = key.slice(1, -1);
+        }
+        // Decode base64 if key was base64-encoded to preserve formatting
+        if (!key.includes("-----BEGIN") && /^[A-Za-z0-9+/=\s]+$/.test(key)) {
+            try {
+                const decoded = Buffer.from(key, "base64").toString("utf8");
+                if (decoded.includes("-----BEGIN")) {
+                    key = decoded;
+                }
+            } catch {}
+        }
+        return key.replace(/\\r/g, "\r").replace(/\\n/g, "\n");
     }
 
     if (process.env.GITHUB_PRIVATE_KEY_PATH) {
@@ -40,8 +54,10 @@ const loadPrivateKey = () => {
 // before accepting real traffic.
 export const getGitHubApp = () => {
     if (!app) {
+        const rawAppId = process.env.GITHUB_APP_ID;
+        const appId = !isNaN(Number(rawAppId)) ? Number(rawAppId) : rawAppId;
         app = new App({
-            appId: process.env.GITHUB_APP_ID,
+            appId,
             privateKey: loadPrivateKey(),
         });
     }
