@@ -2,7 +2,13 @@ import express from "express";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
+import helmet from "helmet";
+import cookieParser from "cookie-parser";
 import { config } from "./config/app.config.js";
+import { corsOptions } from "./config/cors.config.js";
+import { requireTrustedOriginForCookieSession } from "./middleware/csrf.middleware.js";
+import * as logger from "./services/logger.service.js";
+import { publicErrorMessage } from "./utils/http-response.js";
 
 import indexRouter from "./routes/index.route.js";
 import githubRouter from "./routes/github.route.js";
@@ -16,33 +22,22 @@ const app = express();
 // identifies real client IPs from X-Forwarded-For, not the proxy's IP.
 app.set("trust proxy", 1);
 
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (e.g. mobile apps, curl, server-to-server webhooks)
-        if (!origin) return callback(null, true);
-
-        const allowed = Array.isArray(config.cors.origin) ? config.cors.origin : [config.cors.origin];
-
-        // Allow any specified origin, wildcard, or standard Vercel/Render frontend origins
-        if (
-            allowed.includes("*") ||
-            allowed.includes(origin) ||
-            origin.includes("localhost") ||
-            origin.includes("127.0.0.1") ||
-            origin.endsWith(".vercel.app") ||
-            origin.endsWith(".onrender.com")
-        ) {
-            return callback(null, true);
-        }
-
-        // Reject anything that didn't match the allowlist above
-        return callback(new Error(`Origin ${origin} not allowed by CORS`), false);
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "https://avatars.githubusercontent.com", "https://img.shields.io"],
+            connectSrc: ["'self'", "https://api.github.com"],
+        },
     },
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
+    crossOriginEmbedderPolicy: false,
 }));
 
+app.use(cors(corsOptions));
+
+app.use(cookieParser());
 app.use(
     express.json({
         verify: (req, res, buffer) => {
@@ -73,8 +68,18 @@ const apiLimiter = rateLimit({
 });
 
 app.use("/", indexRouter);
-app.use("/github", apiLimiter, githubRouter);
-app.use("/auth", authLimiter, authRouter);
+app.use("/github", apiLimiter, requireTrustedOriginForCookieSession, githubRouter);
+app.use("/auth", authLimiter, requireTrustedOriginForCookieSession, authRouter);
 app.use("/webhooks", webhookRouter);
+
+// Centralized error handling middleware
+app.use((err, req, res, next) => {
+    const status = err.status || err.statusCode || 500;
+    logger.error(null, `[API Error] ${req.method} ${req.originalUrl}: ${err.message}`);
+    res.status(status).json({
+        success: false,
+        message: publicErrorMessage(err, status),
+    });
+});
 
 export default app;

@@ -81,24 +81,29 @@ export const githubCallback = async (code, state) => {
                     client_secret: config.github.clientSecret,
                     code,
                 }),
+                signal: AbortSignal.timeout(10_000),
             }
         );
 
         if (!tokenResponse.ok) {
-            throw new GitHubError(`GitHub token exchange responded with status ${tokenResponse.status}`);
+            throw new GitHubError(`GitHub token exchange responded with status ${tokenResponse.status}`, tokenResponse.status >= 500 ? 502 : 400);
         }
 
         tokenData = await tokenResponse.json();
     } catch (err) {
-        throw new GitHubError(`GitHub token request failed: ${err.message}`);
+        if (err.name === "TimeoutError") {
+            throw new GitHubError("GitHub OAuth service timed out after 10 seconds", 504);
+        }
+        if (err instanceof GitHubError) throw err;
+        throw new GitHubError(`GitHub token request failed: ${err.message}`, 502);
     }
 
     if (tokenData.error) {
-        throw new GitHubError(`GitHub OAuth error: ${tokenData.error_description || tokenData.error}`);
+        throw new GitHubError(`GitHub OAuth error: ${tokenData.error_description || tokenData.error}`, 400);
     }
 
     if (!tokenData.access_token) {
-        throw new GitHubError("GitHub OAuth response did not return an access token");
+        throw new GitHubError("GitHub OAuth response did not return an access token", 502);
     }
 
     let githubUser;
@@ -110,16 +115,21 @@ export const githubCallback = async (code, state) => {
                     Authorization: `Bearer ${tokenData.access_token}`,
                     Accept: "application/json",
                 },
+                signal: AbortSignal.timeout(10_000),
             }
         );
 
         if (!userResponse.ok) {
-            throw new GitHubError(`GitHub user fetch responded with status ${userResponse.status}`);
+            throw new GitHubError(`GitHub user fetch responded with status ${userResponse.status}`, userResponse.status >= 500 ? 502 : 400);
         }
 
         githubUser = await userResponse.json();
     } catch (err) {
-        throw new GitHubError(`Failed to fetch GitHub user details: ${err.message}`);
+        if (err.name === "TimeoutError") {
+            throw new GitHubError("GitHub user details request timed out after 10 seconds", 504);
+        }
+        if (err instanceof GitHubError) throw err;
+        throw new GitHubError(`Failed to fetch GitHub user details: ${err.message}`, 502);
     }
 
     const savedUser = await userService.createOrUpdateUser(
@@ -143,4 +153,8 @@ export const githubCallback = async (code, state) => {
         user: userRes,
         token,
     };
+};
+
+export const getUserById = async (userId) => {
+    return await userService.getUserById(userId);
 };

@@ -7,7 +7,9 @@ import * as jobService from "../services/job.service.js";
 import * as logger from "../services/logger.service.js";
 import readmeQueue from "../queue/queue.js";
 import eventsService from "../services/events.service.js";
+import { belongsToInstallation } from "../services/authorization.service.js";
 import { config } from "../config/app.config.js";
+import { publicErrorMessage } from "../utils/http-response.js";
 import fs from "fs";
 import path from "path";
 
@@ -25,7 +27,7 @@ export const getGitHubApp = async (req, res) => {
         const statusCode = error.status || 500;
         res.status(statusCode).json({
             success: false,
-            message: error.message,
+            message: publicErrorMessage(error, statusCode),
         });
 
     }
@@ -45,7 +47,7 @@ export const githubCallback = async (req, res) => {
         const statusCode = error.status || 500;
         return res.status(statusCode).json({
             success: false,
-            message: error.message
+            message: publicErrorMessage(error, statusCode)
         });
 
     }
@@ -73,7 +75,7 @@ export const installApp = async (req, res) => {
         const statusCode = error.status || 500;
         return res.status(statusCode).json({
             success: false,
-            message: error.message,
+            message: publicErrorMessage(error, statusCode),
         });
 
     }
@@ -137,7 +139,7 @@ export const installCallback = async (req, res) => {
         const statusCode = error.status || 500;
         return res.status(statusCode).json({
             success: false,
-            message: error.message,
+            message: publicErrorMessage(error, statusCode),
         });
 
     }
@@ -188,7 +190,7 @@ export const syncRepositories = async (req, res) => {
         const statusCode = error.status || 500;
         return res.status(statusCode).json({
             success: false,
-            message: error.message,
+            message: publicErrorMessage(error, statusCode),
         });
 
     }
@@ -211,7 +213,7 @@ export const getJobs = async (req, res) => {
     } catch (error) {
         return res.status(500).json({
             success: false,
-            message: error.message
+            message: publicErrorMessage(error, 500)
         });
     }
 };
@@ -219,8 +221,12 @@ export const getJobs = async (req, res) => {
 export const getJobLogs = async (req, res) => {
     try {
         const { jobId } = req.params;
+        const installation = await installationService.getInstallationByUser(req.user.userId);
+        if (!installation) {
+            return res.status(403).json({ success: false, message: "Unauthorized: No GitHub App installation found for your user account" });
+        }
         const job = await jobService.getJobById(jobId);
-        if (!job) {
+        if (!job || !belongsToInstallation(job.repository, installation)) {
             return res.status(404).json({ success: false, message: "Job not found" });
         }
 
@@ -257,9 +263,10 @@ export const getJobLogs = async (req, res) => {
             logs: logLines
         });
     } catch (error) {
+        logger.error(null, `getJobLogs error: ${error.message}`);
         return res.status(500).json({
             success: false,
-            message: error.message
+            message: "Failed to retrieve job logs"
         });
     }
 };
@@ -276,7 +283,7 @@ export const getRepositoryReadme = async (req, res) => {
         }
 
         const repository = await repositoryService.getRepositoryById(repoId);
-        if (!repository) {
+        if (!repository || !belongsToInstallation(repository, installation)) {
             return res.status(404).json({
                 success: false,
                 message: "Repository not found"
@@ -296,10 +303,11 @@ export const getRepositoryReadme = async (req, res) => {
             path: readmeData.path || "README.md",
         });
     } catch (error) {
-        return res.status(200).json({
-            success: true,
-            readme: "",
-            message: error.message
+        logger.error(null, `getRepositoryReadme error: ${error.message}`);
+        const status = error.status === 404 ? 404 : (error.status || 500);
+        return res.status(status).json({
+            success: false,
+            message: error.status === 404 ? "README not found" : "Failed to retrieve repository README"
         });
     }
 };
@@ -390,7 +398,7 @@ export const triggerManualBuild = async (req, res) => {
         logger.error(`Manual trigger failed: ${error.message}`);
         return res.status(500).json({
             success: false,
-            message: error.message
+            message: publicErrorMessage(error, 500)
         });
     }
 };
@@ -398,8 +406,12 @@ export const triggerManualBuild = async (req, res) => {
 export const cancelJob = async (req, res) => {
     try {
         const { jobId } = req.params;
+        const installation = await installationService.getInstallationByUser(req.user.userId);
+        if (!installation) {
+            return res.status(403).json({ success: false, message: "Unauthorized: No GitHub App installation found for your user account" });
+        }
         const job = await jobService.getJobById(jobId);
-        if (!job) {
+        if (!job || !belongsToInstallation(job.repository, installation)) {
             return res.status(404).json({
                 success: false,
                 message: "Job not found",
@@ -416,7 +428,7 @@ export const cancelJob = async (req, res) => {
     } catch (error) {
         return res.status(500).json({
             success: false,
-            message: error.message,
+            message: publicErrorMessage(error, 500),
         });
     }
 };
@@ -510,7 +522,7 @@ export const toggleRepository = async (req, res) => {
     } catch (error) {
         return res.status(500).json({
             success: false,
-            message: error.message
+            message: publicErrorMessage(error, 500)
         });
     }
 };

@@ -24,3 +24,7 @@ export const createOrUpdateUser = async (githubUser, accessToken) => {
 
     return user;
 };
+
+export const getUserById = async (userId) => {
+    return await User.findById(userId).select("-githubAccessToken");
+};

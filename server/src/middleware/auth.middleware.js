@@ -2,19 +2,20 @@ import * as jwtService from "../services/jwt.service.js";
 
 const authMiddleware = (req, res, next) => {
     try {
-        const authHeader = req.headers.authorization;
         let token = null;
 
-        if (authHeader && authHeader.startsWith("Bearer ")) {
-            token = authHeader.split(" ")[1];
-        } else if (req.query && req.query.token) {
-            token = req.query.token;
+        // 1. Primary & Secure: HttpOnly Cookie
+        if (req.cookies && req.cookies.auth_token) {
+            token = req.cookies.auth_token;
+        // 2. Standard API Header: Authorization: Bearer <token> (Postman, cURL, Mobile, CLI)
+        } else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
+            token = req.headers.authorization.split(" ")[1];
         }
 
         if (!token) {
             return res.status(401).json({
                 success: false,
-                message: "Authentication required: missing Bearer token or token query parameter",
+                message: "Authentication required: missing auth cookie or Bearer token",
             });
         }
 
@@ -22,10 +23,10 @@ const authMiddleware = (req, res, next) => {
         req.user = decoded;
 
         next();
-    } catch (error) {
+    } catch {
         return res.status(401).json({
             success: false,
-            message: error.message,
+            message: "Authentication required",
         });
     }
 };

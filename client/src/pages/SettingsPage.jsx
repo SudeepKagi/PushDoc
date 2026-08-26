@@ -5,27 +5,13 @@ import { Input } from "../components/ui/input.jsx";
 import { Label } from "../components/ui/label.jsx";
 import { Badge } from "../components/ui/badge.jsx";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select.jsx";
-import { Settings, Webhook, GitBranch, Copy, Check, Eye, EyeOff, RefreshCw, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
+import { Webhook, GitBranch, Copy, Check, RefreshCw, ShieldCheck } from "lucide-react";
 import { BACKEND_URL } from "../constants/config.js";
-
-function generateCryptoSecret() {
-    try {
-        const bytes = new Uint8Array(24);
-        window.crypto.getRandomValues(bytes);
-        return "whsec_" + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-    } catch {
-        return "whsec_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    }
-}
 
 export default function SettingsPage({
     selectedRepo,
     repos,
     openDetails,
-    webhookSecret,
-    setWebhookSecret,
-    webhookSecretVisible,
-    setWebhookSecretVisible,
     settingsBranch,
     setSettingsBranch,
     settingsPath,
@@ -39,10 +25,7 @@ export default function SettingsPage({
     copyToClipboard
 }) {
     const [saving, setSaving] = useState(false);
-    const [regenerating, setRegenerating] = useState(false);
     const [copiedUrl, setCopiedUrl] = useState(false);
-    const [copiedSecret, setCopiedSecret] = useState(false);
-    const [secretRegeneratedMsg, setSecretRegeneratedMsg] = useState(false);
 
     const handleSave = async () => {
         setSaving(true);
@@ -53,39 +36,11 @@ export default function SettingsPage({
         }
     };
 
-    const handleRegenerateSecret = () => {
-        setRegenerating(true);
-        setSecretRegeneratedMsg(false);
-
-        setTimeout(() => {
-            const newSecret = generateCryptoSecret();
-            if (setWebhookSecret) {
-                setWebhookSecret(newSecret);
-                localStorage.setItem("pushdoc_webhook_secret", newSecret);
-            }
-            navigator.clipboard.writeText(newSecret);
-            setCopiedSecret(true);
-            setSecretRegeneratedMsg(true);
-            setRegenerating(false);
-
-            setTimeout(() => {
-                setCopiedSecret(false);
-            }, 3000);
-        }, 500);
-    };
-
-    const handleCopy = (text, type) => {
+    const handleCopy = (text) => {
         copyToClipboard(text);
-        if (type === "url") {
-            setCopiedUrl(true);
-            setTimeout(() => setCopiedUrl(false), 2000);
-        } else if (type === "secret") {
-            setCopiedSecret(true);
-            setTimeout(() => setCopiedSecret(false), 2000);
-        }
+        setCopiedUrl(true);
+        setTimeout(() => setCopiedUrl(false), 2000);
     };
-
-    const currentSecret = webhookSecret || "whsec_default_secret_token";
 
     return (
         <div className="space-y-6 max-w-6xl mx-auto py-2 font-sans">
@@ -154,7 +109,7 @@ export default function SettingsPage({
                                     variant="outline"
                                     size="icon"
                                     className="h-8 w-8 shrink-0 rounded-[6px]"
-                                    onClick={() => handleCopy(`${BACKEND_URL}/webhooks/github`, "url")}
+                                    onClick={() => handleCopy(`${BACKEND_URL}/webhooks/github`)}
                                     title="Copy Webhook URL"
                                 >
                                     {copiedUrl ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
@@ -165,59 +120,26 @@ export default function SettingsPage({
                         {/* Webhook Secret */}
                         <div className="space-y-1">
                             <div className="flex items-center justify-between">
-                                <Label className="text-xs font-medium">Webhook Secret Token</Label>
-                                <span className="text-[11px] text-text-muted font-mono">256-bit entropy</span>
+                                <Label className="text-xs font-medium">GitHub App Webhook Secret</Label>
+                                <span className="text-[11px] text-text-muted font-mono">Server-managed HMAC</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="relative flex-1">
                                     <Input
-                                        type={webhookSecretVisible ? "text" : "password"}
-                                        value={currentSecret}
+                                        type="text"
+                                        value="•••••••••••••••• (Configured via GITHUB_WEBHOOK_SECRET on server)"
                                         readOnly
-                                        className="font-mono text-xs h-8 rounded-[6px] pr-8 bg-bg"
+                                        className="font-mono text-xs h-8 rounded-[6px] bg-bg text-text-muted select-none"
                                     />
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 text-text-muted hover:text-text-primary"
-                                        onClick={() => setWebhookSecretVisible(!webhookSecretVisible)}
-                                        title={webhookSecretVisible ? "Mask secret" : "Reveal secret"}
-                                    >
-                                        {webhookSecretVisible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                                    </Button>
                                 </div>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-8 w-8 shrink-0 rounded-[6px]"
-                                    onClick={() => handleCopy(currentSecret, "secret")}
-                                    title="Copy Webhook Secret"
-                                >
-                                    {copiedSecret ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-                                </Button>
                             </div>
+                            <p className="text-[11px] text-text-muted">
+                                Webhook delivery authenticity is cryptographically verified via HMAC-SHA256 using your server environment secret.
+                            </p>
                         </div>
 
-                        {/* Success Notification on Regeneration */}
-                        {secretRegeneratedMsg && (
-                            <div className="p-2.5 bg-success/15 border border-success/30 rounded-[4px] text-xs text-success flex items-center gap-2 font-mono animate-in fade-in">
-                                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                                <span>New HMAC secret generated and copied to clipboard!</span>
-                            </div>
-                        )}
-
-                        {/* Action Buttons */}
-                        <div className="pt-1 flex items-center gap-2">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="gap-1.5 h-8 text-xs rounded-[6px] flex-1 font-medium" 
-                                onClick={handleRegenerateSecret}
-                                disabled={regenerating}
-                            >
-                                <RefreshCw className={`h-3.5 w-3.5 ${regenerating ? "animate-spin text-accent" : ""}`} />
-                                <span>{regenerating ? "Generating Crypto Secret..." : "Regenerate Secret"}</span>
-                            </Button>
+                        <div className="p-2.5 bg-surface-raised rounded-[6px] text-[11px] text-text-secondary border border-border">
+                            To rotate this secret, update <code>GITHUB_WEBHOOK_SECRET</code> in your deployment secret manager and update the matching GitHub App webhook setting. A browser-generated value would not protect webhook deliveries.
                         </div>
                     </CardContent>
                 </Card>

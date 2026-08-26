@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { config } from "../config/app.config.js";
 
 export const generateToken = (user) => {
     return jwt.sign(
@@ -6,13 +7,13 @@ export const generateToken = (user) => {
             userId: user._id,
             provider: user.provider,
         },
-        process.env.JWT_SECRET,
+        config.jwt.secret || process.env.JWT_SECRET,
         {
-            expiresIn: "7d",
+            expiresIn: config.jwt.expiresIn || "7d",
         }
     );
 };
 
 export const verifyToken = (token) => {
-    return jwt.verify(token, process.env.JWT_SECRET);
+    return jwt.verify(token, config.jwt.secret || process.env.JWT_SECRET);
 };

@@ -1,7 +1,12 @@
-import express from "express"
+import express from "express";
 import redisConnection from "../queue/connection.js";
+import { lifecycle } from "../services/lifecycle.service.js";
 
 const router = express.Router();
+
+// Production health check routes (Kubernetes / Render / AWS ALB)
+router.get("/health", lifecycle.healthCheck);
+router.get("/ready", lifecycle.healthCheck);
 
 router.get("/", async (req, res) => {
     let redisStatus = "ok";
@@ -22,6 +27,7 @@ router.get("/", async (req, res) => {
     res.status(200).json({
         success: true,
         message: "PushDoc API is running 🚀",
+        state: lifecycle.state,
         redis: redisStatus,
     });
 });
