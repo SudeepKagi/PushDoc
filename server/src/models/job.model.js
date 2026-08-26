@@ -62,6 +62,13 @@ const jobSchema = new mongoose.Schema(
     }
 );
 
+// The stale-job reaper filters by status and a timestamp every 30 seconds.
+// These indexes prevent that operational recovery path from scanning the
+// entire jobs collection as production history grows.
+jobSchema.index({ status: 1, createdAt: 1 });
+jobSchema.index({ status: 1, updatedAt: 1 });
+jobSchema.index({ repository: 1, createdAt: -1 });
+
 export default mongoose.model(
     "Job",
     jobSchema
