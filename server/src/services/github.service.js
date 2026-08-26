@@ -1,9 +1,17 @@
-import githubApp from "../config/github.js";
+import { getGitHubApp as getConfiguredGitHubApp } from "../config/github.js";
 import { GitHubError } from "../utils/errors.js";
+
+const githubApp = () => {
+    try {
+        return getConfiguredGitHubApp();
+    } catch {
+        throw new GitHubError("GitHub App is not configured", 503);
+    }
+};
 
 export const getGitHubApp = async () => {
     // Simply check that octokit is initialized
-    if (!githubApp?.octokit) {
+    if (!githubApp()?.octokit) {
         throw new GitHubError("GitHub App not initialized properly");
     }
     return {
@@ -25,7 +33,7 @@ export const getInstallUrl = (state) => {
 
 export const getInstallation = async (installationId) => {
     try {
-        const response = await githubApp.octokit.request(
+        const response = await githubApp().octokit.request(
             "GET /app/installations/{installation_id}",
             {
                 installation_id: Number(installationId),
@@ -40,7 +48,7 @@ export const getInstallation = async (installationId) => {
 export const getInstallationRepositories = async (installationId) => {
     try {
         const installationOctokit =
-            await githubApp.getInstallationOctokit(
+            await githubApp().getInstallationOctokit(
                 installationId
             );
         const repositories = await installationOctokit.paginate(
@@ -57,7 +65,7 @@ export const getInstallationAccessToken = async (
     installationId
 ) => {
     try {
-        const response = await githubApp.octokit.request(
+        const response = await githubApp().octokit.request(
             "POST /app/installations/{installation_id}/access_tokens",
             {
                 installation_id: Number(installationId),
@@ -71,7 +79,7 @@ export const getInstallationAccessToken = async (
 
 export const getRepositoryDefaultBranchAndCommit = async (installationId, owner, repo) => {
     try {
-        const installationOctokit = await githubApp.getInstallationOctokit(installationId);
+        const installationOctokit = await githubApp().getInstallationOctokit(installationId);
         const repoResponse = await installationOctokit.request(
             "GET /repos/{owner}/{repo}",
             {
@@ -100,7 +108,7 @@ export const getRepositoryDefaultBranchAndCommit = async (installationId, owner,
 
 export const getRepositoryReadme = async (installationId, owner, repo) => {
     try {
-        const installationOctokit = await githubApp.getInstallationOctokit(installationId);
+        const installationOctokit = await githubApp().getInstallationOctokit(installationId);
         const response = await installationOctokit.request(
             "GET /repos/{owner}/{repo}/readme",
             {

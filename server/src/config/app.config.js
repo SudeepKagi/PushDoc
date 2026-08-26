@@ -48,6 +48,7 @@ export const config = {
         origin: process.env.CORS_ORIGIN
             ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
             : [
+                "https://push-doc.vercel.app",
                 "https://pushdoc-client.onrender.com",
                 "http://localhost:5173",
                 "http://localhost:3000",
@@ -55,7 +56,7 @@ export const config = {
             ],
     },
     frontend: {
-        url: process.env.FRONTEND_URL || (process.env.NODE_ENV === "production" ? "https://pushdoc-client.onrender.com" : "http://localhost:5173"),
+        url: process.env.FRONTEND_URL || (process.env.NODE_ENV === "production" ? "https://push-doc.vercel.app" : "http://localhost:5173"),
     },
     workspace: {
         // In production: set WORKSPACE_ROOT_PATH to an absolute path outside the app

@@ -36,3 +36,7 @@ export const getInstallationByInstallationId = async (installationId) => {
         installationId,
     });
 };
+
+export const deleteInstallationById = async (id) => {
+    return await Installation.findByIdAndDelete(id);
+};

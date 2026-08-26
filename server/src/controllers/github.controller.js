@@ -129,17 +129,16 @@ export const installCallback = async (req, res) => {
 
         await installationStateService.deleteState(state);
 
-        return res.status(200).json({
-            success: true,
-            installation,
-        });
+        // Redirect browser back to the frontend dashboard after successful app installation
+        return res.redirect(`${config.frontend.url}/?installed=true`);
 
     } catch (error) {
 
+        logger.error(`installCallback error: ${error.message}`);
         const statusCode = error.status || 500;
         return res.status(statusCode).json({
             success: false,
-            message: publicErrorMessage(error, statusCode),
+            message: error.message || publicErrorMessage(error, statusCode),
         });
 
     }
@@ -157,40 +156,56 @@ export const syncRepositories = async (req, res) => {
         if (!installation) {
             return res.status(404).json({
                 success: false,
-                message: "Installation not found",
+                message: "GitHub App installation not found for your account. Please connect or install the PushDoc GitHub App.",
             });
         }
 
-        const repositories =
-            await githubService.getInstallationRepositories(
-                installation.installationId
-            );
-
-        const syncedRepositories = [];
-
-        for (const repo of repositories) {
-
-            const savedRepository =
-                await repositoryService.createOrUpdateRepository(
-                    repo,
-                    installation._id
+        try {
+            const repositories =
+                await githubService.getInstallationRepositories(
+                    Number(installation.installationId)
                 );
 
-            syncedRepositories.push(savedRepository);
-        }
+            const syncedRepositories = [];
 
-        return res.status(200).json({
-            success: true,
-            count: syncedRepositories.length,
-            repositories: syncedRepositories,
-        });
+            for (const repo of repositories) {
+
+                const savedRepository =
+                    await repositoryService.createOrUpdateRepository(
+                        repo,
+                        installation._id
+                    );
+
+                syncedRepositories.push(savedRepository);
+            }
+
+            return res.status(200).json({
+                success: true,
+                count: syncedRepositories.length,
+                repositories: syncedRepositories,
+            });
+        } catch (ghError) {
+            logger.error(`getInstallationRepositories failed for installation ${installation.installationId}: ${ghError.message} (status: ${ghError.status})`);
+
+            // If the installation was uninstalled/deleted on GitHub, clean up stale local record
+            if (ghError.status === 404 || ghError.message?.includes("Not Found") || ghError.message?.includes("Integration not found")) {
+                await installationService.deleteInstallationById(installation._id);
+                return res.status(404).json({
+                    success: false,
+                    message: "GitHub App was uninstalled or removed from GitHub. Please re-install PushDoc.",
+                });
+            }
+
+            throw ghError;
+        }
 
     } catch (error) {
 
+        logger.error(`syncRepositories failed: ${error.message} (status: ${error.status})`);
         const statusCode = error.status || 500;
         return res.status(statusCode).json({
             success: false,
-            message: publicErrorMessage(error, statusCode),
+            message: error.message || publicErrorMessage(error, statusCode),
         });
 
     }

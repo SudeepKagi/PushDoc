@@ -4,10 +4,20 @@ export const getLoginUrl = () => {
     return `${BACKEND_URL}/auth/github/login`;
 };
 
-export const fetchCurrentUser = async () => {
+const getAuthHeaders = (explicitToken, extraHeaders = {}) => {
+    const token = explicitToken || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+    const headers = { ...extraHeaders };
+    if (token && token !== "cookie_authenticated") {
+        headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
+};
+
+export const fetchCurrentUser = async (token) => {
     try {
         const res = await fetch(`${BACKEND_URL}/auth/me`, {
             credentials: "include",
+            headers: getAuthHeaders(token),
         });
         if (!res.ok) return { success: false, status: res.status };
         const data = await res.json();
@@ -17,11 +27,12 @@ export const fetchCurrentUser = async () => {
     }
 };
 
-export const logoutUser = async () => {
+export const logoutUser = async (token) => {
     try {
         const res = await fetch(`${BACKEND_URL}/auth/logout`, {
             method: "POST",
             credentials: "include",
+            headers: getAuthHeaders(token),
         });
         return await res.json();
     } catch (err) {
@@ -37,18 +48,20 @@ export const exchangeOAuthCode = async (code) => {
     return data;
 };
 
-export const syncRepositories = async () => {
+export const syncRepositories = async (token) => {
     const res = await fetch(`${BACKEND_URL}/github/repositories/sync`, {
         credentials: "include",
+        headers: getAuthHeaders(token),
     });
     const data = await res.json();
     return data;
 };
 
-export const fetchJobs = async () => {
+export const fetchJobs = async (token) => {
     try {
         const res = await fetch(`${BACKEND_URL}/github/jobs`, {
             credentials: "include",
+            headers: getAuthHeaders(token),
         });
         if (!res.ok) {
             return { success: false, status: res.status };
@@ -60,10 +73,11 @@ export const fetchJobs = async () => {
     }
 };
 
-export const fetchJobLogs = async (jobId) => {
+export const fetchJobLogs = async (jobId, token) => {
     try {
         const res = await fetch(`${BACKEND_URL}/github/jobs/${jobId}/logs`, {
             credentials: "include",
+            headers: getAuthHeaders(token),
         });
         if (!res.ok) {
             return { success: false, status: res.status };
@@ -75,37 +89,41 @@ export const fetchJobLogs = async (jobId) => {
     }
 };
 
-export const fetchRepoReadme = async (repoId) => {
+export const fetchRepoReadme = async (repoId, token) => {
     const res = await fetch(`${BACKEND_URL}/github/repositories/${repoId}/readme`, {
         credentials: "include",
+        headers: getAuthHeaders(token),
     });
     const data = await res.json();
     return data;
 };
 
-export const triggerManualBuild = async (repoId) => {
+export const triggerManualBuild = async (repoId, token) => {
     const res = await fetch(`${BACKEND_URL}/github/repositories/${repoId}/trigger`, {
         method: "POST",
         credentials: "include",
+        headers: getAuthHeaders(token),
     });
     const data = await res.json();
     return data;
 };
 
-export const toggleRepositoryActive = async (repoId) => {
+export const toggleRepositoryActive = async (repoId, token) => {
     const res = await fetch(`${BACKEND_URL}/github/repositories/${repoId}/toggle`, {
         method: "PATCH",
         credentials: "include",
+        headers: getAuthHeaders(token),
     });
     const data = await res.json();
     return data;
 };
 
-export const cancelJob = async (jobId) => {
+export const cancelJob = async (jobId, token) => {
     try {
         const res = await fetch(`${BACKEND_URL}/github/jobs/${jobId}/cancel`, {
             method: "POST",
             credentials: "include",
+            headers: getAuthHeaders(token),
         });
         const data = await res.json();
         return data;

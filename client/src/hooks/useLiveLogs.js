@@ -13,10 +13,10 @@ export default function useLiveLogs(token, isActive, onAuthError) {
 
     // Initial Hydration
     const loadJobsList = useCallback(async () => {
-        if (!token) return;
         setLoadingJobs(true);
         try {
-            const data = await fetchJobs(token);
+            const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+            const data = await fetchJobs(activeToken);
             if (data && data.success) {
                 setJobs(data.jobs || []);
             }
@@ -29,7 +29,7 @@ export default function useLiveLogs(token, isActive, onAuthError) {
 
     // Load initial jobs when active
     useEffect(() => {
-        if (isActive && token) {
+        if (isActive) {
             loadJobsList();
         }
     }, [isActive, token, loadJobsList]);
@@ -46,7 +46,8 @@ export default function useLiveLogs(token, isActive, onAuthError) {
         if (!activeJob?._id) return;
 
         let isMounted = true;
-        fetchJobLogs(activeJob._id)
+        const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+        fetchJobLogs(activeJob._id, activeToken)
             .then(data => {
                 if (isMounted && data && data.success) {
                     const fetched = data.logs || [];
@@ -63,19 +64,23 @@ export default function useLiveLogs(token, isActive, onAuthError) {
         return () => {
             isMounted = false;
         };
-    }, [isActive, activeBuildIndex, jobs.length]);
+    }, [isActive, activeBuildIndex, jobs.length, token]);
 
-    // Real-Time Server-Sent Events (SSE) stream via Secure HttpOnly Cookie
+    // Real-Time Server-Sent Events (SSE) stream via Secure HttpOnly Cookie + Fallback Query Token
     useEffect(() => {
         if (!isActive) return;
 
-        const sseUrl = `${BACKEND_URL}/github/events/stream`;
+        const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+        const sseUrl = activeToken && activeToken !== "cookie_authenticated"
+            ? `${BACKEND_URL}/github/events/stream?token=${encodeURIComponent(activeToken)}`
+            : `${BACKEND_URL}/github/events/stream`;
+
         let eventSource = null;
         let consecutiveFailures = 0;
         let lastFailureAt = 0;
 
         try {
-            // Automatically sends HttpOnly auth_token cookie with SSE request
+            // Automatically sends HttpOnly auth_token cookie with SSE request if supported
             eventSource = new EventSource(sseUrl, { withCredentials: true });
 
             eventSource.addEventListener("connected", () => {
