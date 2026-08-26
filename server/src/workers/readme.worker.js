@@ -13,6 +13,7 @@ import * as logger from "../services/logger.service.js";
 import * as workspaceService from "../services/workspace.service.js";
 import { ValidationError } from "../utils/errors.js";
 import { lifecycle } from "../services/lifecycle.service.js";
+import { config } from "../config/app.config.js";
 
 const isJobCancelled = async (trackingJobId) => {
     if (!trackingJobId) return false;
@@ -25,7 +26,7 @@ const isJobCancelled = async (trackingJobId) => {
 };
 
 const readmeWorker = new Worker(
-    "readme-generation",
+    config.queue.name,
 
     async (job) => {
 
