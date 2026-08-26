@@ -3,11 +3,14 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { App } from "@octokit/app";
+import { Octokit } from "@octokit/rest";
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const GitHubApp = App.defaults({ Octokit });
 
 let app;
 
@@ -56,7 +59,7 @@ export const getGitHubApp = () => {
     if (!app) {
         const rawAppId = process.env.GITHUB_APP_ID;
         const appId = !isNaN(Number(rawAppId)) ? Number(rawAppId) : rawAppId;
-        app = new App({
+        app = new GitHubApp({
             appId,
             privateKey: loadPrivateKey(),
         });
