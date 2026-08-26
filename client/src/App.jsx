@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Toaster, toast } from "sonner";
 
 import useGitHub from "./hooks/useGitHub";
 import useLiveLogs from "./hooks/useLiveLogs";
@@ -97,26 +98,27 @@ export default function App() {
     const triggerManualBuild = async (repoId) => {
         try {
             if (!token) {
-                alert("Please log in with GitHub to trigger repository documentation builds.");
+                toast.error("Please log in with GitHub to trigger repository documentation builds.");
                 return { success: false };
             }
             const data = await apiTriggerManualBuild(repoId, token);
             if (data.success) {
                 await refreshJobs();
+                toast.success("Verification job successfully queued!");
                 return data;
             } else {
-                alert("Failed to queue job: " + (data.message || "Unknown error"));
+                toast.error("Failed to queue job: " + (data.message || "Unknown error"));
                 return data;
             }
         } catch (err) {
-            alert("Error triggering build: " + err.message);
+            toast.error("Error triggering build: " + err.message);
             return { success: false, error: err.message };
         }
     };
 
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);
-        alert("Copied payload URL to clipboard!");
+        toast.success("Copied payload URL to clipboard!");
     };
 
     const handlePreferenceToggle = (key) => {
@@ -129,19 +131,19 @@ export default function App() {
 
     const saveConfigurations = () => {
         setHasUnsavedSettings(false);
-        alert("Configuration saved successfully!");
+        toast.success("Configuration saved successfully!");
     };
 
     const handleSaveGeminiKey = () => {
         if (!geminiKey) {
-            alert("Please enter a valid Gemini API key.");
+            toast.error("Please enter a valid Gemini API key.");
             return;
         }
         localStorage.setItem("pushdoc_byok_gemini_key", geminiKey);
         if (geminiKeyLabel) localStorage.setItem("pushdoc_byok_gemini_label", geminiKeyLabel);
         setIsGeminiCustom(true);
         setGeminiKeyStatus("Custom Gemini key saved securely in local browser storage.");
-        alert("Gemini custom key saved!");
+        toast.success("Gemini custom key saved!");
     };
 
     const handleClearGeminiKey = () => {
@@ -151,19 +153,19 @@ export default function App() {
         setGeminiKeyLabel("");
         setIsGeminiCustom(false);
         setGeminiKeyStatus("");
-        alert("Custom Gemini key cleared. Using Platform Managed Key.");
+        toast.info("Custom Gemini key cleared. Using Platform Managed Key.");
     };
 
     const handleSaveGroqKey = () => {
         if (!groqKey) {
-            alert("Please enter a valid Groq API key.");
+            toast.error("Please enter a valid Groq API key.");
             return;
         }
         localStorage.setItem("pushdoc_byok_groq_key", groqKey);
         if (groqKeyLabel) localStorage.setItem("pushdoc_byok_groq_label", groqKeyLabel);
         setIsGroqCustom(true);
         setGroqKeyStatus("Custom Groq key saved securely in local browser storage.");
-        alert("Groq custom key saved!");
+        toast.success("Groq custom key saved!");
     };
 
     const handleClearGroqKey = () => {
@@ -173,13 +175,14 @@ export default function App() {
         setGroqKeyLabel("");
         setIsGroqCustom(false);
         setGroqKeyStatus("");
-        alert("Custom Groq key cleared. Using Platform Managed Key.");
+        toast.info("Custom Groq key cleared. Using Platform Managed Key.");
     };
 
     const isAppPage = page !== "landing" && page !== "onboarding" && page !== "connect";
 
     return (
         <div className="min-h-screen bg-bg text-text-primary font-sans">
+            <Toaster position="top-right" richColors theme="dark" closeButton />
             {/* Global error banner */}
             {syncError && (
                 <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-danger/15 text-danger border border-danger/30 rounded-[6px] px-4 py-2 flex items-center gap-3 text-xs font-mono shadow-md min-w-[320px] max-w-lg">
