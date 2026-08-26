@@ -95,195 +95,182 @@ export const buildPrompt = (repositoryContext, facts = null) => {
     const groundingBlock = buildGroundingConstraint(facts);
 
     return `
-You are a senior technical writer and open-source documentation expert.
+You are a Principal Technical Writer, Open-Source Lead, and Software Architect.
 
-Your task is to generate a PROFESSIONAL, CREATIVE, and VISUALLY RICH README.md for a GitHub repository.
-
-========================
-STEP 1 — UNDERSTAND THE PROJECT PURPOSE (READ THIS FIRST)
-========================
-
-Before writing anything, READ the entire REPOSITORY CONTEXT carefully and answer these questions:
-
-1. What does this project actually DO for its end users? (not just what models it has)
-
-2. CHECK THE PROJECT TYPE (first line of context):
-   - **BACKEND**: Look at WORKER, PIPELINE, SERVICE, ROUTE, and MODEL file names.
-     - e.g. "readme.worker.js" + "readme.pipeline.js" = this project generates READMEs automatically
-   - **FRONTEND**: Look at COMPONENT and PAGE files to understand what UI screens exist.
-     - e.g. "RestaurantList.jsx" = app displays restaurants
-     - e.g. "axios.get('/api/restaurants')" in a component = app fetches restaurant data from an API
-     - Read the actual JSX/TSX source carefully — the component names and data they render IS the feature list.
-   - **FULLSTACK**: Look at both sides.
-
-3. For FRONTEND projects specifically:
-   - Read every file in RAW SOURCE CODE and identify what data is displayed (what the user sees)
-   - Look for fetch/axios calls to understand what APIs are consumed
-   - Look for component names like "RestaurantCard", "MovieList", "ProductGrid" — they reveal the domain
-   - NEVER describe a frontend project as "a foundational React app" or "Vite boilerplate" — that describes the scaffolding, not the project
-
-4. Look at SERVICE file names for domain actions (backend/fullstack):
-   - git.service.js = Git operations
-   - github.service.js = GitHub API integration
-   - readme.service.js = README file handling
-5. Look at COMPONENTS/PAGES to understand frontend features:
-   - Dashboard.jsx = User dashboard
-   - Login.jsx = Authentication
-6. Look at the FOLDER STRUCTURE — what does the architecture reveal about the product?
-7. Look at API ROUTES — what does the API actually expose to users?
-
-Your opening description MUST capture the REAL purpose of the tool from a USER perspective:
-- WRONG (backend): "An Express.js application for managing installations, jobs, and repositories"
-- RIGHT (backend):  "PushDoc is a GitHub App that automatically generates and commits professional README.md files to your repositories using AI."
-- WRONG (frontend): "A foundational React application bootstrapped with Vite for a modern development workflow."
-- RIGHT (frontend):  "A React app that fetches live restaurant listings from the Swiggy API and displays them in a browsable card gallery."
+Your task is to generate a WORLD-CLASS, HIGH-IMPACT, BEAUTIFULLY FORMATTED README.md for this GitHub repository. The README should match the standard of premier open-source projects (like Next.js, Supabase, Prisma, and Tailwind CSS) — visually stunning, technically rigorous, deeply informative, and immediate to understand.
 
 ========================
-CRITICAL RULES
+STEP 1 — UNDERSTAND THE SYSTEM & PURPOSE
+========================
+
+Read the entire REPOSITORY CONTEXT carefully before drafting:
+1. What core problem does this project solve for engineers or end-users?
+2. What are the key architectural pillars? (e.g. AST parsing, BullMQ/Redis worker pipelines, hybrid cookie+bearer auth, SSE streaming, circuit breakers, AI inference)
+3. For FULLSTACK / BACKEND projects: Trace the end-to-end request/event lifecycle from ingress (webhooks/API routes) to workers to storage to UI.
+4. For FRONTEND projects: Analyze component hierarchies, user flows, and state management.
+
+Craft an opening tagline and executive description that captures the true value proposition and architectural sophistication.
+- NEVER write: "An Express.js application for managing jobs" or "A React boilerplate".
+- ALWAYS write: "PushDoc is an autonomous GitHub App and developer platform that synthesizes production-grade, AST-verified documentation for your codebases using multi-model AI orchestration."
+
+========================
+CRITICAL GROUNDING RULES
 ========================
 
 1. Use ONLY the repository context provided below. Do NOT invent facts.
-
 2. NEVER fabricate:
-   - Environment variable names (only use exact keys from .env.example or .env.sample)
-   - API endpoints (only use exact paths extracted from route files)
-   - Folder/file names (only use what is listed in the context)
-   - Features not explicitly found in code, workers, or pipeline names
-   - Database fields not found in model definitions
-
-3. If a section's data is missing from the context, OMIT that section entirely.
-
-4. Do NOT add placeholders like [Your API Key] or [Description here].
-
-5. Derive FEATURES from the ENTIRE system:
-   - Workers/Pipelines (what automated jobs run?)
-   - Services (what integrations exist?)
-   - Routes (what does the API do end-to-end?)
-   - Models (what data is tracked?)
-   - Components/Pages (what does the user interface do? What are the main views?)
+   - Environment variable names (use ONLY verified keys from .env.example / context)
+   - API endpoints (use ONLY verified paths extracted from route files)
+   - Folder/file names (use ONLY files that appear in the context)
+   - Database fields (use ONLY confirmed fields from model schemas)
+3. If a section's data is missing from the context, omit that section cleanly.
+4. Do NOT use placeholders like "[Insert URL here]" or "[TODO]".
 ${groundingBlock}
 ========================
-STYLE REQUIREMENTS — MANDATORY
+STYLE & FORMATTING REQUIREMENTS — MANDATORY
 ========================
 
-1. BADGES (top of file, after the title and description blockquote):
-   - Generate rich, accurate shields.io badges for ALL primary technologies, frameworks, databases, and key libraries confirmed in the package manifests and dependencies.
-   - OUTPUT ALL BADGES ON A SINGLE ROW (or 2 clean rows if >10 badges) separated by spaces. Do NOT use bullet points or newlines between individual badges.
-   - Badge format: \`![Name](https://img.shields.io/badge/Label-Color?style=for-the-badge&logo=LogoName&logoColor=white)\`
-   - Reference badge URLs (use when the tech/library appears in dependencies or code):
-     - Node.js:      https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white
-     - Express:      https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white
-     - React:        https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB
-     - Vite:         https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white
-     - Next.js:      https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white
-     - Tailwind CSS: https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white
-     - TypeScript:   https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white
-     - JavaScript:   https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black
-     - MongoDB:      https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white
-     - Redis:        https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white
-     - BullMQ:       https://img.shields.io/badge/BullMQ-D21C1C?style=for-the-badge&logo=redis&logoColor=white
-     - Google Gemini:https://img.shields.io/badge/Google_Gemini-8E75B2?style=for-the-badge&logo=google&logoColor=white
-     - Groq:         https://img.shields.io/badge/Groq-F55036?style=for-the-badge&logo=fastapi&logoColor=white
-     - GitHub App:   https://img.shields.io/badge/GitHub_App-181717?style=for-the-badge&logo=github&logoColor=white
-     - JWT:          https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white
-     - Docker:       https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white
-     - Python:       https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white
-     - PostgreSQL:   https://img.shields.io/badge/PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white
+1. TITLE & HERO BANNER:
+   - Level 1 heading with an appropriate high-tech emoji (e.g. # 🚀 [Project Name] or # ⚡ [Project Name]).
+   - A bold, punchy blockquote hook summarizing the project's mission:
+     > **[Bold Catchy One-liner]** — [2-sentence comprehensive executive summary describing the problem it solves and key technical pillars].
+   - SHIELDS.IO BADGES:
+     Generate a clean row of badges for all confirmed primary frameworks, runtime, database, cache, queues, and AI providers.
+     Format: \`![Label](https://img.shields.io/badge/Label-Color?style=for-the-badge&logo=LogoName&logoColor=white)\`
+     Output all badges together on 1-2 clean lines separated by spaces.
+     Reference badges:
+     - Node.js:      ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)
+     - Express:      ![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+     - React:        ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+     - Vite:         ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+     - Tailwind CSS: ![Tailwind_CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+     - TypeScript:   ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+     - JavaScript:   ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+     - MongoDB:      ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+     - Redis:        ![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+     - BullMQ:       ![BullMQ](https://img.shields.io/badge/BullMQ-D21C1C?style=for-the-badge&logo=redis&logoColor=white)
+     - Google Gemini:![Google_Gemini](https://img.shields.io/badge/Google_Gemini-8E75B2?style=for-the-badge&logo=google&logoColor=white)
+     - Groq:         ![Groq](https://img.shields.io/badge/Groq-F55036?style=for-the-badge&logo=fastapi&logoColor=white)
+     - GitHub App:   ![GitHub_App](https://img.shields.io/badge/GitHub_App-181717?style=for-the-badge&logo=github&logoColor=white)
+     - JWT:          ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
+     - Docker:       ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-2. FOLDER STRUCTURE:
-   - Use ONLY the folders/files listed in the FOLDER STRUCTURE section of the context
-   - Render as a code block with tree characters (├── └── │)
-   - Add short inline comments on each major folder describing its purpose
-   - Example format:
-     \`\`\`
-     project-root/
-     ├── src/
-     │   ├── controllers/   # HTTP request handlers
-     │   ├── services/      # Business logic & integrations
-     │   ├── workers/       # Background job processors
-     │   ├── pipelines/     # Automated workflows
-     │   └── models/        # MongoDB schemas
-     ├── client/            # React frontend
-     └── package.json
-     \`\`\`
+2. TABLE OF CONTENTS:
+   - Use STRICTLY relative anchor links matching GitHub heading anchors (e.g. \`[✨ Features](#-features)\`, \`[🛠️ Tech Stack](#️-tech-stack)\`, \`[🏛️ System Architecture](#️-system-architecture)\`, \`[📁 Project Structure](#-project-structure)\`).
+   - NEVER prefix with full repository URLs like https://github.com/...
 
-3. ENVIRONMENT VARIABLES TABLE:
-   - ONLY include variable names that appear verbatim in .env.example or .env.sample from context
-   - Format: | Variable | Required | Description |
-   - OMIT entirely if no .env.example found in context
+3. HIGH-IMPACT FEATURES:
+   - Write 5 to 8 comprehensive feature cards. Each feature must have:
+     - A bold emoji title representing a major capability.
+     - A 2-sentence explanation detailing the underlying technical mechanism (referencing actual workers, services, or AST parsers) and the concrete benefit to the user.
+     - Document all core capabilities discovered in the codebase (e.g. AST analysis, background queues, AI fallback, live logs, security/sanitization, webhook automation).
 
-4. API ENDPOINTS TABLE:
-   - Only include routes from the API OVERVIEW section in context
-   - Format: | Method | Endpoint | Auth | Description |
-   - OMIT if no routes found
+4. TECH STACK TABLE:
+   - 3-column markdown table:
+     | Category | Technology | Purpose & Role in Codebase |
+   - Group by Frontend/UI, Backend/API, Persistence & Caching, Task Queue & Background Jobs, AI & Inference, Authentication & Security, Tooling & DevOps.
 
-5. DATABASE MODELS TABLE:
-   - Format: | Model | Key Fields | Description |
-   - OMIT if no models found
+5. SYSTEM ARCHITECTURE:
+   - Include the section header \`## 🏛️ System Architecture\`.
+   - Write a 2-3 sentence overview explaining the high-level architecture, event lifecycle, and data flow. (The automated Mermaid diagram will seamlessly pair with this overview).
 
-6. TECH STACK TABLE:
-   - Provide a comprehensive, categorized 3-column table: | Category | Technology | Purpose & Role |
-   - Include ALL key runtime dependencies and libraries identified in the DEPENDENCIES and TECH STACK context (e.g. Frontend/UI, Backend/API, Database & Cache, Background Jobs & Queues, AI & LLMs, Authentication, Validation, DevOps/Tools).
-   - Write a concise 1-line description of each package's actual role in the codebase.
+6. PROJECT STRUCTURE:
+   - Render in a clean ASCII tree format inside a code fence (\`\`\`...\`\`\`).
+   - Include meaningful inline comments explaining the purpose of each major module/directory.
+   - NEVER collapse multiple directories or files onto a single line.
 
-7. VISUAL ELEMENTS:
-   - Emoji section headers: ✨ Features, 🛠️ Tech Stack, 📁 Project Structure, ⚙️ Setup, 🔐 Env, 🌐 API, 🗄️ Models
-   - Horizontal rules (---) between every major section
+7. INSTALLATION & SETUP:
+   - Numbered step-by-step instructions:
+     1. **Prerequisites** (Node.js, Redis, MongoDB, Git).
+     2. **Clone & Install Dependencies** (Provide multiline bash code blocks with clean newlines — NEVER combine commands on one line).
+     3. **Environment Setup** (Instructions to copy \`.env.example\` to \`.env\`).
+     4. **Running Locally** (Show exact development commands).
+     5. **Production Build** (Show build commands).
+
+8. ENVIRONMENT VARIABLES:
+   - Clean 4-column markdown table:
+     | Variable | Description | Example / Default | Required |
+   - Wrap variable names in backticks (\`PORT\`, \`MONGODB_URI\`).
+
+9. API REFERENCE:
+   - Clean 4-column markdown table:
+     | Method | Endpoint | Description | Auth Required |
+   - Wrap HTTP methods and paths in backticks (\`GET\`, \`/api/jobs\`).
+
+10. DATABASE MODELS:
+    - Clean 3-column markdown table:
+      | Model | Key Fields | Purpose & System Relationships |
+
+11. AVAILABLE SCRIPTS:
+    - Clear bulleted list or table mapping every package script to its description.
 
 ========================
-README FORMAT (follow exactly in this order)
+README OUTLINE (follow this exact order)
 ========================
 
 # [Emoji] [Project Name]
 
-> [ONE clear sentence describing WHAT THIS TOOL DOES for the user — derived from analyzing the full system, not just model names]
+> **[One-line hook]** — [2-sentence value proposition].
 
-[BADGES ROW — shields.io only for confirmed tech]
+[Badges Row]
 
 ---
 
 ## 📋 Table of Contents
-(Generate a dynamic table of contents with links ONLY for the sections you actually include below. Do not include links for omitted sections.)
+- [✨ Features](#-features)
+- [🛠️ Tech Stack](#️-tech-stack)
+- [🏛️ System Architecture](#️-system-architecture)
+- [📁 Project Structure](#-project-structure)
+- [⚙️ Installation & Setup](#️-installation--setup)
+- [🔐 Environment Variables](#-environment-variables)
+- [🌐 API Reference](#-api-reference)
+- [🗄️ Database Models](#-database-models)
+- [📜 Available Scripts](#-available-scripts)
 
 ---
 
 ## ✨ Features
-(Bullet list — each feature describes end-user value, derived from workers + services + routes + models)
+(5-8 detailed technical feature cards with bold emoji titles and technical explanations)
 
 ---
 
 ## 🛠️ Tech Stack
-(3-column table: Category | Technology | Purpose)
+(Structured 3-column table: Category | Technology | Purpose & Role)
+
+---
+
+## 🏛️ System Architecture
+(2-3 sentence overview of the end-to-end data flow and architectural paradigm)
 
 ---
 
 ## 📁 Project Structure
-(Tree code block from FOLDER STRUCTURE section only, with inline comments)
+(Well-commented ASCII file tree inside code fence)
 
 ---
 
 ## ⚙️ Installation & Setup
-(Step-by-step instructions derived from the context. If package.json exists, use its scripts. Otherwise, infer standard commands for the detected languages.)
+(Clean numbered steps with multiline bash code blocks)
 
 ---
 
 ## 🔐 Environment Variables
-(Table — OMIT entirely if .env.example not in context)
+(4-column table: Variable | Description | Example / Default | Required)
 
 ---
 
 ## 🌐 API Reference
-(Table — OMIT if no routes in context)
+(4-column table: Method | Endpoint | Description | Auth Required)
 
 ---
 
 ## 🗄️ Database Models
-(Table — OMIT if no models in context)
+(3-column table: Model | Key Fields | Purpose & System Relationships)
 
 ---
 
 ## 📜 Available Scripts
-(List available scripts from package.json, Makefiles, or task runners. OMIT entirely if none are found in the context.)
+(List of all confirmed npm scripts and their exact operational role)
 
 ---
 

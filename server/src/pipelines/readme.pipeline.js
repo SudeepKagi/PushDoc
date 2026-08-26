@@ -83,15 +83,25 @@ export const generateReadme = async (
 
     let combinedReadme = rawReadme;
     if (architectureSection && !combinedReadme.includes("```mermaid")) {
-        if (combinedReadme.includes("## Project Structure")) {
+        const archHeaderRegex = /(##\s*[^\n]*System Architecture[^\n]*\n+)([\s\S]*?)(?=\n---\s*\n|\n##\s+|$)/i;
+        const structureRegex = /##\s*[^\n]*Project Structure/i;
+        const installRegex = /##\s*[^\n]*Installation/i;
+
+        if (archHeaderRegex.test(combinedReadme)) {
+            const cleanDiagram = architectureSection.replace(/^##\s*[^\n]*System Architecture\n+/i, "");
             combinedReadme = combinedReadme.replace(
-                /(## Project Structure[\s\S]*?)(---|\n## )/,
-                `$1\n---\n\n${architectureSection}\n\n$2`
+                archHeaderRegex,
+                `$1$2\n\n${cleanDiagram}\n\n`
             );
-        } else if (combinedReadme.includes("## Installation")) {
+        } else if (structureRegex.test(combinedReadme)) {
             combinedReadme = combinedReadme.replace(
-                "## Installation",
-                `${architectureSection}\n---\n\n## Installation`
+                structureRegex,
+                `${architectureSection}\n---\n\n$&`
+            );
+        } else if (installRegex.test(combinedReadme)) {
+            combinedReadme = combinedReadme.replace(
+                installRegex,
+                `${architectureSection}\n---\n\n$&`
             );
         } else {
             combinedReadme = `${combinedReadme}\n\n---\n\n${architectureSection}`;

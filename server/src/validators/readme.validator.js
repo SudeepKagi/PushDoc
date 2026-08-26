@@ -5,7 +5,7 @@ const REQUIRED_SECTIONS = [
     { name: "Features",            patterns: [/(feature)/i] },
     { name: "Tech Stack",           patterns: [/(tech|stack|technolog|dependenc)/i] },
     { name: "Installation",         patterns: [/(install)/i] },
-    { name: "Usage",                patterns: [/(usage|getting\s+started)/i] },
+    { name: "Usage",                patterns: [/(usage|getting\s+started|quick\s*start|setup|how\s+to\s+run|running)/i] },
 ];
 
 const PLACEHOLDER_PATTERNS = [
