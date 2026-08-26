@@ -2,7 +2,9 @@ import express from "express";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
-import { config } from "./config/app.config.js";
+import cookieParser from "cookie-parser";
+import { corsOptions } from "./config/cors.config.js";
+import { requireTrustedOriginForCookieSession } from "./middleware/csrf.middleware.js";
 
 import indexRouter from "./routes/index.route.js";
 import githubRouter from "./routes/github.route.js";
@@ -16,33 +18,9 @@ const app = express();
 // identifies real client IPs from X-Forwarded-For, not the proxy's IP.
 app.set("trust proxy", 1);
 
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (e.g. mobile apps, curl, server-to-server webhooks)
-        if (!origin) return callback(null, true);
+app.use(cors(corsOptions));
 
-        const allowed = Array.isArray(config.cors.origin) ? config.cors.origin : [config.cors.origin];
-
-        // Allow any specified origin, wildcard, or standard Vercel/Render frontend origins
-        if (
-            allowed.includes("*") ||
-            allowed.includes(origin) ||
-            origin.includes("localhost") ||
-            origin.includes("127.0.0.1") ||
-            origin.endsWith(".vercel.app") ||
-            origin.endsWith(".onrender.com")
-        ) {
-            return callback(null, true);
-        }
-
-        // Reject anything that didn't match the allowlist above
-        return callback(new Error(`Origin ${origin} not allowed by CORS`), false);
-    },
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
-}));
-
+app.use(cookieParser());
 app.use(
     express.json({
         verify: (req, res, buffer) => {
@@ -73,8 +51,8 @@ const apiLimiter = rateLimit({
 });
 
 app.use("/", indexRouter);
-app.use("/github", apiLimiter, githubRouter);
-app.use("/auth", authLimiter, authRouter);
+app.use("/github", apiLimiter, requireTrustedOriginForCookieSession, githubRouter);
+app.use("/auth", authLimiter, requireTrustedOriginForCookieSession, authRouter);
 app.use("/webhooks", webhookRouter);
 
 export default app;

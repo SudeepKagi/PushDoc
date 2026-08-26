@@ -7,6 +7,7 @@ import * as jobService from "../services/job.service.js";
 import * as logger from "../services/logger.service.js";
 import readmeQueue from "../queue/queue.js";
 import eventsService from "../services/events.service.js";
+import { belongsToInstallation } from "../services/authorization.service.js";
 import { config } from "../config/app.config.js";
 import fs from "fs";
 import path from "path";
@@ -219,8 +220,12 @@ export const getJobs = async (req, res) => {
 export const getJobLogs = async (req, res) => {
     try {
         const { jobId } = req.params;
+        const installation = await installationService.getInstallationByUser(req.user.userId);
+        if (!installation) {
+            return res.status(403).json({ success: false, message: "Unauthorized: No GitHub App installation found for your user account" });
+        }
         const job = await jobService.getJobById(jobId);
-        if (!job) {
+        if (!job || !belongsToInstallation(job.repository, installation)) {
             return res.status(404).json({ success: false, message: "Job not found" });
         }
 
@@ -276,7 +281,7 @@ export const getRepositoryReadme = async (req, res) => {
         }
 
         const repository = await repositoryService.getRepositoryById(repoId);
-        if (!repository) {
+        if (!repository || !belongsToInstallation(repository, installation)) {
             return res.status(404).json({
                 success: false,
                 message: "Repository not found"
@@ -398,8 +403,12 @@ export const triggerManualBuild = async (req, res) => {
 export const cancelJob = async (req, res) => {
     try {
         const { jobId } = req.params;
+        const installation = await installationService.getInstallationByUser(req.user.userId);
+        if (!installation) {
+            return res.status(403).json({ success: false, message: "Unauthorized: No GitHub App installation found for your user account" });
+        }
         const job = await jobService.getJobById(jobId);
-        if (!job) {
+        if (!job || !belongsToInstallation(job.repository, installation)) {
             return res.status(404).json({
                 success: false,
                 message: "Job not found",
