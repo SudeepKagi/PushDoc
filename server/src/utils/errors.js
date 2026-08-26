@@ -48,3 +48,14 @@ export class WorkspaceError extends AppError {
         super(message, 500);
     }
 }
+
+export class PipelineError extends AppError {
+    constructor(stage, message, originalError = null) {
+        super(`[${stage}] ${message}`, 500);
+        this.stage = stage;
+        this.originalError = originalError;
+        if (originalError?.stack) {
+            this.stack = `${this.stack}\nCaused by: ${originalError.stack}`;
+        }
+    }
+}
