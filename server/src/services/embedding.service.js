@@ -3,7 +3,6 @@ import { GoogleGenAI } from "@google/genai";
 import { config } from "../config/app.config.js";
 import * as cache from "./cache.service.js";
 
-const EMBEDDING_MODEL = "text-embedding-004";
 const MAX_CHUNK_LINES = 40;
 
 /**
@@ -18,6 +17,9 @@ const MAX_CHUNK_LINES = 40;
  */
 const contentSha = (text) =>
     crypto.createHash("sha1").update(text).digest("hex");
+
+export const embeddingCacheKey = (text, model = config.ai.embeddingModel, dimensions = config.ai.embeddingDimensions) =>
+    `embed:${model}:${dimensions}:${contentSha(text)}`;
 
 /**
  * Splits repository files into clean code chunks for embedding.
@@ -83,7 +85,7 @@ export const cosineSimilarity = (vecA, vecB) => {
 };
 
 /**
- * Generates embeddings for a batch of text chunks using Gemini text-embedding-004.
+ * Generates embeddings for repository chunks using the configured Gemini embedding model.
  *
  * Cache strategy: before each API call, check Redis for a stored vector keyed
  * by SHA-1(chunk.content). On a hit, use the cached vector (no API call). On a
@@ -100,8 +102,7 @@ export const buildVectorIndex = async (chunks) => {
 
     const ai = new GoogleGenAI({ apiKey });
     const ttl = config.cache.embeddingTtlSeconds;
-    // Cap candidate chunks to top 25 to guarantee fast sub-5s index creation
-    const targetChunks = (chunks || []).slice(0, 25);
+    const targetChunks = chunks || [];
 
     const BATCH_SIZE = 5;
     const indexedChunks = [];
@@ -111,8 +112,7 @@ export const buildVectorIndex = async (chunks) => {
         const batchResults = await Promise.all(
             batch.map(async (chunk) => {
                 try {
-                    const sha = contentSha(chunk.content);
-                    const cacheKey = `embed:${sha}`;
+                    const cacheKey = embeddingCacheKey(chunk.content);
 
                     // Step 1: Check cache
                     const cachedVector = await cache.get(cacheKey);
@@ -122,8 +122,9 @@ export const buildVectorIndex = async (chunks) => {
 
                     // Step 2: Call Gemini embedding API with 6s timeout guard
                     const embedPromise = ai.models.embedContent({
-                        model: EMBEDDING_MODEL,
+                        model: config.ai.embeddingModel,
                         contents: chunk.content,
+                        config: { outputDimensionality: config.ai.embeddingDimensions },
                     });
                     const timeoutPromise = new Promise((_, reject) =>
                         setTimeout(() => reject(new Error("Embedding timeout")), 6000)
@@ -136,8 +137,8 @@ export const buildVectorIndex = async (chunks) => {
                         return { ...chunk, vector: values };
                     }
                     return null;
-                } catch {
-                    return null;
+                } catch (error) {
+                    throw new Error(`Embedding failed for ${chunk.filePath}: ${error.message}`, { cause: error });
                 }
             })
         );
@@ -147,6 +148,10 @@ export const buildVectorIndex = async (chunks) => {
                 indexedChunks.push(res);
             }
         }
+    }
+
+    if (targetChunks.length > 0 && indexedChunks.length === 0) {
+        throw new Error("Embedding provider returned no usable vectors.");
     }
 
     return indexedChunks;

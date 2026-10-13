@@ -59,6 +59,8 @@ export const completeJob = async (
         generatedReadme,
         validationScore,
         validationWarnings,
+        aiReport,
+        pullRequestUrl,
     } = {}
 ) => {
     const job = await Job.findById(jobId).populate({
@@ -76,6 +78,8 @@ export const completeJob = async (
     if (generatedReadme !== undefined) job.generatedReadme = generatedReadme;
     if (validationScore !== undefined) job.validationScore = validationScore;
     if (validationWarnings !== undefined) job.validationWarnings = validationWarnings;
+    if (aiReport !== undefined) job.aiReport = aiReport;
+    if (pullRequestUrl !== undefined) job.pullRequestUrl = pullRequestUrl;
 
     await job.save();
 

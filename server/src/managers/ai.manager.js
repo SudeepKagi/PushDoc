@@ -1,7 +1,7 @@
 import CircuitBreaker from "opossum";
 import { AI_PROVIDERS } from "../config/ai.config.js";
 import { config } from "../config/app.config.js";
-import { shouldRetry } from "../utils/ai.utils.js";
+import { FAILURE_ACTION, getFailureAction } from "../utils/ai.utils.js";
 import * as logger from "../services/logger.service.js";
 import { AIProviderError } from "../utils/errors.js";
 
@@ -36,7 +36,7 @@ const providerBreakers = new Map();
 for (const provider of AI_PROVIDERS) {
     const breaker = new CircuitBreaker(
         // The function being protected: the raw provider generate call.
-        (prompt, apiKey) => provider.provider.generate(prompt, apiKey),
+        (prompt, apiKey) => provider.provider.generate(prompt, apiKey, provider),
         breakerOptions
     );
 
@@ -62,6 +62,11 @@ export const generateReadme = async (prompt) => {
 
         logger.info(`Trying AI provider: ${provider.name} (model: ${provider.model})`);
 
+        if (breaker?.opened) {
+            logger.warn(`${provider.name} circuit breaker is open — skipping provider`);
+            continue;
+        }
+
         let keyNumber = 1;
 
         for (const apiKey of provider.apiKeys) {
@@ -69,19 +74,12 @@ export const generateReadme = async (prompt) => {
                 logger.debug(`Using API key ${keyNumber}/${provider.apiKeys.length} for ${provider.name}`);
 
                 let response;
-                if (breaker && !breaker.opened) {
+                if (breaker) {
                     try {
                         response = await breaker.fire(prompt, apiKey);
                     } catch (fireErr) {
-                        if (fireErr.message?.includes("Breaker is open") || fireErr.name === "OpenCircuitError") {
-                            logger.warn(`${provider.name} breaker is open — attempting direct generation call`);
-                            response = await provider.provider.generate(prompt, apiKey);
-                        } else {
-                            throw fireErr;
-                        }
+                        throw fireErr;
                     }
-                } else {
-                    response = await provider.provider.generate(prompt, apiKey);
                 }
 
                 logger.success(`${provider.name} generated README successfully`);
@@ -91,11 +89,12 @@ export const generateReadme = async (prompt) => {
                 logger.warn(`${provider.name} key ${keyNumber} failed: ${error.message}`);
                 lastError = error;
 
-                if (!shouldRetry(error)) {
+                const action = getFailureAction(error);
+                if (action === FAILURE_ACTION.FATAL) {
                     logger.error(`Non-retryable error from ${provider.name}: ${error.message}`);
                     throw new AIProviderError(`AI generation failed (non-retryable) on ${provider.name}: ${error.message}`);
                 }
-
+                if (action === FAILURE_ACTION.FALLBACK) break;
                 keyNumber++;
             }
         }

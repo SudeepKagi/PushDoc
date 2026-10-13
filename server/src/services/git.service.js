@@ -99,6 +99,21 @@ export const commitChanges = async (
     }
 };
 
+export const createBranch = async (repositoryPath, branch, token) => {
+    validateRepoPath(repositoryPath);
+    const branchName = branch?.replace("refs/heads/", "").trim();
+    if (!branchName || /[\s;`"'$&<>|]/g.test(branchName)) {
+        throw new ValidationError(`Invalid branch name format: ${branch}`);
+    }
+    try {
+        const git = simpleGit(repositoryPath, { timeout: { block: GIT_TIMEOUT_MS } });
+        await git.checkoutLocalBranch(branchName);
+        return branchName;
+    } catch (error) {
+        throw handleGitError(error, token);
+    }
+};
+
 export const pushChanges = async (
     repositoryPath,
     branch,

@@ -56,6 +56,10 @@ const jobSchema = new mongoose.Schema(
         validationScore: Number,
 
         validationWarnings: [String],
+
+        aiReport: mongoose.Schema.Types.Mixed,
+
+        pullRequestUrl: String,
     },
     {
         timestamps: true,

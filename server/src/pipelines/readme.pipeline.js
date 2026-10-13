@@ -6,52 +6,67 @@ import * as factsExtractor from "../analyzers/facts.extractor.js";
 import * as critic from "../analyzers/critic.js";
 import * as diagramService from "../services/diagram.service.js";
 import * as aiService from "../services/ai.service.js";
+import * as aiClient from "../services/ai.client.js";
+import { config } from "../config/app.config.js";
+import * as snapshotService from "../services/snapshot.service.js";
 import * as validatorService from "../services/validator.service.js";
 import { validateReadme } from "../validators/readme.validator.js";
 import * as logger from "../services/logger.service.js";
 
 export const generateReadme = async (
     repositoryPath,
-    jobId
+    jobId,
+    generationContext = {}
 ) => {
+    const startedAt = performance.now();
+    const stageTimings = {};
+    const mark = (stage, started) => { stageTimings[stage] = Math.round(performance.now() - started); };
 
     logger.info(
         jobId,
         "Reading repository..."
     );
 
+    const readStarted = performance.now();
     const repository =
         repositoryReader.readRepository(
             repositoryPath
         );
+    mark("READING", readStarted);
 
     logger.info(
         jobId,
         "Analyzing repository..."
     );
 
+    const analysisStarted = performance.now();
     const knowledge =
         repositoryAnalyzer.analyzeRepository(
             repository
         );
+    mark("ANALYZING", analysisStarted);
 
     logger.info(
         jobId,
         "Extracting deterministic ground-truth facts..."
     );
 
+    const factsStarted = performance.now();
     const facts = factsExtractor.extractFacts(knowledge);
+    mark("FACTS", factsStarted);
 
     logger.info(
         jobId,
         "Building repository context..."
     );
 
+    const contextStarted = performance.now();
     const repositoryContext =
         await repositoryContextBuilder.buildRepositoryContext(
             repository,
             knowledge
         );
+    mark("CONTEXT", contextStarted);
 
     logger.info(
         jobId,
@@ -70,10 +85,33 @@ export const generateReadme = async (
         "Calling AI provider..."
     );
 
-    const rawReadme =
-        await aiService.generateReadme(
-            prompt
-        );
+    const generationStarted = performance.now();
+    const createAntigravityPayload = async () => ({
+        job_id: String(jobId), repo: generationContext.repo,
+        facts, existing_readme: generationContext.existingReadme || "",
+        snapshot_base64: await snapshotService.createSnapshot(repositoryPath),
+    });
+    let rawReadme;
+    let antigravityReport = null;
+    if (config.ai.backend === "antigravity") {
+        const result = await aiClient.generateReadmeWithAntigravity(await createAntigravityPayload());
+        if (!result.report?.gate_passed) throw new Error("Antigravity output did not pass its integrity gate.");
+        rawReadme = result.readme_markdown;
+        antigravityReport = result.report;
+    } else {
+        rawReadme = await aiService.generateReadme(prompt);
+        if (config.ai.backend === "shadow") {
+            try {
+                const result = await aiClient.generateReadmeWithAntigravity(await createAntigravityPayload());
+                antigravityReport = result.report;
+                logger.info(jobId, `Shadow AI run completed (gate: ${result.report?.gate_passed === true})`);
+            } catch (error) {
+                antigravityReport = { shadowError: error.message };
+                logger.warn(jobId, `Shadow AI run failed: ${error.message}`);
+            }
+        }
+    }
+    mark("GENERATION", generationStarted);
 
     logger.info(
         jobId,
@@ -162,6 +200,8 @@ export const generateReadme = async (
         facts,
         criticReport,
         structuralReport,
+        antigravityReport,
+        metrics: { ...stageTimings, TOTAL: Math.round(performance.now() - startedAt) },
     };
 
 };

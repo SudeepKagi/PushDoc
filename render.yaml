@@ -11,7 +11,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: SEPARATE_WORKER
-        value: "false"
+        value: "true"
       - key: PORT
         value: 10000
       - key: MONGODB_URI
@@ -38,11 +38,91 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
+      - key: AI_BACKEND
+        value: shadow
+      - key: AI_SERVICE_URL
+        value: https://pushdoc-ai.onrender.com
+      - key: AI_SERVICE_TOKEN
+        sync: false
       - key: CORS_ORIGIN
         value: https://push-doc.vercel.app,https://pushdoc-client.onrender.com
     healthCheckPath: /
 
-  # ── 2. PushDoc Frontend Static Site ─────────────────────────────────────────
+  - type: worker
+    name: pushdoc-worker
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm install --prefix server
+    startCommand: npm run worker --prefix server
+    envVars:
+      - key: SEPARATE_WORKER
+        value: "true"
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: GITHUB_APP_ID
+        sync: false
+      - key: GITHUB_APP_NAME
+        sync: false
+      - key: GITHUB_PRIVATE_KEY_PATH
+        value: /etc/secrets/pushdoc-private-key.pem
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_REDIRECT_URI
+        sync: false
+      - key: GITHUB_WEBHOOK_SECRET
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: AI_BACKEND
+        value: shadow
+      - key: AI_SERVICE_URL
+        value: https://pushdoc-ai.onrender.com
+      - key: AI_SERVICE_TOKEN
+        sync: false
+
+  # ── 2. AI sidecar ─────────────────────────────────────────────────────────
+  # A paid instance is intentional: free Render services have an ephemeral
+  # filesystem and cannot safely retain SQLite job/checkpoint state.
+  - type: web
+    name: pushdoc-ai
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: pushdoc-ai/Dockerfile
+    dockerContext: pushdoc-ai
+    healthCheckPath: /readyz
+    disk:
+      name: pushdoc-ai-state
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PUSHDOC_AI_SERVICE_TOKEN
+        sync: false
+      - key: PUSHDOC_ENABLE_LLM_DRAFTING
+        value: "true"
+      - key: PUSHDOC_AI_STATE_DB
+        value: /var/data/jobs.sqlite3
+      - key: PUSHDOC_AI_CHECKPOINT_DB
+        value: /var/data/checkpoints.sqlite3
+      - key: GEMINI_API_KEY_1
+        sync: false
+      - key: GEMINI_OPENAI_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai/
+      - key: GROQ_API_KEY_1
+        sync: false
+      - key: GROQ_BASE_URL
+        value: https://api.groq.com/openai/v1
+
+  # ── 3. PushDoc Frontend Static Site ─────────────────────────────────────────
   - type: web
     name: pushdoc-client
     runtime: static

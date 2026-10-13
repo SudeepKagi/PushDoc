@@ -18,6 +18,11 @@ export const IGNORE_DIRECTORIES = new Set([
     "temp",
     "uploads",
     "logs",
+    "venv",
+    ".venv",
+    "__pycache__",
+    "target",
+    "vendor",
 ]);
 
 /**

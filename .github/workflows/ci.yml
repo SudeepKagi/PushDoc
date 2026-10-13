@@ -53,3 +53,39 @@ jobs:
           npm audit --omit=dev
           npm audit --omit=dev --prefix server
           npm audit --omit=dev --prefix client
+
+  pushdoc-ai:
+    name: Python AI service
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: pushdoc-ai
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Lint Python
+        run: uv run ruff check src tests
+
+      - name: Test Python service
+        run: uv run pytest -q
+
+      - name: Audit Python dependencies
+        run: uvx pip-audit
+
+      - name: Build service container
+        run: docker build -t pushdoc-ai:test .

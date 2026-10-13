@@ -42,6 +42,11 @@ const repositorySchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        // Direct writes are opt-in. The safe default is a generated README pull request.
+        autoCommit: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,

@@ -2,7 +2,8 @@ import Groq from "groq-sdk";
 
 export const generate = async (
     prompt,
-    apiKey
+    apiKey,
+    { model, maxOutputTokens } = {}
 ) => {
 
     const groq = new Groq({
@@ -12,7 +13,7 @@ export const generate = async (
     const response =
         await groq.chat.completions.create({
 
-            model: "llama-3.3-70b-versatile",
+            model,
 
             messages: [
                 {
@@ -22,6 +23,7 @@ export const generate = async (
             ],
 
             temperature: 0.2,
+            max_tokens: maxOutputTokens,
 
         });
 
@@ -31,13 +33,17 @@ export const generate = async (
         throw new Error("Groq returned no choices.");
     }
 
-    if (choice.finish_reason && !["stop", "eos", "length"].includes(choice.finish_reason)) {
-        throw new Error(`Groq stopped early: ${choice.finish_reason}`);
+    if (choice.finish_reason && !["stop", "eos"].includes(choice.finish_reason)) {
+        const error = new Error(`Groq stopped early: ${choice.finish_reason}`);
+        error.code = choice.finish_reason === "length" ? "LENGTH" : "SAFETY";
+        throw error;
     }
 
     const content = choice.message?.content;
     if (!content || !content.trim()) {
-        throw new Error("Groq returned empty content.");
+        const error = new Error("Groq returned empty content.");
+        error.code = "EMPTY_OUTPUT";
+        throw error;
     }
 
     return content;

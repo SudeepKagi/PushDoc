@@ -1,0 +1,12 @@
+services:
+  pushdoc-ai:
+    build: .
+    env_file:
+      - ../server/.env
+    environment:
+      GEMINI_OPENAI_BASE_URL: https://generativelanguage.googleapis.com/v1beta/openai/
+      GROQ_BASE_URL: https://api.groq.com/openai/v1
+    ports:
+      - "8000:8000"
+  redis:
+    image: redis:7.4-alpine

@@ -41,8 +41,15 @@ export const config = {
             process.env.GROQ_API_KEY_1,
             process.env.GROQ_API_KEY_2,
         ].filter(Boolean),
-        geminiModel: "gemini-2.5-flash",
-        groqModel: "llama-3.3-70b-versatile",
+        // Model IDs are deployment configuration: providers retire and gate models.
+        geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+        groqModel: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+        embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-2",
+        embeddingDimensions: parseInt(process.env.GEMINI_EMBEDDING_DIMENSIONS || "768", 10),
+        maxOutputTokens: parseInt(process.env.AI_MAX_OUTPUT_TOKENS || "8192", 10),
+        backend: process.env.AI_BACKEND || "legacy",
+        serviceUrl: process.env.AI_SERVICE_URL,
+        serviceToken: process.env.AI_SERVICE_TOKEN,
     },
     cors: {
         origin: process.env.CORS_ORIGIN
@@ -161,6 +168,12 @@ export const validateConfig = () => {
     if (config.ai.geminiKeys.length === 0 && config.ai.groqKeys.length === 0) {
         throw new Error(
             `[ConfigError] No AI API keys loaded. Please provide at least one key for Gemini or Groq.`
+        );
+    }
+
+    if (config.ai.backend === "antigravity" && (!config.ai.serviceUrl || !config.ai.serviceToken)) {
+        throw new Error(
+            "[ConfigError] AI_BACKEND=antigravity requires AI_SERVICE_URL and AI_SERVICE_TOKEN."
         );
     }
 };

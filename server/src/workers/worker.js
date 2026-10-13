@@ -36,24 +36,29 @@ try {
 }
 
 // Register the BullMQ worker. This import starts listening for queued jobs.
-import "./readme.worker.js";
+import readmeWorker from "./readme.worker.js";
 
 logger.success("Worker process started and listening for jobs");
 
 // ── Graceful shutdown ──────────────────────────────────────────────────────
 // When the process receives SIGTERM (e.g. from a process manager or container
 // orchestrator), close the worker cleanly so in-flight jobs are not abandoned.
-process.on("SIGTERM", () => {
-    logger.info("Worker: SIGTERM received — shutting down gracefully");
-    // readme.worker.js exports the Worker instance; give BullMQ a chance to
-    // finish the current job before exiting.
-    process.exit(0);
-});
+let shuttingDown = false;
+const shutdown = async (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    logger.info(`Worker: ${signal} received — waiting for BullMQ to close`);
+    try {
+        await readmeWorker.close();
+        process.exit(0);
+    } catch (error) {
+        logger.error(`Worker shutdown failed: ${error.message}`);
+        process.exit(1);
+    }
+};
 
-process.on("SIGINT", () => {
-    logger.info("Worker: SIGINT received — shutting down gracefully");
-    process.exit(0);
-});
+process.on("SIGTERM", () => { void shutdown("SIGTERM"); });
+process.on("SIGINT", () => { void shutdown("SIGINT"); });
 
 process.on("unhandledRejection", (reason) => {
     logger.error(`Worker unhandled rejection: ${reason}`);

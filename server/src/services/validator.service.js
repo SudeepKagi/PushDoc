@@ -65,8 +65,5 @@ export const validateAndSanitizeReadme = (readme, knowledge) => {
         return fullMatch;
     });
 
-    // Clean up double spaces created by stripped badges
-    sanitized = sanitized.replace(/  +/g, " ");
-
     return sanitized;
 };

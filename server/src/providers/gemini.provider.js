@@ -1,11 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 
-export const generate = async (prompt, apiKey) => {
+import { config } from "../config/app.config.js";
+
+export const generate = async (prompt, apiKey, { model = config.ai.geminiModel, maxOutputTokens = config.ai.maxOutputTokens } = {}) => {
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model,
         contents: prompt,
+        config: { temperature: 0.2, maxOutputTokens },
     });
 
     const candidate = response.candidates?.[0];
@@ -16,9 +19,9 @@ export const generate = async (prompt, apiKey) => {
 
     // Surface *why* there's no content (safety block, token limit, etc.)
     if (candidate.finishReason && candidate.finishReason !== "STOP") {
-        throw new Error(
-            `Gemini stopped early: ${candidate.finishReason}`
-        );
+        const error = new Error(`Gemini stopped early: ${candidate.finishReason}`);
+        error.code = ["MAX_TOKENS", "SAFETY"].includes(candidate.finishReason) ? candidate.finishReason : "FALLBACK";
+        throw error;
     }
 
     const markdown =
@@ -27,7 +30,9 @@ export const generate = async (prompt, apiKey) => {
             .join("") ?? "";   // <-- fallback so markdown is always a string
 
     if (!markdown.trim()) {
-        throw new Error("Gemini returned empty content.");
+        const error = new Error("Gemini returned empty content.");
+        error.code = "EMPTY_OUTPUT";
+        throw error;
     }
 
     return markdown;
@@ -52,14 +57,15 @@ export const generateStructured = async (prompt, jsonSchema, apiKey) => {
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: config.ai.geminiModel,
         contents: prompt,
-        generationConfig: {
+        config: {
             responseMimeType: "application/json",
             responseSchema: jsonSchema,
             // Low temperature for structured extraction — we want deterministic
             // output that matches the schema, not creative variation.
             temperature: 0.1,
+            maxOutputTokens: config.ai.maxOutputTokens,
         },
     });
 

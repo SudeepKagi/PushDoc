@@ -37,6 +37,7 @@ const readmeWorker = new Worker(
         let repositoryPath;
         let originalReadme = "";
         let generatedReadme = "";
+        let pullRequestUrl;
 
         const {
             repositoryId,
@@ -178,10 +179,18 @@ const readmeWorker = new Worker(
                 "GENERATING"
             );
 
-            const { readme, knowledge, criticReport, structuralReport, metrics } =
+            const { readme, knowledge, criticReport, structuralReport, metrics, antigravityReport } =
                 await readmePipeline.generateReadme(
                     repositoryPath,
-                    jobId
+                    jobId,
+                    {
+                        repo: {
+                            full_name: repository.fullName,
+                            default_branch: branch.replace("refs/heads/", ""),
+                            commit_sha: commitSha,
+                        },
+                        existingReadme: originalReadme,
+                    }
                 );
 
             const allWarnings = [
@@ -196,27 +205,11 @@ const readmeWorker = new Worker(
                 structuralReport?.score ?? 100
             );
 
-            // Inject Quality Badge into README below the primary title
-            const badgeColor = lowestScore >= 90 ? "brightgreen" : lowestScore >= 75 ? "yellow" : "red";
-            const qualityBadge = `[![PushDoc Quality Score](https://img.shields.io/badge/PushDoc%20Quality-${lowestScore}%2F100-${badgeColor})](https://github.com/SudeepKagi/PushDoc)`;
-
-            let finalReadme = readme;
-            if (!finalReadme.includes("PushDoc%20Quality")) {
-                const lines = finalReadme.split("\n");
-                const h1Index = lines.findIndex(line => line.startsWith("# "));
-                if (h1Index !== -1) {
-                    lines.splice(h1Index + 1, 0, "", qualityBadge);
-                    finalReadme = lines.join("\n");
-                } else {
-                    finalReadme = `${qualityBadge}\n\n${finalReadme}`;
-                }
-            }
-
-            generatedReadme = finalReadme;
+            generatedReadme = readme;
 
             logger.success(
                 jobId,
-                `README generated (Quality: ${lowestScore}/100 | Critic: ${criticReport?.score ?? 100} | Structural: ${structuralReport?.score ?? 100} | Total: ${metrics?.TOTAL ?? 0}ms)`
+                `README generated (Critic: ${criticReport?.score ?? 100} | Structural: ${structuralReport?.score ?? 100} | Total: ${metrics?.TOTAL ?? 0}ms)`
             );
 
             if (await isJobCancelled(trackingJob._id)) {
@@ -229,9 +222,17 @@ const readmeWorker = new Worker(
                 "WRITING"
             );
 
+            const targetBranch = repository.autoCommit
+                ? branch
+                : `pushdoc/readme-${String(commitSha).slice(0, 7)}`;
+
+            if (!repository.autoCommit) {
+                await gitService.createBranch(repositoryPath, targetBranch, token);
+            }
+
             const { readmePath, filename } = await readmeService.writeReadme(
                 repositoryPath,
-                finalReadme
+                generatedReadme
             );
 
             logger.success(
@@ -270,14 +271,24 @@ const readmeWorker = new Worker(
 
                 await gitService.pushChanges(
                     repositoryPath,
-                    branch,
+                    targetBranch,
                     pushToken
                 );
 
-                logger.success(
-                    jobId,
-                    "README pushed"
-                );
+                if (repository.autoCommit) {
+                    logger.success(jobId, "README pushed directly because autoCommit is enabled");
+                } else {
+                    pullRequestUrl = await githubService.createReadmePullRequest({
+                        installationId: repository.installation.installationId,
+                        owner: repository.owner,
+                        repo: repository.name,
+                        head: targetBranch,
+                        base: branch.replace("refs/heads/", ""),
+                        commitSha,
+                        report: antigravityReport,
+                    });
+                    logger.success(jobId, `README pull request created: ${pullRequestUrl}`);
+                }
 
             } else {
 
@@ -300,6 +311,8 @@ const readmeWorker = new Worker(
                     generatedReadme,
                     validationWarnings: allWarnings,
                     validationScore: lowestScore,
+                    aiReport: antigravityReport,
+                    pullRequestUrl,
                 }
             );
 

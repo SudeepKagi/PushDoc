@@ -7,7 +7,8 @@ export const AI_PROVIDERS = [
         name: "Gemini",
         priority: 1,
         enabled: true,
-        model: "gemini-2.5-flash",
+        model: config.ai.geminiModel,
+        maxOutputTokens: config.ai.maxOutputTokens,
         provider: geminiProvider,
         apiKeys: config.ai.geminiKeys.length > 0 ? config.ai.geminiKeys : [
             process.env.GEMINI_API_KEY,
@@ -20,7 +21,8 @@ export const AI_PROVIDERS = [
         name: "Groq",
         priority: 2,
         enabled: true,
-        model: "llama-3.3-70b-versatile",
+        model: config.ai.groqModel,
+        maxOutputTokens: config.ai.maxOutputTokens,
         provider: groqProvider,
         apiKeys: config.ai.groqKeys.length > 0 ? config.ai.groqKeys : [
             process.env.GROQ_API_KEY,

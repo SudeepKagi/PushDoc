@@ -2,8 +2,6 @@ import { GoogleGenAI } from "@google/genai";
 import { config } from "../config/app.config.js";
 import { cosineSimilarity } from "./embedding.service.js";
 
-const EMBEDDING_MODEL = "text-embedding-004";
-
 /**
  * Performs semantic similarity search over an in-memory vector index.
  *
@@ -13,21 +11,24 @@ const EMBEDDING_MODEL = "text-embedding-004";
  * @returns {array} Top relevant chunks sorted by similarity
  */
 export const queryVectorIndex = async (vectorIndex, queryText, topK = 8) => {
-    if (!vectorIndex || vectorIndex.length === 0) return [];
+    if (!vectorIndex || vectorIndex.length === 0) {
+        throw new Error("Cannot query an empty embedding index.");
+    }
 
     const apiKey = config.ai.geminiKeys[0] || process.env.GEMINI_API_KEY;
-    if (!apiKey) return [];
+    if (!apiKey) throw new Error("No Gemini API key available for retrieval query.");
 
     const ai = new GoogleGenAI({ apiKey });
 
     try {
         const response = await ai.models.embedContent({
-            model: EMBEDDING_MODEL,
+            model: config.ai.embeddingModel,
             contents: queryText,
+            config: { outputDimensionality: config.ai.embeddingDimensions },
         });
 
         const queryVector = response.embedding?.values;
-        if (!queryVector) return [];
+        if (!queryVector) throw new Error("Embedding provider returned no query vector.");
 
         const scored = vectorIndex.map((chunk) => ({
             ...chunk,
@@ -37,8 +38,7 @@ export const queryVectorIndex = async (vectorIndex, queryText, topK = 8) => {
         scored.sort((a, b) => b.score - a.score);
 
         return scored.slice(0, topK);
-    } catch {
-        // Fallback to top-K chunks by file priority if embedding query fails
-        return vectorIndex.slice(0, topK);
+    } catch (error) {
+        throw new Error(`Retrieval query embedding failed: ${error.message}`, { cause: error });
     }
 };
