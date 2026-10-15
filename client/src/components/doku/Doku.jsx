@@ -25,8 +25,8 @@ const SWAP_SPRING = { type: "spring", duration: 0.35, bounce: 0 };
 // Only "working" moves on its own, so idle motion always means Doku is busy.
 const Doku = ({ pose = "wave", className = "" }) => (
   <img
-    src={POSES[pose] ?? POSES.wave}
-    alt=""
+    src="/mascot-full.png"
+    alt="Mascot"
     aria-hidden
     width={320}
     height={320}

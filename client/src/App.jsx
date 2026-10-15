@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
+import Landing from "./lib/pages/Landing";
 import Login from "./lib/pages/Login";
 import OauthVerify from "./lib/pages/OauthVerify";
 import Home from "./lib/pages/Home";
@@ -23,7 +24,7 @@ const App = () => {
         }}
       />
       <Routes>
-        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/oauth-success" element={<OauthVerify />} />
         <Route element={<DashboardLayout />}>
