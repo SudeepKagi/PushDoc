@@ -4,8 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Self-hosted Inter Display, served from client/public. Mirrors the
-   next/font/local setup in seo-client so both apps render identically. */
+/* Self-hosted Inter Display, served from client/public. */
 @font-face {
   font-family: "Inter Display";
   src: url("/inter-display.p.woff2") format("woff2");

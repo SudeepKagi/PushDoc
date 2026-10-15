@@ -27,7 +27,7 @@ body {
 .art {
   position: absolute;
   inset: 0;
-  background: url(../../../seo-client/public/background4.png) no-repeat;
+  background: url(../../../docs/images/banner.jpg) no-repeat;
   background-size: cover;
 }
 .shade {

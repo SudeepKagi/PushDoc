@@ -12,12 +12,10 @@ import {
   Check,
   Mail,
 } from "lucide-react";
-import SEO from "@/components/common/SEO";
 import { useRequireAuth } from "../../hooks/useRequireAuth";
 import { useAuth } from "../../context/auth-context";
 import { useRepos } from "../../hooks/useRepos";
 import { api, ENDPOINTS } from "../api";
-import { APP_ORIGIN, MARKETING_URL } from "../urls";
 import { usePostHog } from "@posthog/react";
 import { ThinkingOrb } from "@/components/ui/thinking-orb";
 import DeleteAccountModal from "@/components/profile/DeleteAccountModal";
@@ -73,7 +71,7 @@ const Profile = () => {
       posthog?.capture("account_deleted");
       posthog?.reset();
       localStorage.removeItem("accessToken");
-      window.location.href = MARKETING_URL;
+      window.location.href = "/login";
     } catch (error) {
       // The modal used to close silently here, so a failed delete was
       // indistinguishable from a successful one.
@@ -109,383 +107,375 @@ const Profile = () => {
   }
 
   return (
-    <>
-      <SEO
-        title="Profile - PushDoc"
-        description="Review your PushDoc account, GitHub connection, repository activity, and account settings."
-        ogUrl={`${APP_ORIGIN}/profile`}
-        canonical={`${APP_ORIGIN}/profile`}
-      />
-      <div className="relative min-h-screen overflow-x-hidden bg-linear-to-b from-white via-slate-50/70 to-white font-sans text-slate-900 selection:bg-blue-50">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute top-24 left-[-8rem] h-72 w-72 rounded-full bg-blue-100/60 blur-3xl" />
-          <div className="absolute top-56 right-[-7rem] h-80 w-80 rounded-full bg-sky-100/45 blur-3xl" />
-        </div>
+    <div className="relative min-h-screen overflow-x-hidden bg-linear-to-b from-white via-slate-50/70 to-white font-sans text-slate-900 selection:bg-blue-50">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute top-24 left-[-8rem] h-72 w-72 rounded-full bg-blue-100/60 blur-3xl" />
+        <div className="absolute top-56 right-[-7rem] h-80 w-80 rounded-full bg-sky-100/45 blur-3xl" />
+      </div>
 
-        <div className="relative mx-auto max-w-6xl px-4 pt-24 pb-16 sm:px-6 sm:pt-32 sm:pb-20">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="mb-10"
-          >
-            <div className="mb-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <div className="mb-3 flex items-center gap-2">
-                  <div className="h-1 w-8 rounded-full bg-blue-600" />
-                  <span className="font-mono text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">
-                    Profile System
+      <div className="relative mx-auto max-w-6xl px-4 pt-24 pb-16 sm:px-6 sm:pt-32 sm:pb-20">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="mb-10"
+        >
+          <div className="mb-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="mb-3 flex items-center gap-2">
+                <div className="h-1 w-8 rounded-full bg-blue-600" />
+                <span className="font-mono text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">
+                  Profile System
+                </span>
+              </div>
+              <h1 className="mb-3 text-3xl leading-none font-black tracking-tighter text-slate-900 uppercase sm:text-5xl">
+                Account Profile
+              </h1>
+              <p className="max-w-2xl text-sm font-medium tracking-tight text-slate-500 sm:text-base">
+                Manage your GitHub connection, monitor repository coverage, and
+                control account settings from the same operating surface as the
+                rest of the app.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="rounded-panel shadow-raised sm:rounded-panel-lg mb-8 border border-slate-200 bg-white/90 p-5 backdrop-blur-sm sm:p-8"
+        >
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-4 sm:gap-5">
+              <div className="relative shrink-0">
+                <img
+                  src={user.avatarUrl}
+                  alt={user.githubUsername}
+                  className="h-16 w-16 rounded-full border-2 border-slate-200 object-cover sm:h-20 sm:w-20"
+                />
+                {user.admin && (
+                  <span className="absolute right-0 bottom-0 flex h-5 w-5 items-center justify-center rounded-full border-[3px] border-white bg-blue-600">
+                    <Check size={10} className="text-white" />
                   </span>
-                </div>
-                <h1 className="mb-3 text-3xl leading-none font-black tracking-tighter text-slate-900 uppercase sm:text-5xl">
-                  Account Profile
-                </h1>
-                <p className="max-w-2xl text-sm font-medium tracking-tight text-slate-500 sm:text-base">
-                  Manage your GitHub connection, monitor repository coverage,
-                  and control account settings from the same operating surface
-                  as the rest of the app.
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="mb-1 font-mono text-[10px] font-black tracking-[0.24em] text-slate-400 uppercase">
+                  Connected Identity
+                </p>
+                <h2 className="truncate text-xl font-black tracking-tight text-slate-900 uppercase sm:text-2xl">
+                  {user.name || user.githubUsername}
+                </h2>
+                <p className="truncate text-sm text-slate-500">
+                  @{user.githubUsername}
                 </p>
               </div>
+
+              {user.admin && (
+                <span className="inline-flex items-center rounded-2xl bg-blue-600 px-3 py-1 text-xs font-medium text-white sm:text-sm">
+                  Admin
+                </span>
+              )}
             </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <a
+                href={`https://github.com/${user.githubUsername}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-100"
+              >
+                <Github size={16} />
+                GitHub Profile
+              </a>
+            </div>
+          </div>
+        </motion.div>
+
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-panel shadow-panel sm:rounded-panel-lg border border-slate-200/60 bg-white/90 p-4 sm:p-5"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <div className="rounded-xl bg-slate-100 p-2 text-slate-500">
+                <Github size={18} />
+              </div>
+              <TrendingUp size={14} className="text-slate-400" />
+            </div>
+            <p className="mb-1 text-xl font-black text-slate-900 sm:text-2xl">
+              {statsLoading ? (
+                <span className="inline-block h-6 w-8 animate-pulse rounded bg-slate-100 sm:h-8" />
+              ) : (
+                repos.length
+              )}
+            </p>
+            <p className="font-mono text-[10px] font-black tracking-[0.28em] text-slate-400 uppercase">
+              Total Repos
+            </p>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="rounded-panel shadow-raised sm:rounded-panel-lg mb-8 border border-slate-200 bg-white/90 p-5 backdrop-blur-sm sm:p-8"
+            transition={{ delay: 0.15 }}
+            className={`rounded-panel shadow-panel sm:rounded-panel-lg border p-4 sm:p-5 ${
+              hasActiveRepos
+                ? "border-blue-100 bg-blue-50/80"
+                : "border-slate-200/60 bg-white/90"
+            }`}
           >
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex min-w-0 items-center gap-4 sm:gap-5">
-                <div className="relative shrink-0">
-                  <img
-                    src={user.avatarUrl}
-                    alt={user.githubUsername}
-                    className="h-16 w-16 rounded-full border-2 border-slate-200 object-cover sm:h-20 sm:w-20"
-                  />
-                  {user.admin && (
-                    <span className="absolute right-0 bottom-0 flex h-5 w-5 items-center justify-center rounded-full border-[3px] border-white bg-blue-600">
-                      <Check size={10} className="text-white" />
-                    </span>
-                  )}
+            <div className="mb-3 flex items-center justify-between">
+              <div
+                className={`rounded-xl p-2 ${
+                  hasActiveRepos
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-100 text-slate-400"
+                }`}
+              >
+                <Zap size={18} />
+              </div>
+              {hasActiveRepos && (
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black tracking-[0.18em] text-blue-700 uppercase">
+                  Live
+                </span>
+              )}
+            </div>
+            <p
+              className={`mb-1 text-xl font-black sm:text-2xl ${
+                hasActiveRepos ? "text-blue-700" : "text-slate-500"
+              }`}
+            >
+              {statsLoading ? (
+                <span className="inline-block h-6 w-8 animate-pulse rounded bg-slate-100 sm:h-8" />
+              ) : (
+                activeReposCount
+              )}
+            </p>
+            <p className="font-mono text-[10px] font-black tracking-[0.28em] text-slate-400 uppercase">
+              Active Updates
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="rounded-panel shadow-panel sm:rounded-panel-lg border border-slate-200/60 bg-slate-50/80 p-4 sm:p-5"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <div className="rounded-xl bg-slate-100 p-2 text-slate-500">
+                <Clock size={18} />
+              </div>
+            </div>
+            <p className="mb-1 text-base font-black text-slate-900 sm:text-lg">
+              {user.autoReadmeEnabled ? "Real-time" : "Paused"}
+            </p>
+            <p className="font-mono text-[10px] font-black tracking-[0.28em] text-slate-400 uppercase">
+              Sync Status
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="rounded-panel sm:rounded-panel-lg border border-sky-100 bg-sky-50/80 p-4 shadow-[0_16px_40px_-28px_rgba(14,165,233,0.2)] sm:p-5"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <div className="rounded-xl bg-white/80 p-2 text-sky-700">
+                <Github size={18} />
+              </div>
+              <span className="h-2 w-2 rounded-full bg-sky-500" />
+            </div>
+            <p className="mb-1 text-xl font-black text-sky-700 sm:text-2xl">
+              {privateReposCount}
+            </p>
+            <p className="font-mono text-[10px] font-black tracking-[0.28em] text-slate-400 uppercase">
+              Private Repos
+            </p>
+          </motion.div>
+        </div>
+
+        <div className="mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="rounded-panel shadow-raised sm:rounded-panel-lg border border-slate-200 bg-white/90 p-5 backdrop-blur-sm sm:p-6"
+          >
+            <div className="mb-5 flex items-center gap-2">
+              <div className="h-1 w-6 rounded-full bg-blue-600" />
+              <span className="font-mono text-[10px] font-black tracking-[0.24em] text-slate-400 uppercase">
+                Integrations
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-tile flex items-center justify-between gap-4 border border-slate-200 bg-slate-50/80 p-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="rounded-xl bg-slate-900 p-2 text-white">
+                    <Github size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-800">
+                      GitHub
+                    </p>
+                    <p className="truncate text-[11px] text-slate-400">
+                      OAuth Connected
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="mb-1 font-mono text-[10px] font-black tracking-[0.24em] text-slate-400 uppercase">
-                    Connected Identity
+                <div className="flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">
+                  <Check size={12} />
+                  <span className="text-[10px] font-black tracking-[0.18em] uppercase">
+                    Active
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-tile border border-slate-200 bg-white p-4">
+                  <p className="mb-1 font-mono text-[10px] font-black tracking-[0.22em] text-slate-400 uppercase">
+                    Username
                   </p>
-                  <h2 className="truncate text-xl font-black tracking-tight text-slate-900 uppercase sm:text-2xl">
-                    {user.name || user.githubUsername}
-                  </h2>
-                  <p className="truncate text-sm text-slate-500">
+                  <p className="truncate text-sm font-semibold text-slate-900">
                     @{user.githubUsername}
                   </p>
                 </div>
-
-                {user.admin && (
-                  <span className="inline-flex items-center rounded-2xl bg-blue-600 px-3 py-1 text-xs font-medium text-white sm:text-sm">
-                    Admin
-                  </span>
-                )}
+                <div className="rounded-tile border border-slate-200 bg-white p-4">
+                  <p className="mb-1 font-mono text-[10px] font-black tracking-[0.22em] text-slate-400 uppercase">
+                    Auto README
+                  </p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {user.autoReadmeEnabled ? "Enabled" : "Disabled"}
+                  </p>
+                </div>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <a
-                  href={`https://github.com/${user.githubUsername}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-100"
+              <div className="rounded-tile flex items-center justify-between gap-4 border border-slate-200 bg-white p-4 sm:col-span-2">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="rounded-xl bg-slate-100 p-2 text-slate-500">
+                    <Mail size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-800">
+                      Email Notifications
+                    </p>
+                    <p className="truncate text-[11px] text-slate-400">
+                      README generation success &amp; failure emails
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={user.emailNotificationsEnabled ?? true}
+                  onClick={handleToggleEmailNotifications}
+                  disabled={isUpdatingNotifications}
+                  className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                    (user.emailNotificationsEnabled ?? true)
+                      ? "bg-blue-600"
+                      : "bg-slate-200"
+                  }`}
                 >
-                  <Github size={16} />
-                  GitHub Profile
-                </a>
+                  <span
+                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                      (user.emailNotificationsEnabled ?? true)
+                        ? "translate-x-5"
+                        : "translate-x-0"
+                    }`}
+                  />
+                </button>
               </div>
             </div>
           </motion.div>
+        </div>
 
-          <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="rounded-panel shadow-panel sm:rounded-panel-lg border border-slate-200/60 bg-white/90 p-4 sm:p-5"
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <div className="rounded-xl bg-slate-100 p-2 text-slate-500">
-                  <Github size={18} />
-                </div>
-                <TrendingUp size={14} className="text-slate-400" />
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="rounded-panel shadow-raised sm:rounded-panel-lg overflow-hidden border border-slate-200 bg-white/90 backdrop-blur-sm"
+        >
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            aria-expanded={showSettings}
+            className="flex w-full cursor-pointer items-center justify-between p-5 transition-colors hover:bg-slate-50 sm:p-6"
+          >
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-slate-100 p-2 text-slate-500">
+                <Settings size={18} />
               </div>
-              <p className="mb-1 text-xl font-black text-slate-900 sm:text-2xl">
-                {statsLoading ? (
-                  <span className="inline-block h-6 w-8 animate-pulse rounded bg-slate-100 sm:h-8" />
-                ) : (
-                  repos.length
-                )}
-              </p>
-              <p className="font-mono text-[10px] font-black tracking-[0.28em] text-slate-400 uppercase">
-                Total Repos
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className={`rounded-panel shadow-panel sm:rounded-panel-lg border p-4 sm:p-5 ${
-                hasActiveRepos
-                  ? "border-blue-100 bg-blue-50/80"
-                  : "border-slate-200/60 bg-white/90"
-              }`}
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <div
-                  className={`rounded-xl p-2 ${
-                    hasActiveRepos
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-100 text-slate-400"
-                  }`}
-                >
-                  <Zap size={18} />
-                </div>
-                {hasActiveRepos && (
-                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black tracking-[0.18em] text-blue-700 uppercase">
-                    Live
-                  </span>
-                )}
-              </div>
-              <p
-                className={`mb-1 text-xl font-black sm:text-2xl ${
-                  hasActiveRepos ? "text-blue-700" : "text-slate-500"
-                }`}
-              >
-                {statsLoading ? (
-                  <span className="inline-block h-6 w-8 animate-pulse rounded bg-slate-100 sm:h-8" />
-                ) : (
-                  activeReposCount
-                )}
-              </p>
-              <p className="font-mono text-[10px] font-black tracking-[0.28em] text-slate-400 uppercase">
-                Active Updates
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="rounded-panel shadow-panel sm:rounded-panel-lg border border-slate-200/60 bg-slate-50/80 p-4 sm:p-5"
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <div className="rounded-xl bg-slate-100 p-2 text-slate-500">
-                  <Clock size={18} />
-                </div>
-              </div>
-              <p className="mb-1 text-base font-black text-slate-900 sm:text-lg">
-                {user.autoReadmeEnabled ? "Real-time" : "Paused"}
-              </p>
-              <p className="font-mono text-[10px] font-black tracking-[0.28em] text-slate-400 uppercase">
-                Sync Status
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="rounded-panel sm:rounded-panel-lg border border-sky-100 bg-sky-50/80 p-4 shadow-[0_16px_40px_-28px_rgba(14,165,233,0.2)] sm:p-5"
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <div className="rounded-xl bg-white/80 p-2 text-sky-700">
-                  <Github size={18} />
-                </div>
-                <span className="h-2 w-2 rounded-full bg-sky-500" />
-              </div>
-              <p className="mb-1 text-xl font-black text-sky-700 sm:text-2xl">
-                {privateReposCount}
-              </p>
-              <p className="font-mono text-[10px] font-black tracking-[0.28em] text-slate-400 uppercase">
-                Private Repos
-              </p>
-            </motion.div>
-          </div>
-
-          <div className="mb-8">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="rounded-panel shadow-raised sm:rounded-panel-lg border border-slate-200 bg-white/90 p-5 backdrop-blur-sm sm:p-6"
-            >
-              <div className="mb-5 flex items-center gap-2">
-                <div className="h-1 w-6 rounded-full bg-blue-600" />
-                <span className="font-mono text-[10px] font-black tracking-[0.24em] text-slate-400 uppercase">
-                  Integrations
+              <div className="text-left">
+                <p className="font-mono text-[10px] font-black tracking-[0.22em] text-slate-400 uppercase">
+                  Settings
+                </p>
+                <span className="text-sm font-semibold text-slate-700">
+                  Account Settings
                 </span>
               </div>
+            </div>
+            <ChevronRight
+              size={18}
+              className={`text-slate-400 transition-transform duration-200 ${
+                showSettings ? "rotate-90" : ""
+              }`}
+            />
+          </button>
 
-              <div className="space-y-4">
-                <div className="rounded-tile flex items-center justify-between gap-4 border border-slate-200 bg-slate-50/80 p-4">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="rounded-xl bg-slate-900 p-2 text-white">
-                      <Github size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-800">
-                        GitHub
-                      </p>
-                      <p className="truncate text-[11px] text-slate-400">
-                        OAuth Connected
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">
-                    <Check size={12} />
-                    <span className="text-[10px] font-black tracking-[0.18em] uppercase">
-                      Active
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="rounded-tile border border-slate-200 bg-white p-4">
-                    <p className="mb-1 font-mono text-[10px] font-black tracking-[0.22em] text-slate-400 uppercase">
-                      Username
-                    </p>
-                    <p className="truncate text-sm font-semibold text-slate-900">
-                      @{user.githubUsername}
-                    </p>
-                  </div>
-                  <div className="rounded-tile border border-slate-200 bg-white p-4">
-                    <p className="mb-1 font-mono text-[10px] font-black tracking-[0.22em] text-slate-400 uppercase">
-                      Auto README
-                    </p>
-                    <p className="text-sm font-semibold text-slate-900">
-                      {user.autoReadmeEnabled ? "Enabled" : "Disabled"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-tile flex items-center justify-between gap-4 border border-slate-200 bg-white p-4 sm:col-span-2">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="rounded-xl bg-slate-100 p-2 text-slate-500">
-                      <Mail size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-800">
-                        Email Notifications
-                      </p>
-                      <p className="truncate text-[11px] text-slate-400">
-                        README generation success &amp; failure emails
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={user.emailNotificationsEnabled ?? true}
-                    onClick={handleToggleEmailNotifications}
-                    disabled={isUpdatingNotifications}
-                    className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                      (user.emailNotificationsEnabled ?? true)
-                        ? "bg-blue-600"
-                        : "bg-slate-200"
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                        (user.emailNotificationsEnabled ?? true)
-                          ? "translate-x-5"
-                          : "translate-x-0"
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="rounded-panel shadow-raised sm:rounded-panel-lg overflow-hidden border border-slate-200 bg-white/90 backdrop-blur-sm"
-          >
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              aria-expanded={showSettings}
-              className="flex w-full cursor-pointer items-center justify-between p-5 transition-colors hover:bg-slate-50 sm:p-6"
-            >
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-slate-100 p-2 text-slate-500">
-                  <Settings size={18} />
-                </div>
-                <div className="text-left">
-                  <p className="font-mono text-[10px] font-black tracking-[0.22em] text-slate-400 uppercase">
-                    Settings
-                  </p>
-                  <span className="text-sm font-semibold text-slate-700">
-                    Account Settings
-                  </span>
-                </div>
-              </div>
-              <ChevronRight
-                size={18}
-                className={`text-slate-400 transition-transform duration-200 ${
-                  showSettings ? "rotate-90" : ""
-                }`}
-              />
-            </button>
-
-            <AnimatePresence>
-              {showSettings && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div className="border-t border-slate-100 px-5 pt-3 pb-5 sm:px-6 sm:pb-6">
-                    <div className="rounded-panel border border-rose-100 bg-rose-50/60 p-4">
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle
-                          size={18}
-                          className="mt-0.5 shrink-0 text-rose-500"
-                        />
-                        <div className="flex-1">
-                          <h3 className="mb-1 text-sm font-black tracking-tight text-rose-900 uppercase">
-                            Danger Zone
-                          </h3>
-                          <p className="mb-3 text-xs text-rose-700/80">
-                            Permanently delete your account and all associated
-                            data. This action cannot be undone.
-                          </p>
-                          <button
-                            onClick={() => setShowDeleteModal(true)}
-                            className="cursor-pointer rounded text-xs font-semibold text-rose-700 underline underline-offset-2 transition-colors hover:text-rose-800"
-                          >
-                            Delete my account
-                          </button>
-                        </div>
+          <AnimatePresence>
+            {showSettings && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="border-t border-slate-100 px-5 pt-3 pb-5 sm:px-6 sm:pb-6">
+                  <div className="rounded-panel border border-rose-100 bg-rose-50/60 p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle
+                        size={18}
+                        className="mt-0.5 shrink-0 text-rose-500"
+                      />
+                      <div className="flex-1">
+                        <h3 className="mb-1 text-sm font-black tracking-tight text-rose-900 uppercase">
+                          Danger Zone
+                        </h3>
+                        <p className="mb-3 text-xs text-rose-700/80">
+                          Permanently delete your account and all associated
+                          data. This action cannot be undone.
+                        </p>
+                        <button
+                          onClick={() => setShowDeleteModal(true)}
+                          className="cursor-pointer rounded text-xs font-semibold text-rose-700 underline underline-offset-2 transition-colors hover:text-rose-800"
+                        >
+                          Delete my account
+                        </button>
                       </div>
                     </div>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        </div>
-
-        <DeleteAccountModal
-          open={showDeleteModal}
-          confirmText={deleteConfirmText}
-          onConfirmTextChange={setDeleteConfirmText}
-          deleting={isDeleting}
-          onClose={closeDeleteModal}
-          onConfirm={handleDelete}
-        />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
-    </>
+
+      <DeleteAccountModal
+        open={showDeleteModal}
+        confirmText={deleteConfirmText}
+        onConfirmTextChange={setDeleteConfirmText}
+        deleting={isDeleting}
+        onClose={closeDeleteModal}
+        onConfirm={handleDelete}
+      />
+    </div>
   );
 };
 

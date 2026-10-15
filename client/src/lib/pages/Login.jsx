@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/auth-context";
 import { ThinkingOrb } from "@/components/ui/thinking-orb";
 import { Github } from "lucide-react";
-
-import { MARKETING_URL } from "../urls";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -115,11 +113,10 @@ const Login = () => {
       </a>
 
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 sm:px-8">
-        {/* ── Masthead. Identity left, one field right, separated by space
-            rather than a rule. ───────────────────────────────────────────── */}
+        {/* ── Masthead. Identity left. ───────────────────────────────────────────── */}
         <header className="flex shrink-0 items-center justify-between gap-6 py-5">
-          <a
-            href={MARKETING_URL}
+          <Link
+            to="/login"
             aria-label="PushDoc home"
             className="flex items-center gap-1.5 rounded-md"
           >
@@ -133,13 +130,7 @@ const Login = () => {
             <span className="font-display text-base font-semibold tracking-tight text-slate-900">
               PushDoc
             </span>
-          </a>
-          <a
-            href={MARKETING_URL}
-            className={`${TYPE.caption} rounded-md text-slate-500 transition-colors hover:text-slate-900`}
-          >
-            Back to pushdoc.online
-          </a>
+          </Link>
         </header>
 
         <main

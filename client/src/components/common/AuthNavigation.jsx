@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, LogOut, Home, Activity, Menu, X, Shield } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/context/auth-context";
 import { usePostHog } from "@posthog/react";
-
-import { MARKETING_URL } from "@/lib/urls";
 
 const AuthNavigation = () => {
   const navigate = useNavigate();
@@ -43,7 +41,7 @@ const AuthNavigation = () => {
     posthog?.reset();
     logout();
     setShowDropdown(false);
-    window.location.href = MARKETING_URL;
+    navigate("/login");
   };
 
   return (
@@ -55,8 +53,8 @@ const AuthNavigation = () => {
           heading share a left edge instead of missing it by ~85px. */}
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         {/* Logo */}
-        <a
-          href={MARKETING_URL}
+        <Link
+          to="/home"
           aria-label="PushDoc home"
           className="flex shrink-0 cursor-pointer items-center gap-2 rounded-lg"
         >
@@ -70,7 +68,7 @@ const AuthNavigation = () => {
           <span className="font-display text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
             PushDoc
           </span>
-        </a>
+        </Link>
 
         {/* Navigation & User Menu */}
         <div className="flex items-center gap-2 sm:gap-3">

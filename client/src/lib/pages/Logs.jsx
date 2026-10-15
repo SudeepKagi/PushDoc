@@ -11,7 +11,6 @@ import {
   Layers,
 } from "lucide-react";
 import { useQuery } from "convex/react";
-import SEO from "@/components/common/SEO";
 import { useRequireAuth } from "../../hooks/useRequireAuth";
 import { api, ENDPOINTS } from "../api";
 import { usePostHog } from "@posthog/react";
@@ -20,7 +19,6 @@ import { ThinkingOrb } from "@/components/ui/thinking-orb";
 import LogRowSkeleton from "@/components/common/LogRowSkeleton";
 import DokuState from "@/components/doku/DokuState";
 import { logsEmptyState, logsErrorState } from "@/components/doku/dokuStates";
-import { APP_ORIGIN } from "../urls";
 
 const STATUS_CONFIG = {
   success: {
@@ -168,11 +166,6 @@ const Logs = () => {
 
   return (
     <>
-      <SEO
-        title="Activity Logs - PushDoc"
-        ogUrl={`${APP_ORIGIN}/logs`}
-        canonical={`${APP_ORIGIN}/logs`}
-      />
       <div className="relative min-h-screen overflow-x-hidden bg-linear-to-b from-white via-slate-50/70 to-white font-sans text-slate-900 selection:bg-sky-100">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute top-24 left-[-7rem] h-72 w-72 rounded-full bg-blue-100/55 blur-3xl" />

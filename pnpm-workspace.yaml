@@ -2,7 +2,6 @@ packages:
   - "client"
   - "server"
   - "convex-server"
-  - "seo-client"
 
 allowBuilds:
   core-js: false

@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import RepoCard from "@/components/repos/RepoCard";
 import RepoCardSkeleton from "@/components/repos/RepoCardSkeleton";
 import { RefreshCw, Search, X } from "lucide-react";
-import SEO from "@/components/common/SEO";
 import { useRequireAuth } from "../../hooks/useRequireAuth";
 import { useRepos } from "../../hooks/useRepos";
 import { usePostHog } from "@posthog/react";
@@ -13,7 +12,6 @@ import DokuState from "@/components/doku/DokuState";
 import { repoEmptyState, repoErrorState } from "@/components/doku/dokuStates";
 import ProviderPriorityControl from "@/components/repos/ProviderPriorityControl";
 import CommitTypeToggle from "@/components/repos/CommitTypeToggle";
-import { APP_ORIGIN } from "../urls";
 import { ThinkingOrb } from "@/components/ui/thinking-orb";
 
 const FILTER_TABS = [
@@ -130,12 +128,6 @@ const Home = () => {
 
   return (
     <>
-      <SEO
-        title="Dashboard - PushDoc | Manage Your Repositories"
-        description="Manage AI-powered README updates for your GitHub repositories. View, enable, and configure automatic documentation generation."
-        ogUrl={`${APP_ORIGIN}/home`}
-        canonical={`${APP_ORIGIN}/home`}
-      />
       <CleanupFeatureSpotlight
         open={showCleanupIntro}
         onDismiss={dismissCleanupIntro}

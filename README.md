@@ -18,7 +18,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Node.js-20+-5fa04e.svg" alt="Node.js 20+" />
   <img src="https://img.shields.io/badge/React-19-149eca.svg" alt="React 19" />
-  <img src="https://img.shields.io/badge/Next.js-16-black.svg" alt="Next.js 16" />
   <img src="https://img.shields.io/badge/Express-5-444444.svg" alt="Express 5" />
   <img src="https://img.shields.io/badge/BullMQ-Redis-dc382d.svg" alt="BullMQ on Redis" />
   <img src="https://img.shields.io/badge/Convex-live_logs-f3b01c.svg" alt="Convex live logs" />
@@ -98,8 +97,7 @@ Every step is pushed to Convex as it happens, so the dashboard updates without p
 
 | Part           | Folder           | What it does                                                 |
 | -------------- | ---------------- | ------------------------------------------------------------ |
-| Dashboard      | `client/`        | React 19 and Vite app at app.pushdoc.online                  |
-| Website        | `seo-client/`    | Next.js 16 landing site at pushdoc.online                    |
+| Frontend       | `client/`        | React 19 and Vite dashboard app                              |
 | API and worker | `server/`        | Express 5 API, webhook handler, BullMQ worker, LLM providers |
 | Live logs      | `convex-server/` | Convex functions that stream run messages to the dashboard   |
 
@@ -130,7 +128,6 @@ Create the environment files below, then start each part:
 ```sh
 pnpm dev:convex   # Convex functions
 pnpm dev          # dashboard on :5173 and API on :3000
-pnpm dev:seo      # marketing site, optional
 ```
 
 GitHub must be able to reach `/api/github/webhookhandler` to deliver pushes, so expose the API with a tunnel when running locally.
@@ -172,23 +169,13 @@ One Gemini key is enough. Blank key slots are skipped.
 </details>
 
 <details>
-<summary><b>Dashboard</b> &nbsp;<code>client/.env</code></summary>
+<summary><b>Frontend</b> &nbsp;<code>client/.env</code></summary>
 
 ```env
 VITE_BACKEND_URL=http://localhost:3000
 VITE_CONVEX_URL=https://your-convex-deployment.convex.cloud
 VITE_PUBLIC_POSTHOG_PROJECT_TOKEN=your_posthog_token
 VITE_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
-VITE_MARKETING_URL=http://localhost:3001
-```
-
-</details>
-
-<details>
-<summary><b>Website</b> &nbsp;<code>seo-client/.env</code></summary>
-
-```env
-NEXT_PUBLIC_APP_URL=http://localhost:5173
 ```
 
 </details>
