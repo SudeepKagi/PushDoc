@@ -106,6 +106,19 @@ export const addRepoActivity = async (req, res) => {
 
     const accessToken = decrypt(user.githubAccessToken);
 
+    const backendUrl = (
+      process.env.BACKEND_URL || "https://pushdoc-api.onrender.com"
+    ).replace(/\/+$/, "");
+    const webhookUrl = `${backendUrl}/api/github/webhookhandler`;
+
+    const webhookConfig = {
+      url: webhookUrl,
+      content_type: "json",
+    };
+    if (process.env.GITHUB_WEBHOOK_SECRET) {
+      webhookConfig.secret = process.env.GITHUB_WEBHOOK_SECRET;
+    }
+
     let webhookId;
     try {
       const webhookRes = await githubPost(
@@ -114,11 +127,7 @@ export const addRepoActivity = async (req, res) => {
           name: "web",
           active: true,
           events: ["push"],
-          config: {
-            url: `${process.env.BACKEND_URL}/api/github/webhookhandler`,
-            content_type: "json",
-            secret: process.env.GITHUB_WEBHOOK_SECRET,
-          },
+          config: webhookConfig,
         },
         accessToken,
       );
@@ -132,10 +141,11 @@ export const addRepoActivity = async (req, res) => {
             `${GITHUB_API_BASE}/repos/${repoOwner}/${repoName}/hooks`,
             accessToken,
           );
-          const webhookUrl = `${process.env.BACKEND_URL}/api/github/webhookhandler`;
-          const existing = hooksRes.data.find(
-            (h) => h.config?.url === webhookUrl,
-          );
+          const existing =
+            hooksRes.data.find((h) => h.config?.url === webhookUrl) ||
+            hooksRes.data.find((h) =>
+              h.config?.url?.includes("/api/github/webhookhandler"),
+            );
           if (existing) {
             webhookId = existing.id;
           } else {
@@ -149,9 +159,21 @@ export const addRepoActivity = async (req, res) => {
             .json({ message: "Webhook already exists for this repository" });
         }
       } else {
-        return res
-          .status(500)
-          .json({ message: "Error creating webhook", error: error.message });
+        const detail =
+          error.response?.data?.message ||
+          error.response?.data?.errors?.[0]?.message ||
+          error.message;
+        githubLog.error("Failed to create GitHub webhook", {
+          repo: `${repoOwner}/${repoName}`,
+          status: error.response?.status,
+          detail,
+          githubData: error.response?.data,
+        });
+        return res.status(error.response?.status || 500).json({
+          message: `Error creating webhook: ${detail}`,
+          error: detail,
+          githubError: error.response?.data,
+        });
       }
     }
     let activeRepo;

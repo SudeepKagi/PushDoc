@@ -11,10 +11,13 @@ import { ConvexProvider, ConvexReactClient } from "convex/react";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
 
-posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN, {
-  api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
-  defaults: "2026-01-30",
-});
+if (import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN) {
+  posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN, {
+    api_host:
+      import.meta.env.VITE_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
+    defaults: "2026-01-30",
+  });
+}
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

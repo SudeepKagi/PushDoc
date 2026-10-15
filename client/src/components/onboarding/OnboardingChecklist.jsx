@@ -736,7 +736,7 @@ const StepsView = ({
             </button>
           </div>
           <p className="mt-1 text-sm text-slate-600">
-            Hi, I'm Doku. Three quick steps and your README looks after itself.
+            Hi, I'm Aura. Three quick steps and your README looks after itself.
           </p>
           <ProgressBar steps={steps} />
         </div>

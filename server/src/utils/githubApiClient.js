@@ -6,6 +6,7 @@ export function githubHeaders(accessToken) {
   return {
     Authorization: `Bearer ${accessToken}`,
     Accept: "application/vnd.github+json",
+    "User-Agent": "PushDoc/1.0",
   };
 }
 
