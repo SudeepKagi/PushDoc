@@ -40,10 +40,10 @@ const CleanupButtonCallout = () => (
     className="pointer-events-none absolute right-4 bottom-[3.25rem] z-10 flex w-[34px] flex-col items-center sm:right-6 sm:bottom-[3.75rem]"
     aria-hidden
   >
-    <p className="mb-1 text-[10px] font-bold whitespace-nowrap text-blue-700">
+    <p className="mb-1 text-[10px] font-bold whitespace-nowrap text-indigo-700">
       Cleanup
     </p>
-    <div className="h-0 w-0 border-x-10 border-t-12 border-x-transparent border-t-[#1d4ed8]" />
+    <div className="h-0 w-0 border-x-10 border-t-12 border-x-transparent border-t-[#4f46e5]" />
   </motion.div>
 );
 

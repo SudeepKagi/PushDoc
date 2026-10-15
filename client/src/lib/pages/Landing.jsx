@@ -60,42 +60,42 @@ const STEPS = [
     Icon: Unplug,
     title: "Connect Repo",
     desc: "Link your GitHub repository once",
-    iconClass: "bg-[#D6EAFF] text-[#005FD6] border-[#A9D3FF]",
+    iconClass: "bg-indigo-50 text-indigo-600 border-indigo-200",
   },
   {
     Icon: Activity,
     title: "Push Code",
     desc: "Just code & commit as usual",
-    iconClass: "bg-[#D6EAFF] text-[#005FD6] border-[#A9D3FF]",
+    iconClass: "bg-indigo-50 text-indigo-600 border-indigo-200",
   },
   {
     Icon: ClipboardCheck,
     title: "README Updates",
     desc: "Docs sync automatically instantly",
-    iconClass: "bg-emerald-100 text-emerald-600 border-emerald-200",
+    iconClass: "bg-amber-50 text-amber-600 border-amber-200",
   },
 ];
 
 const RUN_STATUS_STYLES = {
   success: {
     label: "Success",
-    color: "text-blue-700",
-    bg: "bg-blue-50",
-    border: "border-blue-100",
+    color: "text-indigo-700",
+    bg: "bg-indigo-50",
+    border: "border-indigo-100",
     icon: <CheckCircle2 size={14} />,
   },
   ongoing: {
     label: "In Progress",
-    color: "text-sky-700",
-    bg: "bg-sky-50",
-    border: "border-sky-100",
+    color: "text-amber-700",
+    bg: "bg-amber-50",
+    border: "border-amber-100",
     icon: <RefreshCw size={14} className="animate-spin" />,
   },
   skipped: {
     label: "Skipped",
-    color: "text-amber-700",
-    bg: "bg-amber-50",
-    border: "border-amber-100",
+    color: "text-slate-600",
+    bg: "bg-slate-50",
+    border: "border-slate-100",
     icon: <SkipForward size={14} />,
   },
 };
@@ -203,7 +203,7 @@ function LineSvg({ className, delay = 0, color = "#F17463" }) {
   );
 }
 
-function StraightLine({ className, delay = 0, color = "#F17463" }) {
+function StraightLine({ className, delay = 0, color = "#f59e0b" }) {
   const glowId = useId();
   return (
     <svg
@@ -287,7 +287,7 @@ function PulseBorderIcon({ className }) {
           width="47"
           height="47"
           rx="2"
-          stroke="#3b82f6"
+          stroke="#4f46e5"
           strokeWidth="1"
           strokeLinecap="round"
           fill="none"
@@ -303,7 +303,7 @@ function PulseBorderIcon({ className }) {
           width="47"
           height="47"
           rx="2"
-          stroke="#a855f7"
+          stroke="#f59e0b"
           strokeWidth="1"
           strokeLinecap="round"
           fill="none"
@@ -357,7 +357,7 @@ export default function Landing() {
       };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 antialiased selection:bg-[#209BFF] selection:text-white">
+    <div className="min-h-screen bg-white font-sans text-slate-900 antialiased selection:bg-[#4F46E5] selection:text-white">
       {/* ── Resizable Navbar (Matching daemondoc) ─────────────────────────────── */}
       <motion.nav
         aria-label="Main"
@@ -619,7 +619,7 @@ export default function Landing() {
         {/* ── Browser Mock Window (Matching daemondoc Live Demo) ─────────────── */}
         <section className={cn("relative pt-20 lg:pt-28", SECTION_X)}>
           <div className="relative mx-auto max-w-5xl">
-            <div className="animate-pulse-slow absolute -inset-1 top-0 right-0 left-0 rounded-2xl bg-gradient-to-r from-[#209BFF] to-[#54A1FD] opacity-20 blur" />
+            <div className="animate-pulse-slow absolute -inset-1 top-0 right-0 left-0 rounded-2xl bg-gradient-to-r from-[#4F46E5] via-[#818CF8] to-[#F59E0B] opacity-25 blur-lg" />
 
             <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
               {/* Browser chrome header */}
@@ -754,7 +754,7 @@ export default function Landing() {
             SECTION_HEAD_GAP,
           )}
         >
-          <div className="text-sm font-semibold tracking-wide text-blue-600">
+          <div className="text-sm font-semibold tracking-wide text-indigo-600">
             Platform
           </div>
           <div className="text-2xl font-medium tracking-tighter text-slate-900 sm:text-3xl md:text-4xl">
@@ -772,7 +772,7 @@ export default function Landing() {
             {/* Card 1: ModelCard */}
             <div className="h-110 w-full overflow-hidden rounded-2xl border border-neutral-200 p-5 sm:rounded-none sm:border-0 sm:p-6">
               <div className="text-md flex items-center gap-2 font-semibold text-slate-900">
-                <BrainIcon className="size-4 text-blue-600" />
+                <BrainIcon className="size-4 text-indigo-600" />
                 Provider Priority &amp; Fallback
               </div>
               <div className="pt-2 text-sm leading-relaxed font-normal text-slate-500">
@@ -861,7 +861,7 @@ export default function Landing() {
                       <span className="font-mono text-slate-400">Key #2</span>
                     </div>
                     <div className="mt-1.5">
-                      <span className="rounded-xs border border-blue-500 bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
+                      <span className="rounded-xs border border-indigo-400 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">
                         Active
                       </span>
                     </div>
@@ -873,7 +873,7 @@ export default function Landing() {
             {/* Card 2: ChatCard */}
             <div className="h-110 w-full overflow-hidden rounded-2xl border border-neutral-200 p-5 sm:rounded-none sm:border-0 sm:p-6">
               <div className="text-md flex items-center gap-2 font-semibold text-slate-900">
-                <SquareMousePointer className="size-4 text-blue-600" />
+                <SquareMousePointer className="size-4 text-indigo-600" />
                 Watch Every Push, Live
               </div>
               <div className="pt-2 text-sm leading-relaxed font-normal text-slate-500">
@@ -932,7 +932,7 @@ export default function Landing() {
             {/* Card 3: IngestCard (Spans 2 columns on lg) */}
             <div className="h-auto w-full overflow-hidden rounded-2xl border border-neutral-200 p-5 sm:h-110 sm:rounded-none sm:border-0 sm:p-6 lg:col-span-2">
               <div className="text-md flex items-center gap-2 font-semibold text-slate-900">
-                <GitBranch className="size-4 text-blue-600" />
+                <GitBranch className="size-4 text-indigo-600" />
                 One Webhook, Smart Generation
               </div>
               <div className="pt-2 text-sm leading-relaxed font-normal text-slate-500">
@@ -943,37 +943,37 @@ export default function Landing() {
               <div className="mx-auto min-h-[73%] w-[calc(100%-10px)] pt-5">
                 <div className="flex flex-col gap-3 px-1 py-6 sm:hidden">
                   <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-3 shadow-xs">
-                    <FileText size={16} className="text-blue-500" />
+                    <FileText size={16} className="text-indigo-600" />
                     <span className="text-sm">Full Rewrite</span>
                   </div>
                   <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-3 shadow-xs">
-                    <GitPullRequest size={16} className="text-purple-500" />
+                    <GitPullRequest size={16} className="text-amber-500" />
                     <span className="text-sm">Section Patch</span>
                   </div>
                   <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-3 shadow-xs">
-                    <Network size={16} className="text-orange-500" />
+                    <Network size={16} className="text-indigo-400" />
                     <span className="text-sm">Cleanup Worker</span>
                   </div>
                 </div>
 
                 <div className="relative mx-auto hidden h-full max-w-2xl pt-4 sm:block sm:scale-110">
-                  <LineSvg className="top-16 left-32" color="#3b82f6" />
-                  <StraightLine className="top-28 left-32" />
+                  <LineSvg className="top-16 left-32" color="#4f46e5" />
+                  <StraightLine className="top-28 left-32" color="#f59e0b" />
                   <LineSvg
                     className="top-34 left-32 rotate-x-180"
-                    color="#a855f7"
+                    color="#818cf8"
                   />
 
                   <div className="absolute top-14 left-4 flex items-center gap-2 text-xs font-medium text-slate-700">
-                    <FileText size={15} className="text-blue-500" />
+                    <FileText size={15} className="text-indigo-600" />
                     Full Rewrite
                   </div>
                   <div className="absolute top-26 left-4 flex items-center gap-2 text-xs font-medium text-slate-700">
-                    <GitPullRequest size={15} className="text-purple-500" />
+                    <GitPullRequest size={15} className="text-amber-500" />
                     Section Patch
                   </div>
                   <div className="absolute top-38 left-4 flex items-center gap-2 text-xs font-medium text-slate-700">
-                    <Network size={15} className="text-orange-500" />
+                    <Network size={15} className="text-indigo-400" />
                     Cleanup Worker
                   </div>
 
@@ -993,7 +993,7 @@ export default function Landing() {
       >
         <div className="grid gap-10 lg:grid-cols-12 lg:gap-16 xl:gap-24">
           <div className="lg:col-span-5">
-            <p className="mb-3 text-sm font-semibold tracking-wide text-blue-600">
+            <p className="mb-3 text-sm font-semibold tracking-wide text-indigo-600">
               Questions, answered
             </p>
             <h2
@@ -1026,7 +1026,7 @@ export default function Landing() {
                         <span>{item.question}</span>
                         <span
                           aria-hidden="true"
-                          className="relative flex size-6 shrink-0 items-center justify-center text-blue-600"
+                          className="relative flex size-6 shrink-0 items-center justify-center text-indigo-600"
                         >
                           <span className="absolute h-px w-4 bg-current" />
                           <motion.span
@@ -1092,7 +1092,7 @@ export default function Landing() {
                   <li>
                     <a
                       href="#how-it-works"
-                      className="text-slate-600 transition-colors hover:text-blue-600"
+                      className="text-slate-600 transition-colors hover:text-indigo-600"
                     >
                       How it works
                     </a>
@@ -1100,7 +1100,7 @@ export default function Landing() {
                   <li>
                     <a
                       href="#features"
-                      className="text-slate-600 transition-colors hover:text-blue-600"
+                      className="text-slate-600 transition-colors hover:text-indigo-600"
                     >
                       Features
                     </a>
@@ -1108,7 +1108,7 @@ export default function Landing() {
                   <li>
                     <a
                       href="#faq"
-                      className="text-slate-600 transition-colors hover:text-blue-600"
+                      className="text-slate-600 transition-colors hover:text-indigo-600"
                     >
                       FAQ
                     </a>
