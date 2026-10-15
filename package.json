@@ -1,47 +1,43 @@
 {
-  "name": "pushdoc",
+  "name": "PushDoc",
   "version": "1.0.0",
-  "description": "PushDoc — Autonomous AI-powered README generation engine for GitHub repositories",
+  "description": "",
   "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "type": "module",
   "scripts": {
-    "test": "npm test --prefix server",
-    "build:client": "npm run build --prefix client",
-    "start:server": "npm start --prefix server",
-    "start:worker": "npm run worker --prefix server",
-    "build": "npm run build:client",
-    "start": "npm run start:server"
+    "dev": "concurrently \"npm run dev:client\"  \"npm run dev:server\"",
+    "prepare": "husky",
+    "install:all": "pnpm install",
+    "dev:client": "pnpm --filter client dev",
+    "dev:server": "pnpm --filter server dev",
+    "dev:seo": "pnpm --filter seo-client dev",
+    "dev:convex": "pnpm --filter convex-server exec convex dev",
+    "build:client": "pnpm --filter client build",
+    "build:seo": "pnpm --filter seo-client build",
+    "start:server": "pnpm --filter server start",
+    "test": "pnpm -r --if-present run test",
+    "commitlint": "commitlint --edit",
+    "format:check": "prettier --check .",
+    "format:write": "prettier --write .",
+    "lint": "pnpm -r --if-present run lint",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "build": "pnpm -r --if-present run build"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/SudeepKagi/PushDoc.git"
-  },
-  "keywords": [
-    "github-app",
-    "ai",
-    "readme-generator",
-    "ast-analysis",
-    "gemini",
-    "groq",
-    "bullmq",
-    "rag"
-  ],
-  "author": "Sudeep Kagi",
+  "keywords": [],
+  "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/SudeepKagi/PushDoc/issues"
+  "engines": {
+    "node": ">=20"
   },
-  "homepage": "https://github.com/SudeepKagi/PushDoc#readme",
+  "packageManager": "pnpm@10.20.0",
   "devDependencies": {
-    "nodemon": "^3.1.14"
-  },
-  "dependencies": {
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "morgan": "^1.11.0",
-    "simple-git": "^3.36.0"
+    "@commitlint/cli": "^21.0.1",
+    "@commitlint/config-conventional": "^21.0.1",
+    "concurrently": "^10.0.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
+    "wait-on": "^9.1.0"
   }
 }

@@ -1,54 +1,37 @@
-# ── Dependencies ────────────────────────────────────────────
-**/node_modules/
-
-# ── Environment & Secrets ────────────────────────────────────
-**/.env
-**/.env.*
-!**/.env.example
-
-# ── GitHub App Private Keys ──────────────────────────────────
-server/keys/
-*.pem
-
-# ── Temp / Workspaces (cloned repos & logs) ──────────────────
-temp/
-server/temp/
-server/prompt.txt
-
-# ── Logs ─────────────────────────────────────────────────────
+# Environments and secrets
+.env
+.env*
+.env.*
+*.env
+logs
+.pnpm-store
 *.log
-logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# ── Build Output ─────────────────────────────────────────────
-**/dist/
-**/build/
 
-# ── Parcel Cache ─────────────────────────────────────────────
-.parcel-cache/
-client/.parcel-cache/
+node_modules
+**/package-lock.json
+**/bun.lock
+dist
+dist-ssr
+*.local
 
-# ── Vite Cache ───────────────────────────────────────────────
-.vite/
-
-# ── OS Files ─────────────────────────────────────────────────
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-Thumbs.db
-desktop.ini
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# ── IDE / Editor ─────────────────────────────────────────────
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# ── Scratch / Untitled Files ──────────────────────────────────
-**/Untitled-*.txt
-**/Untitled-*.js
-**/*.scratch.*
-
-# ── Stitch Assets (design tool output, not source) ───────────
-stitch_assets/
-
-# ── Local Agent / Scratch Documentation ──────────────────────
-CHANGELOG.md
+.claude
+CLAUDE.md
+.env-share
+LLM_FLOW.md

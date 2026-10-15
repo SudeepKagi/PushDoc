@@ -1,0 +1,344 @@
+import axios from "axios";
+import jwt from "jsonwebtoken";
+import User, {
+  SUPPORTED_COMMIT_TYPES,
+  SUPPORTED_LLM_PROVIDERS,
+} from "../schema/user.schema.js";
+import Provider from "../schema/provider.schema.js";
+import ActiveRepo from "../schema/activeRepo.js";
+import UserLogModel from "../schema/userLog.schema.js";
+import { encrypt, decrypt } from "../utils/crypto.js";
+import { GITHUB_API_BASE, githubDelete } from "../utils/githubApiClient.js";
+import { redis } from "../utils/redis.js";
+import { authLog as log } from "../utils/logger.js";
+
+export { encrypt, decrypt };
+
+const generateAccessToken = (userId) =>
+  jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+export const githubAuthRedirect = (req, res) => {
+  const githubClientId = process.env.GITHUB_CLIENT_ID;
+  const redirectUri = process.env.GITHUB_CALLBACK_URL;
+  const authUrl =
+    `https://github.com/login/oauth/authorize` +
+    `?client_id=${githubClientId}` +
+    `&redirect_uri=${redirectUri}` +
+    `&scope=repo read:user user:email`;
+  res.redirect(authUrl);
+};
+
+export const githubCallBack = async (req, res) => {
+  const authCode = req.query.code;
+  try {
+    const tokenRes = await axios.post(
+      "https://github.com/login/oauth/access_token",
+      {
+        code: authCode,
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        redirect_uri: process.env.GITHUB_CALLBACK_URL,
+      },
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const accessToken = tokenRes.data.access_token;
+
+    const userInfoRes = await axios.get("https://api.github.com/user", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const userInfo = userInfoRes.data;
+    const primaryEmail = await getGithubPrimaryEmail(accessToken);
+
+    let user;
+    try {
+      const result = await createOAuthUser(userInfo, accessToken, primaryEmail);
+      user = result.user;
+    } catch (error) {
+      log.error("OAuth user creation failed", { detail: error.message });
+      return res
+        .status(500)
+        .json({ message: "Error creating OAuth user", error: error.message });
+    }
+
+    if (!user || !user._id) {
+      log.error("OAuth user creation returned an invalid user object");
+      return res
+        .status(500)
+        .json({ message: "Failed to create or retrieve user" });
+    }
+
+    let accessTokenJWT;
+    try {
+      accessTokenJWT = generateAccessToken(user._id.toString());
+    } catch (error) {
+      return res.status(500).json({ message: "Error generating JWT", error });
+    }
+
+    const redirectUrl = `${process.env.FRONTEND_URL}/oauth-success#accessToken=${accessTokenJWT}`;
+    res.redirect(302, redirectUrl);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error during github OAuth callback", error });
+  }
+};
+
+const getGithubPrimaryEmail = async (accessToken) => {
+  try {
+    const emailRes = await axios.get("https://api.github.com/user/emails", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github+json",
+      },
+    });
+
+    const emails = Array.isArray(emailRes.data) ? emailRes.data : [];
+    const primaryVerified = emails.find((e) => e.primary && e.verified);
+    const verified = emails.find((e) => e.verified);
+    const first = emails[0];
+
+    return primaryVerified?.email || verified?.email || first?.email || null;
+  } catch {
+    // Some accounts may not expose email even with scope; continue without blocking login.
+    return null;
+  }
+};
+
+export const createOAuthUser = async (
+  profile,
+  access_token,
+  primaryEmail = null,
+) => {
+  let user = await User.findOne({ githubId: profile.id });
+
+  if (!user) {
+    user = new User({
+      githubId: profile.id,
+      onboarding: { startedAt: new Date() },
+    });
+  }
+
+  user.githubUsername = profile.login;
+  user.avatarUrl = profile.avatar_url;
+  user.githubAccessToken = encrypt(access_token);
+
+  if (profile.email || primaryEmail) {
+    user.email = profile.email || primaryEmail;
+  }
+
+  await user.save();
+
+  return { user };
+};
+
+export const verifyUser = async (req, res) => {
+  const userId = req.userId;
+  try {
+    const user = await User.findById(userId).select("-__v -githubAccessToken");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    return res.status(200).json({ user });
+  } catch (error) {
+    log.error("User verification failed", { detail: error.message });
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getProviders = async (_req, res) => {
+  try {
+    const providers = await Provider.find()
+      .sort({ order: 1 })
+      .select("-__v -createdAt -updatedAt")
+      .lean();
+    return res.status(200).json({ providers });
+  } catch (error) {
+    log.error("Failed to fetch LLM providers", { detail: error.message });
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updateLlmProviderPriority = async (req, res) => {
+  const userId = req.userId;
+  const { llmProviderPriority } = req.body;
+
+  if (!Array.isArray(llmProviderPriority)) {
+    return res
+      .status(400)
+      .json({ message: "llmProviderPriority must be an array" });
+  }
+
+  const unsupported = llmProviderPriority.filter(
+    (provider) => !SUPPORTED_LLM_PROVIDERS.includes(provider),
+  );
+  if (unsupported.length > 0) {
+    return res
+      .status(400)
+      .json({ message: `Unsupported provider(s): ${unsupported.join(", ")}` });
+  }
+
+  const hasDuplicates =
+    new Set(llmProviderPriority).size !== llmProviderPriority.length;
+  if (hasDuplicates) {
+    return res
+      .status(400)
+      .json({ message: "llmProviderPriority contains duplicate providers" });
+  }
+
+  if (llmProviderPriority.length !== SUPPORTED_LLM_PROVIDERS.length) {
+    return res.status(400).json({
+      message: `llmProviderPriority must include all providers: ${SUPPORTED_LLM_PROVIDERS.join(
+        ", ",
+      )}`,
+    });
+  }
+
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { llmProviderPriority },
+      { new: true, runValidators: true },
+    ).select("-__v -githubAccessToken");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({
+      user,
+      llmProviderPriority: user.llmProviderPriority,
+    });
+  } catch (error) {
+    log.error("Failed to update LLM provider priority", {
+      userId,
+      detail: error.message,
+    });
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updateEmailNotifications = async (req, res) => {
+  const userId = req.userId;
+  const { emailNotificationsEnabled } = req.body;
+
+  if (typeof emailNotificationsEnabled !== "boolean") {
+    return res
+      .status(400)
+      .json({ message: "emailNotificationsEnabled must be a boolean" });
+  }
+
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { emailNotificationsEnabled },
+      { new: true, runValidators: true },
+    ).select("-__v -githubAccessToken");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({
+      user,
+      emailNotificationsEnabled: user.emailNotificationsEnabled,
+    });
+  } catch (error) {
+    log.error("Failed to update email notification preference", {
+      userId,
+      detail: error.message,
+    });
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const logout = async (req, res) => {
+  res.status(200).json({ message: "Logged out successfully" });
+};
+
+export const deleteAccount = async (req, res) => {
+  const userId = req.userId;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const accessToken = decrypt(user.githubAccessToken);
+    const activeRepos = await ActiveRepo.find({ userId });
+
+    for (const repo of activeRepos) {
+      try {
+        await githubDelete(
+          `${GITHUB_API_BASE}/repos/${repo.repoOwner}/${repo.repoName}/hooks/${repo.webhookId}`,
+          accessToken,
+        );
+      } catch (webhookError) {
+        if (webhookError.response?.status !== 404) {
+          log.warn("Failed to delete webhook during account deletion", {
+            repo: `${repo.repoOwner}/${repo.repoName}`,
+            detail: webhookError.message,
+          });
+        }
+      }
+    }
+    await User.deleteOne({ _id: userId });
+    await UserLogModel.deleteMany({ userId });
+    await ActiveRepo.deleteMany({ userId });
+    await redis.del("admin_analytics");
+    return res.status(200).json({ message: "Account deleted successfully" });
+  } catch (error) {
+    log.error("Account deletion failed", {
+      userId,
+      detail: error.message,
+    });
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updatePreferredCommitType = async (req, res) => {
+  const userId = req.userId;
+  const { preferredCommitType } = req.body;
+
+  if (!SUPPORTED_COMMIT_TYPES.includes(preferredCommitType)) {
+    return res.status(400).json({
+      message: `preferredCommitType must be one of: ${SUPPORTED_COMMIT_TYPES.join(
+        ", ",
+      )}`,
+    });
+  }
+
+  try {
+    // Picking a commit type, even the default one, is the deliberate choice
+    // the onboarding checklist waits for.
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        preferredCommitType,
+        "onboarding.commitTypeConfirmedAt": new Date(),
+      },
+      { new: true, runValidators: true },
+    ).select("preferredCommitType");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res
+      .status(200)
+      .json({ preferredCommitType: user.preferredCommitType });
+  } catch (error) {
+    log.error("Failed to update preferred commit type", {
+      userId,
+      detail: error.message,
+    });
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

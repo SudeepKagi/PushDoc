@@ -1,171 +1,388 @@
-import { getGitHubApp as getConfiguredGitHubApp } from "../config/github.js";
-import { GitHubError } from "../utils/errors.js";
+import {
+  GITHUB_API_BASE,
+  githubGet,
+  githubPost,
+  githubPut,
+} from "../utils/githubApiClient.js";
+import { getLanguageFromExtension } from "../utils/langMap.js";
+import { IGNORED_DIR_PATTERNS } from "../utils/scan.filters.js";
+import { githubLog as log } from "../utils/logger.js";
 
-const githubApp = () => {
-    try {
-        return getConfiguredGitHubApp();
-    } catch {
-        throw new GitHubError("GitHub App is not configured", 503);
-    }
-};
+/**
+ * Get commit diff between two commits
+ * @param {string} accessToken - GitHub access token
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {string} baseSha - Base commit SHA
+ * @param {string} headSha - Head commit SHA
+ * @returns {Promise<Object>} Commit comparison data
+ */
+export async function getCommitDiff(
+  accessToken,
+  owner,
+  repo,
+  baseSha,
+  headSha,
+) {
+  try {
+    const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/compare/${baseSha}...${headSha}`;
+    const response = await githubGet(url, accessToken);
 
-export const getGitHubApp = async () => {
-    // Simply check that octokit is initialized
-    if (!githubApp()?.octokit) {
-        throw new GitHubError("GitHub App not initialized properly");
-    }
     return {
-        success: true
+      files: response.data.files || [],
+      commits: response.data.commits || [],
+      totalCommits: response.data.total_commits || 0,
     };
-};
+  } catch (error) {
+    log.error("Failed to fetch commit diff", {
+      repo: `${owner}/${repo}`,
+      baseSha,
+      headSha,
+      detail: error.message,
+    });
+    throw new Error(`Failed to fetch commit diff: ${error.message}`);
+  }
+}
 
-export const getInstallUrl = (state) => {
-    const appName = process.env.GITHUB_APP_NAME;
-    if (!appName) {
-        throw new GitHubError("GITHUB_APP_NAME environment variable is not configured");
-    }
-    const installUrl = new URL(
-        `https://github.com/apps/${appName}/installations/new`
+/**
+ * Get single commit details
+ * @param {string} accessToken - GitHub access token
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {string} sha - Commit SHA
+ * @returns {Promise<Object>} Commit data
+ */
+export async function getCommit(accessToken, owner, repo, sha) {
+  try {
+    const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/commits/${sha}`;
+    const response = await githubGet(url, accessToken);
+
+    return {
+      sha: response.data.sha,
+      message: response.data.commit.message,
+      author: response.data.commit.author,
+      files: response.data.files || [],
+      stats: response.data.stats,
+    };
+  } catch (error) {
+    log.error("Failed to fetch commit", {
+      repo: `${owner}/${repo}`,
+      sha,
+      detail: error.message,
+    });
+    throw new Error(`Failed to fetch commit: ${error.message}`);
+  }
+}
+
+/**
+ * Get repository file tree structure
+ * @param {string} accessToken - GitHub access token
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {string} branch - Branch name
+ * @returns {Promise<Object>} Repository tree
+ */
+export async function getRepoTree(accessToken, owner, repo, branch) {
+  try {
+    const branchUrl = `${GITHUB_API_BASE}/repos/${owner}/${repo}/branches/${branch}`;
+    const branchResponse = await githubGet(branchUrl, accessToken);
+    const treeSha = branchResponse.data.commit.commit.tree.sha;
+
+    const treeUrl = `${GITHUB_API_BASE}/repos/${owner}/${repo}/git/trees/${treeSha}?recursive=1`;
+    const treeResponse = await githubGet(treeUrl, accessToken);
+
+    return {
+      sha: treeResponse.data.sha,
+      tree: treeResponse.data.tree || [],
+      truncated: treeResponse.data.truncated || false,
+    };
+  } catch (error) {
+    log.error("Failed to fetch repository tree", {
+      repo: `${owner}/${repo}`,
+      detail: error.message,
+    });
+    throw new Error(`Failed to fetch repo tree: ${error.message}`);
+  }
+}
+
+/**
+ * Get file content from repository
+ * @param {string} accessToken - GitHub access token
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {string} path - File path
+ * @param {string} branch - Branch name
+ * @returns {Promise<Object>} File content and metadata
+ */
+export async function getFileContent(accessToken, owner, repo, path, branch) {
+  try {
+    const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
+    const response = await githubGet(url, accessToken);
+
+    const content = Buffer.from(response.data.content, "base64").toString(
+      "utf-8",
     );
-    installUrl.searchParams.append("state", state);
-    return installUrl.toString();
-};
 
-export const getInstallation = async (installationId) => {
-    try {
-        const response = await githubApp().octokit.request(
-            "GET /app/installations/{installation_id}",
-            {
-                installation_id: Number(installationId),
-            }
-        );
-        return response.data;
-    } catch (error) {
-        throw new GitHubError(`Failed to fetch GitHub installation details: ${error.message}`, error.status || 502);
+    return {
+      path: response.data.path,
+      sha: response.data.sha,
+      size: response.data.size,
+      content: content,
+      encoding: response.data.encoding,
+    };
+  } catch (error) {
+    if (error.response && error.response.status === 404) {
+      return null; // File doesn't exist
     }
-};
+    log.error("Failed to fetch file content", {
+      repo: `${owner}/${repo}`,
+      path,
+      detail: error.message,
+    });
+    throw new Error(`Failed to fetch file content: ${error.message}`);
+  }
+}
 
-export const getInstallationRepositories = async (installationId) => {
-    try {
-        const id = Number(installationId);
-        const installationOctokit =
-            await githubApp().getInstallationOctokit(
-                id
-            );
+/**
+ * Commit a file to repository
+ * @param {string} accessToken - GitHub access token
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {string} path - File path
+ * @param {string} content - File content
+ * @param {string} message - Commit message
+ * @param {string} branch - Branch name
+ * @param {string} sha - Current file SHA (for updates, optional for new files)
+ * @returns {Promise<Object>} Commit response
+ */
+export async function commitFile(
+  accessToken,
+  owner,
+  repo,
+  path,
+  content,
+  message,
+  branch,
+  sha = null,
+) {
+  try {
+    const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/contents/${path}`;
 
-        if (typeof installationOctokit.paginate === "function") {
-            const repositories = await installationOctokit.paginate(
-                "GET /installation/repositories",
-                { per_page: 100 }
-            );
-            return repositories;
-        }
+    const encodedContent = Buffer.from(content).toString("base64");
 
-        const res = await installationOctokit.request(
-            "GET /installation/repositories",
-            { per_page: 100 }
-        );
-        return res.data?.repositories || [];
-    } catch (error) {
-        throw new GitHubError(`Failed to fetch installation repositories: ${error.message}`, error.status || 502);
+    const payload = {
+      message: message,
+      content: encodedContent,
+      branch: branch,
+    };
+
+    if (sha) {
+      payload.sha = sha;
     }
-};
 
-export const getInstallationAccessToken = async (
-    installationId
-) => {
-    try {
-        const response = await githubApp().octokit.request(
-            "POST /app/installations/{installation_id}/access_tokens",
-            {
-                installation_id: Number(installationId),
-            }
-        );
-        return response.data.token;
-    } catch (error) {
-        throw new GitHubError(`Failed to generate installation access token: ${error.message}`, error.status || 502);
-    }
-};
+    const response = await githubPut(url, payload, accessToken);
 
-export const getRepositoryDefaultBranchAndCommit = async (installationId, owner, repo) => {
-    try {
-        const installationOctokit = await githubApp().getInstallationOctokit(installationId);
-        const repoResponse = await installationOctokit.request(
-            "GET /repos/{owner}/{repo}",
-            {
-                owner,
-                repo,
-            }
-        );
-        const defaultBranch = repoResponse.data.default_branch || "main";
+    return {
+      content: response.data.content,
+      commit: response.data.commit,
+    };
+  } catch (error) {
+    log.error("Failed to commit file", {
+      repo: `${owner}/${repo}`,
+      path,
+      branch,
+      detail: error.message,
+      response: error.response?.data,
+    });
+    throw new Error(`Failed to commit file: ${error.message}`);
+  }
+}
 
-        const refResponse = await installationOctokit.request(
-            "GET /repos/{owner}/{repo}/git/ref/{ref}",
-            {
-                owner,
-                repo,
-                ref: `heads/${defaultBranch}`,
-            }
-        );
-        return {
-            branch: `refs/heads/${defaultBranch}`,
-            commitSha: refResponse.data.object.sha,
-        };
-    } catch (error) {
-        throw new GitHubError(`Failed to fetch repository details from GitHub: ${error.message}`, error.status || 502);
-    }
-};
+/**
+ * Commit a file to a new branch and raise a pull request against the base branch
+ * @param {string} accessToken - GitHub access token
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {string} path - File path
+ * @param {string} content - File content
+ * @param {string} message - Commit message (also used as PR title)
+ * @param {string} baseBranch - Branch the PR targets
+ * @param {string} sha - Current file SHA (for updates, optional for new files)
+ * @param {string} headBranch - Branch to create for the PR (optional)
+ * @returns {Promise<Object>} Commit and pull request response
+ */
+export async function raisePr(
+  accessToken,
+  owner,
+  repo,
+  path,
+  content,
+  message,
+  baseBranch,
+  sha = null,
+  headBranch = `pushdoc/readme-${Date.now()}`,
+  body = "Automated README update generated by [PushDoc](https://pushdoc.online)\n\n[skip ci]",
+) {
+  try {
+    const baseRefUrl = `${GITHUB_API_BASE}/repos/${owner}/${repo}/git/ref/heads/${baseBranch}`;
+    const baseRef = await githubGet(baseRefUrl, accessToken);
 
-export const getRepositoryReadme = async (installationId, owner, repo) => {
-    try {
-        const installationOctokit = await githubApp().getInstallationOctokit(installationId);
-        const response = await installationOctokit.request(
-            "GET /repos/{owner}/{repo}/readme",
-            {
-                owner,
-                repo,
-            }
-        );
-        if (response.data && response.data.content) {
-            const buffer = Buffer.from(response.data.content, "base64");
-            return {
-                content: buffer.toString("utf8"),
-                name: response.data.name,
-                path: response.data.path,
-            };
-        }
-        return { content: "" };
-    } catch (error) {
-        // Return empty string if repository has no README on GitHub
-        return { content: "", error: error.message };
-    }
-};
+    await githubPost(
+      `${GITHUB_API_BASE}/repos/${owner}/${repo}/git/refs`,
+      { ref: `refs/heads/${headBranch}`, sha: baseRef.data.object.sha },
+      accessToken,
+    );
 
-export const createReadmePullRequest = async ({ installationId, owner, repo, head, base, commitSha, report }) => {
-    try {
-        const installationOctokit = await githubApp().getInstallationOctokit(installationId);
-        const openPulls = await installationOctokit.request("GET /repos/{owner}/{repo}/pulls", {
-            owner,
-            repo,
-            state: "open",
-            head: `${owner}:${head}`,
-            base,
-            per_page: 1,
-        });
-        if (openPulls.data?.[0]?.html_url) {
-            return openPulls.data[0].html_url;
-        }
-        const body = [
-            "Generated by PushDoc.",
-            "",
-            `Source commit: \`${commitSha}\``,
-            `Integrity gate: ${report?.gate_passed === true ? "passed" : "not available"}`,
-        ].join("\n");
-        const response = await installationOctokit.request("POST /repos/{owner}/{repo}/pulls", {
-            owner, repo, head, base, title: "docs: update README with PushDoc", body,
-        });
-        return response.data.html_url;
-    } catch (error) {
-        throw new GitHubError(`Failed to create README pull request: ${error.message}`, error.status || 502);
-    }
-};
+    const commitResult = await commitFile(
+      accessToken,
+      owner,
+      repo,
+      path,
+      content,
+      message,
+      headBranch,
+      sha,
+    );
+
+    const prResponse = await githubPost(
+      `${GITHUB_API_BASE}/repos/${owner}/${repo}/pulls`,
+      { title: message, head: headBranch, base: baseBranch, body },
+      accessToken,
+    );
+
+    return {
+      content: commitResult.content,
+      commit: commitResult.commit,
+      pullRequest: {
+        number: prResponse.data.number,
+        url: prResponse.data.html_url,
+        headBranch,
+      },
+    };
+  } catch (error) {
+    log.error("Failed to raise pull request", {
+      repo: `${owner}/${repo}`,
+      path,
+      baseBranch,
+      headBranch,
+      detail: error.message,
+      response: error.response?.data,
+    });
+    throw new Error(`Failed to raise pull request: ${error.message}`);
+  }
+}
+
+/**
+ * Format repository tree into a readable structure
+ * @param {Array} tree - Array of tree items
+ * @param {number} maxDepth - Maximum depth to display (default: 3)
+ * @returns {string} Formatted tree structure
+ */
+export function formatRepoTree(tree, maxDepth = 3) {
+  const filteredTree = tree.filter((item) => {
+    return !IGNORED_DIR_PATTERNS.some((pattern) => pattern.test(item.path));
+  });
+
+  const structure = {};
+
+  filteredTree.forEach((item) => {
+    const parts = item.path.split("/");
+    const depth = parts.length;
+
+    if (depth > maxDepth) return;
+
+    let current = structure;
+    parts.forEach((part, index) => {
+      if (!current[part]) {
+        current[part] =
+          index === parts.length - 1 && item.type === "blob" ? null : {};
+      }
+      if (current[part] !== null) {
+        current = current[part];
+      }
+    });
+  });
+
+  function formatNode(node, prefix = "") {
+    let result = "";
+    const entries = Object.entries(node);
+
+    entries.forEach(([key, value], index) => {
+      const isLastEntry = index === entries.length - 1;
+      const connector = isLastEntry ? "└── " : "├── ";
+      const extension = value === null ? "" : "/";
+
+      result += prefix + connector + key + extension + "\n";
+
+      if (value !== null) {
+        const newPrefix = prefix + (isLastEntry ? "    " : "│   ");
+        result += formatNode(value, newPrefix);
+      }
+    });
+
+    return result;
+  }
+
+  return formatNode(structure);
+}
+
+/**
+ * Determine file language based on extension
+ * @param {string} filename - File name
+ * @returns {string} Language identifier
+ */
+export function getFileLanguage(filename) {
+  return getLanguageFromExtension(filename);
+}
+
+/**
+ * Check if file should be included in context (filter by extension)
+ * @param {string} filename - File name
+ * @returns {boolean} Whether to include the file
+ */
+export function shouldIncludeFile(filename) {
+  const relevantExtensions = [
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".py",
+    ".java",
+    ".cpp",
+    ".c",
+    ".cs",
+    ".go",
+    ".rs",
+    ".rb",
+    ".php",
+    ".swift",
+    ".kt",
+    ".scala",
+    ".sh",
+    ".bash",
+    ".yml",
+    ".yaml",
+    ".json",
+    ".md",
+    ".sql",
+  ];
+
+  return relevantExtensions.some((ext) => filename.toLowerCase().endsWith(ext));
+}
+
+/**
+ * Truncate file content if too large
+ * @param {string} content - File content
+ * @param {number} maxLines - Maximum number of lines (default: 100)
+ * @returns {string} Truncated content
+ */
+export function truncateContent(content, maxLines = 100) {
+  const lines = content.split("\n");
+
+  if (lines.length <= maxLines) {
+    return content;
+  }
+
+  const truncated = lines.slice(0, maxLines).join("\n");
+  return truncated + `\n\n... (truncated ${lines.length - maxLines} lines)`;
+}

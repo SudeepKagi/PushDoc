@@ -1,0 +1,88 @@
+import EngineCard from "./EngineCard";
+import { Key } from "@/app/(landing)/_animate-ui/icons/key";
+import { Search } from "@/app/(landing)/_animate-ui/icons/search";
+import { LayersIcon } from "@/app/(landing)/_animate-ui/icons/layers";
+import { PlugZap } from "@/app/(landing)/_animate-ui/icons/plug-zap";
+import { Disc3 } from "@/app/(landing)/_animate-ui/icons/disc-3";
+import { Hammer } from "@/app/(landing)/_animate-ui/icons/hammer";
+import { SECTION_X, SECTION_Y } from "@/app/(landing)/_lib/section";
+
+type AnimateIconComponent = React.ComponentType<Record<string, unknown>>;
+
+const ENGINE_FEATURES: {
+  icon: AnimateIconComponent;
+  animation: string;
+  title: string;
+  desc: string;
+  iconClass: string;
+}[] = [
+  {
+    icon: Key as AnimateIconComponent,
+    animation: "path",
+    title: "GitHub OAuth 2.0",
+    desc: "Secure handshake protocols ensuring precise permission scoping for your private repositories.",
+    iconClass: "bg-[#EAF4FF] text-[#005FD6]",
+  },
+  {
+    icon: PlugZap as AnimateIconComponent,
+    animation: "path",
+    title: "Context Synthesis",
+    desc: "Advanced RAG-based engine that aggregates cross-file dependencies for holistic doc generation.",
+    iconClass: "bg-[#EAF4FF] text-[#209BFF]",
+  },
+  {
+    icon: Search as AnimateIconComponent,
+    animation: "path",
+    title: "Differential Scan",
+    desc: "Compute-efficient audits that only process modified AST nodes to minimize latency.",
+    iconClass: "bg-emerald-50 text-emerald-600",
+  },
+  {
+    icon: LayersIcon as AnimateIconComponent,
+    animation: "path",
+    title: "Commit Isolation",
+    desc: "Granular tracking of change-sets to provide accurate version histories within your README.",
+    iconClass: "bg-amber-50 text-amber-600",
+  },
+  {
+    icon: Hammer as AnimateIconComponent,
+    animation: "path",
+    title: "Monorepo Native",
+    desc: "Seamless handling of complex workspaces including Turborepo, Lerna, and Nx structures.",
+    iconClass: "bg-rose-50 text-rose-600",
+  },
+  {
+    icon: Disc3 as AnimateIconComponent,
+    animation: "path",
+    title: "Logic Exclusions",
+    desc: "Smart filtering to omit boilerplate, tests, and sensitive configuration from public docs.",
+    iconClass: "bg-violet-50 text-violet-600",
+  },
+];
+
+export default function EngineSection() {
+  return (
+    <section
+      id="engine"
+      className={`bg-linear-to-b from-white via-slate-50/50 to-white ${SECTION_Y}`}
+    >
+      <div className={SECTION_X}>
+        <div className="mx-auto mb-16 max-w-3xl text-center">
+          <h2 className="font-display mb-4 text-3xl font-bold text-slate-900 md:text-4xl">
+            Everything the Engine Does
+          </h2>
+          <p className="text-lg font-light tracking-[-0.012em] text-slate-600">
+            Deep-tech capabilities powering the next generation of automated
+            documentation.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {ENGINE_FEATURES.map((f) => (
+            <EngineCard key={f.title} f={f} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
