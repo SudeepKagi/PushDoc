@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="client/public/mascot-full.png" alt="PushDoc Mascot Aura" width="160" />
+  <img src="docs/images/banner.jpg" alt="PushDoc banner: a README pull request raised by PushDoc on the enchanted PushDoc background" width="100%" />
 </p>
-
-<h1 align="center">PushDoc</h1>
 
 <p align="center">
   Connect a GitHub repo once, and every push to main comes back as an up-to-date README.<br>
@@ -15,6 +13,23 @@
   <a href="#how-it-works">How it works</a> |
   <a href="#self-hosting">Self-hosting</a>
 </h4>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-20+-5fa04e.svg" alt="Node.js 20+" />
+  <img src="https://img.shields.io/badge/React-19-149eca.svg" alt="React 19" />
+  <img src="https://img.shields.io/badge/Vite-7-646CFF.svg" alt="Vite 7" />
+  <img src="https://img.shields.io/badge/Express-5-444444.svg" alt="Express 5" />
+  <img src="https://img.shields.io/badge/BullMQ-Redis-dc382d.svg" alt="BullMQ on Redis" />
+  <img src="https://img.shields.io/badge/Convex-live_logs-f3b01c.svg" alt="Convex live logs" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="AGPL-3.0 licensed" /></a>
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome" />
+</p>
+
+PushDoc keeps your README in step with your code. It listens for pushes to your default branch, reads what changed, and decides whether the README needs a full rewrite or only a few sections touched. Then it writes the update with Gemini (or Sarvam AI when Gemini is busy) and commits it back to the repo, or opens a pull request if you'd rather review it first. You watch each run step by step from the dashboard.
+
+<p align="center">
+  <img src="docs/images/dashboard.jpg" alt="The PushDoc dashboard: repository cards with auto-update toggles, commit type and AI priority controls" width="100%" />
+</p>
 
 ## Highlights
 
@@ -31,11 +46,18 @@
 
 ## Update modes
 
-| Mode              | Strategy            | Description                                                    |
-| :---------------- | :------------------ | :------------------------------------------------------------- |
-| **Full rewrite**  | Whole repo scan     | Reads the whole repo and writes documentation completely fresh |
-| **Section patch** | Modified files scan | Rewrites only the specific sections a push touched             |
-| **Cleanup**       | Formatting scan     | Tidies an existing README without adding extraneous content    |
+<table>
+  <tr>
+    <td width="33%"><img src="docs/images/mode-full-rewrite.jpg" alt="Full rewrite: every line of the README is newly written" /></td>
+    <td width="33%"><img src="docs/images/mode-section-patch.jpg" alt="Section patch: only two sections of the README change" /></td>
+    <td width="33%"><img src="docs/images/mode-cleanup.jpg" alt="Cleanup: a duplicate section is removed and nothing new is added" /></td>
+  </tr>
+  <tr>
+    <td align="center" valign="top"><b>Full rewrite</b><br><sub>Reads the whole repo and writes it fresh</sub></td>
+    <td align="center" valign="top"><b>Section patch</b><br><sub>Rewrites only the sections a push touched</sub></td>
+    <td align="center" valign="top"><b>Cleanup</b><br><sub>Tidies a messy README, adds nothing new</sub></td>
+  </tr>
+</table>
 
 A small, fast model reads the current README and picks between a full rewrite and a patch. When the two are close, it chooses the patch, so the parts you wrote yourself stay put. Cleanup runs only when you press the broom button on a repo card.
 
@@ -59,6 +81,10 @@ From the **Repositories** page:
 **Activity Logs** lists every run with its status. Open one to see each step, the strategy it chose and why, and a link to the commit or pull request.
 
 ## How it works
+
+<p align="center">
+  <img src="docs/images/live-logs.jpg" alt="A live PushDoc run: streaming logs and steps in real-time" width="100%" />
+</p>
 
 1. **Push.** You push to the default branch. Pushes to other branches, PushDoc's own commits and commits it has already handled are ignored.
 2. **Queue.** The Express server checks the webhook signature, answers GitHub at once, and puts a job on a BullMQ queue in Redis.
