@@ -160,7 +160,7 @@ const FAQ_QUESTIONS = [
   },
 ];
 
-/* ── SVG Animation Components (Matching daemondoc) ─────────────────────────── */
+/* ── SVG Animation Components ─────────────────────────────────────────────── */
 function LineSvg({ className, delay = 0, color = "#F17463" }) {
   const glowId = useId();
   return (
@@ -358,7 +358,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 antialiased selection:bg-[#4F46E5] selection:text-white">
-      {/* ── Resizable Navbar (Matching daemondoc) ─────────────────────────────── */}
+      {/* ── Resizable Navbar ────────────────────────────────────────────────────── */}
       <motion.nav
         aria-label="Main"
         className="fixed inset-x-0 top-6 z-50 w-full"
@@ -513,7 +513,7 @@ export default function Landing() {
         </motion.div>
       </motion.nav>
 
-      {/* ── Hero Section (Matching daemondoc) ─────────────────────────────────── */}
+      {/* ── Hero Section ────────────────────────────────────────────────────────── */}
       <main id="hero">
         <motion.section
           style={frameStyle}
@@ -566,7 +566,7 @@ export default function Landing() {
               to current docs in seconds.
             </h1>
 
-            {/* Prompt Card (Exact match with daemondoc) */}
+            {/* Prompt Card */}
             <div className="mx-auto mt-14 w-full max-w-2xl rounded-[22px] bg-white/25 p-1 shadow-[0_32px_72px_-32px_rgba(15,23,42,0.4)] ring-1 ring-white/40 backdrop-blur-md">
               <div className="rounded-[18px] bg-slate-950/90 p-4 text-left select-none">
                 <p
@@ -616,7 +616,7 @@ export default function Landing() {
           </div>
         </motion.section>
 
-        {/* ── Browser Mock Window (Matching daemondoc Live Demo) ─────────────── */}
+        {/* ── Browser Mock Window (Interactive Demo) ──────────────────────────────── */}
         <section className={cn("relative pt-20 lg:pt-28", SECTION_X)}>
           <div className="relative mx-auto max-w-5xl">
             <div className="animate-pulse-slow absolute -inset-1 top-0 right-0 left-0 rounded-2xl bg-gradient-to-r from-[#4F46E5] via-[#818CF8] to-[#F59E0B] opacity-25 blur-lg" />
@@ -706,7 +706,7 @@ export default function Landing() {
         </section>
       </main>
 
-      {/* ── Steps Section (Matching daemondoc) ─────────────────────────────────── */}
+      {/* ── Steps Section ───────────────────────────────────────────────────────── */}
       <section
         id="how-it-works"
         aria-labelledby="hero-steps"
@@ -746,7 +746,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Platform Bento Grid (Matching daemondoc Grid) ────────────────────── */}
+      {/* ── Platform Bento Grid ─────────────────────────────────────────────────── */}
       <section id="features" className={SECTION_Y}>
         <div
           className={cn(
@@ -985,7 +985,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── FAQ Section (Matching daemondoc) ─────────────────────────────────── */}
+      {/* ── FAQ Section ─────────────────────────────────────────────────────────── */}
       <section
         id="faq"
         aria-labelledby="faq-heading"
@@ -1061,7 +1061,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Footer (Matching daemondoc) ───────────────────────────────────────── */}
+      {/* ── Footer ──────────────────────────────────────────────────────────────── */}
       <footer className="relative border-t border-slate-100 bg-gradient-to-b from-white via-slate-50/50 to-white pt-14 pb-12 lg:pt-20">
         <div className={SECTION_X}>
           <div className="grid grid-cols-1 gap-12 pb-14 md:grid-cols-12 lg:gap-16">
