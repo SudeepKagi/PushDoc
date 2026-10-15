@@ -1,329 +1,358 @@
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  Github,
-  Zap,
-  GitCommit,
-  GitPullRequest,
-  RefreshCw,
-  Cpu,
-  ArrowRight,
-  Shield,
-  Clock,
   Sparkles,
   ChevronRight,
-  FileCode,
+  FileText,
+  GitPullRequest,
+  Lock,
+  ArrowRight,
+  Unplug,
+  Activity,
+  ClipboardCheck,
+  Cpu,
+  RefreshCw,
+  Zap,
   Terminal,
+  Shield,
+  CheckCircle2,
+  ChevronDown,
+  Github,
+  Layers,
+  ExternalLink,
 } from "lucide-react";
-import { useAuth } from "../../context/auth-context";
 
-const PIPELINE_STEPS = [
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+/* ── Modes Mock ────────────────────────────────────────────────────────────── */
+const MODES = [
+  { id: "direct", label: "Direct Commit", Icon: FileText },
+  { id: "pr", label: "Pull Request", Icon: GitPullRequest },
+];
+
+/* ── 3 Steps (Matching daemondoc) ──────────────────────────────────────────── */
+const STEPS = [
   {
-    step: "01",
-    title: "Push",
-    desc: "You commit code and push to your default branch as usual.",
-    cmd: "git push origin main",
+    Icon: Unplug,
+    title: "Connect Repo",
+    desc: "Link your GitHub repository once",
+    iconClass: "bg-indigo-500/10 text-indigo-400 border-indigo-500/30",
   },
   {
-    step: "02",
-    title: "Webhook",
-    desc: "GitHub fires an HMAC-verified webhook directly to BullMQ queue.",
-    cmd: "POST /api/github/webhookhandler",
+    Icon: Activity,
+    title: "Push Code",
+    desc: "Just code & commit as usual",
+    iconClass: "bg-sky-500/10 text-sky-400 border-sky-500/30",
   },
   {
-    step: "03",
-    title: "Code Scan",
-    desc: "Worker analyzes changed files and current README structure.",
-    cmd: "Scan git diff & file snapshots",
-  },
-  {
-    step: "04",
-    title: "AI Synthesis",
-    desc: "Gemini or Sarvam AI writes fresh docs or patches sections.",
-    cmd: "Gemini 2.5 + Sarvam AI Fallback",
-  },
-  {
-    step: "05",
-    title: "Commit or PR",
-    desc: "Pushes updated README back with [skip ci] to prevent loops.",
-    cmd: "chore: auto-update README",
+    Icon: ClipboardCheck,
+    title: "README Updates",
+    desc: "Docs sync automatically instantly",
+    iconClass: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
   },
 ];
 
-const FEATURES = [
+/* ── FAQs (Matching daemondoc) ─────────────────────────────────────────────── */
+const FAQS = [
   {
-    icon: Zap,
-    title: "Zero Manual Maintenance",
-    desc: "Stop letting READMEs drift behind your code. Every commit automatically updates architecture diagrams, setup guides, and APIs.",
+    q: "How does PushDoc know when I push new code?",
+    a: "When you switch on a repository, PushDoc registers a webhook with GitHub. Every git push to your default branch sends an authenticated payload with HMAC-SHA256 signature verification directly to our worker queue.",
   },
   {
-    icon: Cpu,
-    title: "Multi-Model Fallback",
-    desc: "Powered by Gemini first with Sarvam AI fallback. Automatic rate-limit rotation ensures generation never stalls.",
+    q: "Does PushDoc overwrite manual edits I make to my README?",
+    a: "No. PushDoc operates in smart section patch mode by default. It parses your existing markdown sections into an Abstract Syntax Tree (AST) and only touches the specific sections affected by your latest commits.",
   },
   {
-    icon: Clock,
-    title: "Live Convex Log Streaming",
-    desc: "Watch your README generate step-by-step in real-time. Live logs stream directly from Convex without polling.",
+    q: "Can I review README changes before they go live?",
+    a: "Yes. In your repository settings on the dashboard, you can toggle between 'Direct Commit' (where PushDoc commits straight to main) and 'Pull Request' mode (where PushDoc opens a reviewable PR with line diffs).",
   },
   {
-    icon: GitPullRequest,
-    title: "Direct Commit or Pull Request",
-    desc: "You choose how changes arrive: commit directly to main or open a clean pull request for human review first.",
+    q: "What happens if Google Gemini hits rate limits?",
+    a: "PushDoc implements an automatic circuit breaker with instant fallback to Sarvam AI. If the primary model encounters a 429 quota or latency spike, jobs seamlessly failover without failing your queued run.",
   },
   {
-    icon: Shield,
-    title: "Enterprise Loop-Guard",
-    desc: "PushDoc commits include [skip ci] markers and SHA verification so automated commits never trigger infinite loops.",
-  },
-  {
-    icon: RefreshCw,
-    title: "One-Click Cleanup",
-    desc: "Have a messy or outdated README? Click the broom icon on any repo card to format and tidy it on demand.",
+    q: "Is my private repository source code safe?",
+    a: "Yes. PushDoc operates under a strict zero-retention policy. Source files are read in volatile memory buffers for static analysis and purged immediately once the documentation is committed.",
   },
 ];
 
 export default function Landing() {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [selectedMode, setSelectedMode] = useState("direct");
+  const [activeFaq, setActiveFaq] = useState(null);
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-slate-950 font-sans text-slate-100 selection:bg-blue-600 selection:text-white">
-      {/* Background glow effects */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute top-[-10rem] left-1/2 h-[38rem] w-[54rem] -translate-x-1/2 rounded-full bg-blue-600/15 blur-[120px]" />
-        <div className="absolute top-[30rem] right-[-10rem] h-[28rem] w-[36rem] rounded-full bg-indigo-600/10 blur-[100px]" />
-      </div>
-
-      {/* Top Navbar */}
+    <div className="min-h-screen bg-slate-950 font-sans text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
+      {/* ── Resizable Navbar (Matching daemondoc) ─────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2.5">
             <img
               src="/mascot-bust.png"
-              alt="PushDoc"
-              width={36}
-              height={36}
+              alt="PushDoc Mascot Aura"
+              width={34}
+              height={34}
               className="h-8 w-auto"
             />
-            <span className="font-display text-lg font-bold tracking-tight text-white">
+            <span className="font-display text-xl font-bold tracking-tight text-white">
               PushDoc
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-8 text-sm font-medium text-slate-400 md:flex">
-            <a
-              href="#how-it-works"
-              className="transition-colors hover:text-white"
+          <nav className="hidden items-center gap-6 text-sm font-medium text-slate-300 md:flex">
+            <button
+              onClick={() => scrollToSection("how-it-works")}
+              className="cursor-pointer transition-colors hover:text-white"
             >
               How it works
-            </a>
-            <a href="#features" className="transition-colors hover:text-white">
+            </button>
+            <button
+              onClick={() => scrollToSection("platform")}
+              className="cursor-pointer transition-colors hover:text-white"
+            >
+              Platform
+            </button>
+            <button
+              onClick={() => scrollToSection("features")}
+              className="cursor-pointer transition-colors hover:text-white"
+            >
               Features
-            </a>
-            <a href="#pipeline" className="transition-colors hover:text-white">
-              Pipeline
-            </a>
+            </button>
+            <button
+              onClick={() => scrollToSection("faq")}
+              className="cursor-pointer transition-colors hover:text-white"
+            >
+              FAQ
+            </button>
           </nav>
 
           <div className="flex items-center gap-3">
-            {user ? (
-              <Link
-                to="/home"
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-blue-500/25 transition-all hover:bg-blue-500"
-              >
-                Go to Dashboard
-                <ArrowRight size={15} />
-              </Link>
-            ) : (
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
-              >
-                <Github size={16} />
-                Sign in with GitHub
-              </Link>
-            )}
+            <a
+              href="https://github.com/SudeepKagi/PushDoc"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:border-slate-700 hover:text-white sm:flex"
+            >
+              <Github className="h-3.5 w-3.5" />
+              <span>GitHub</span>
+            </a>
+            <button
+              onClick={() => navigate("/login")}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-indigo-500"
+            >
+              <span>Get Started</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative mx-auto max-w-6xl px-4 pt-20 pb-16 text-center sm:px-6 sm:pt-28 sm:pb-24">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mx-auto mb-8 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3.5 py-1 text-xs font-semibold text-blue-300"
-        >
-          <Sparkles size={14} className="text-blue-400" />
-          <span>Next-Generation Automated Documentation</span>
-        </motion.div>
+      {/* ── Hero Section (Matching daemondoc) ─────────────────────────────────── */}
+      <main
+        id="hero"
+        className="relative overflow-hidden pt-16 pb-20 sm:pt-24 sm:pb-28"
+      >
+        {/* Ambient radial glows */}
+        <div className="pointer-events-none absolute -top-40 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-indigo-600/15 blur-[120px]" />
+        <div className="pointer-events-none absolute top-1/2 left-1/4 h-[320px] w-[500px] -translate-x-1/2 rounded-full bg-sky-500/10 blur-[100px]" />
 
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mx-auto max-w-4xl text-4xl font-extrabold tracking-tight text-white sm:text-6xl sm:leading-tight"
-        >
-          Your README stays in sync on every{" "}
-          <span className="bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-400 bg-clip-text text-transparent">
-            git push.
-          </span>
-        </motion.h1>
+        <div className="relative mx-auto max-w-5xl px-6 text-center">
+          {/* Eyebrow Pill */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white backdrop-blur-md transition-colors hover:bg-white/20 sm:gap-3 sm:text-sm">
+            <Sparkles size={15} className="shrink-0 text-sky-300" />
+            <span className="h-3.5 w-px shrink-0 bg-white/30" />
+            <span>
+              Synced on every push
+              <span className="hidden sm:inline"> — no manual edits</span>
+            </span>
+            <ChevronRight size={15} className="shrink-0 opacity-70" />
+          </div>
 
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-400 sm:text-xl"
-        >
-          Connect a GitHub repository once. PushDoc reads your commits, detects
-          architectural changes, and automatically commits fresh, accurate
-          documentation back to your repository.
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-10 flex flex-wrap items-center justify-center gap-4"
-        >
-          <Link
-            to={user ? "/home" : "/login"}
-            className="inline-flex h-12 items-center justify-center gap-2.5 rounded-xl bg-blue-600 px-7 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:scale-[1.02] hover:bg-blue-500"
-          >
-            <Github size={18} />
-            {user ? "Open Dashboard" : "Connect with GitHub"}
-            <ArrowRight size={16} />
-          </Link>
-          <a
-            href="#how-it-works"
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-6 text-base font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
-          >
-            See how it works
-          </a>
-        </motion.div>
-
-        {/* Mascot + Demo Showcase Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="relative mx-auto mt-16 max-w-4xl overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-b from-slate-900/90 to-slate-950 p-6 shadow-2xl backdrop-blur-xl sm:p-8"
-        >
-          <div className="flex flex-col items-center justify-between gap-8 text-left md:flex-row">
-            <div className="flex-1 space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                Live Automated Sync
-              </div>
-              <h3 className="text-2xl font-bold text-white">
-                Meet Aura: Your Automated Docs Companion
-              </h3>
-              <p className="text-sm leading-relaxed text-slate-400">
-                Aura listens to your webhook events in real-time, selects
-                between full architectural rewrites or targeted section patches,
-                and streams live progress step-by-step to your dashboard.
-              </p>
-              <div className="flex flex-wrap gap-2 pt-2 font-mono text-xs text-slate-400">
-                <span className="rounded border border-slate-700/50 bg-slate-800/80 px-2.5 py-1">
-                  AST Patching
-                </span>
-                <span className="rounded border border-slate-700/50 bg-slate-800/80 px-2.5 py-1">
-                  HMAC SHA-256
-                </span>
-                <span className="rounded border border-slate-700/50 bg-slate-800/80 px-2.5 py-1">
-                  BullMQ Queue
-                </span>
-              </div>
-            </div>
-            <div className="relative flex shrink-0 items-center justify-center">
-              <div className="absolute inset-0 rounded-full bg-blue-500/20 blur-2xl" />
+          {/* Headline with Mascot Peeking (Matching daemondoc) */}
+          <h1 className="font-display mx-auto mt-8 max-w-4xl text-3xl font-medium tracking-tight text-white sm:text-5xl sm:leading-[1.15] lg:text-6xl">
+            From git push{" "}
+            <span className="inline-block -translate-y-1 align-middle">
               <img
-                src="/mascot-full.png"
-                alt="Aura Mascot"
-                width={260}
-                height={260}
-                className="relative h-48 w-auto drop-shadow-2xl select-none sm:h-56"
+                src="/mascot-bust.png"
+                alt="Aura"
+                width={56}
+                height={56}
+                className="animate-doku-bob inline-block h-10 w-auto drop-shadow-[0_4px_12px_rgba(79,70,229,0.4)] sm:h-14"
               />
+            </span>{" "}
+            to current docs in seconds.
+          </h1>
+
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">
+            Connect your repository once. Every push to your default branch
+            triggers an evidence-backed README update with zero manual
+            formatting.
+          </p>
+
+          {/* Prompt Mock Card (Matching daemondoc) */}
+          <div className="mx-auto mt-10 w-full max-w-2xl rounded-2xl bg-white/15 p-1 shadow-2xl ring-1 ring-white/30 backdrop-blur-md">
+            <div className="rounded-xl bg-slate-950/90 p-4 text-left select-none">
+              <p className="px-2 pt-2 pb-8 font-mono text-sm text-slate-400 sm:pb-10 sm:text-base">
+                github.com/your-org/your-repo
+                <span className="ml-1 inline-block h-4 w-0.5 animate-pulse bg-indigo-400 align-middle" />
+              </p>
+
+              <div className="flex flex-col gap-3 border-t border-slate-800/80 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-1 rounded-full bg-white/[0.06] p-1">
+                  {MODES.map(({ id, label, Icon }) => {
+                    const isSelected = selectedMode === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setSelectedMode(id)}
+                        className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                          isSelected
+                            ? "bg-white/15 text-white"
+                            : "text-slate-400 hover:text-slate-200"
+                        }`}
+                      >
+                        <Icon size={14} />
+                        <span>{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/login")}
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-indigo-500"
+                >
+                  <span>Connect repo</span>
+                  <Sparkles size={15} />
+                </button>
+              </div>
             </div>
           </div>
-        </motion.div>
-      </section>
 
-      {/* Pipeline Section */}
+          {/* Live Browser Mock (Matching daemondoc Live Demo) */}
+          <div className="relative mx-auto mt-16 max-w-4xl">
+            <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/90 shadow-2xl">
+              {/* Browser chrome header */}
+              <div className="flex items-center gap-4 border-b border-slate-800 bg-slate-900 px-4 py-3">
+                <div className="flex shrink-0 gap-2">
+                  <div className="h-3 w-3 rounded-full bg-rose-500/80" />
+                  <div className="h-3 w-3 rounded-full bg-amber-500/80" />
+                  <div className="h-3 w-3 rounded-full bg-emerald-500/80" />
+                </div>
+                <div className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-slate-950/80 py-1 font-mono text-xs text-slate-400">
+                  <Lock size={11} className="text-emerald-400" />
+                  <span>push-doc.vercel.app</span>
+                </div>
+              </div>
+
+              {/* Mock Dashboard Window */}
+              <div className="space-y-4 bg-slate-950/60 p-6 text-left font-mono text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 animate-ping rounded-full bg-emerald-400" />
+                    <span className="font-semibold text-slate-200">
+                      Worker Queue Active
+                    </span>
+                  </div>
+                  <span className="text-slate-400">
+                    BullMQ on Redis • Convex Live Logs
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="space-y-1 rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                    <div className="text-slate-400">Last Commit Trigger</div>
+                    <div className="truncate font-semibold text-indigo-400">
+                      git push origin main (#17ba987)
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      HMAC-SHA256 verified
+                    </div>
+                  </div>
+                  <div className="space-y-1 rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                    <div className="text-slate-400">Generation Strategy</div>
+                    <div className="font-semibold text-emerald-400">
+                      Smart Section Patch
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      Preserved 4 manual sections
+                    </div>
+                  </div>
+                  <div className="space-y-1 rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                    <div className="text-slate-400">AI Provider Chain</div>
+                    <div className="font-semibold text-sky-400">
+                      Gemini 3.1 Flash Lite
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      Sarvam AI standby fallback
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1 rounded-lg border border-slate-800 bg-slate-950 p-3 text-slate-300">
+                  <div className="text-slate-400">
+                    // Convex Real-time Live Log Stream
+                  </div>
+                  <div className="text-emerald-400">
+                    [info] Webhook payload accepted for SudeepKagi/PushDoc
+                  </div>
+                  <div>
+                    [info] AST analyzer detected 1 modified route file in
+                    src/routes/
+                  </div>
+                  <div>
+                    [info] Synthesizing updated API documentation diff...
+                  </div>
+                  <div className="text-indigo-400">
+                    [success] README committed directly to main (score: 98/100)
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* ── Steps Section (Matching daemondoc) ─────────────────────────────────── */}
       <section
-        id="pipeline"
-        className="border-t border-slate-900 bg-slate-950/60 py-20"
+        id="how-it-works"
+        className="border-t border-slate-800/80 bg-slate-950 py-20"
       >
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-16 text-center">
-            <span className="font-mono text-xs font-bold tracking-widest text-blue-400 uppercase">
-              Deterministic Workflow
-            </span>
-            <h2 className="mt-2 text-3xl font-extrabold text-white sm:text-4xl">
-              How a push becomes documentation
+        <div className="mx-auto max-w-4xl px-6">
+          <div className="mb-12 space-y-2 text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              How PushDoc Works
             </h2>
-            <p className="mx-auto mt-3 max-w-xl text-slate-400">
-              From git push to committed markdown in seconds.
+            <p className="text-sm text-slate-400">
+              Three simple steps to permanent documentation sync.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-            {PIPELINE_STEPS.map((stage) => (
-              <div
-                key={stage.step}
-                className="relative rounded-xl border border-slate-800/80 bg-slate-900/40 p-5 transition-colors hover:border-slate-700"
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold text-blue-400">
-                    {stage.step}
-                  </span>
-                  <Terminal size={14} className="text-slate-500" />
-                </div>
-                <h3 className="mb-1.5 text-base font-semibold text-white">
-                  {stage.title}
-                </h3>
-                <p className="mb-4 text-xs leading-relaxed text-slate-400">
-                  {stage.desc}
-                </p>
-                <div className="truncate rounded border border-slate-800 bg-slate-950 px-2 py-1 font-mono text-[10px] text-slate-400">
-                  {stage.cmd}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section id="features" className="border-t border-slate-900 py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-16 text-center">
-            <span className="font-mono text-xs font-bold tracking-widest text-blue-400 uppercase">
-              Engine Capabilities
-            </span>
-            <h2 className="mt-2 text-3xl font-extrabold text-white sm:text-4xl">
-              Engineered for developer confidence
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((feat) => {
-              const Icon = feat.icon;
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {STEPS.map((step, idx) => {
+              const StepIcon = step.Icon;
               return (
                 <div
-                  key={feat.title}
-                  className="rounded-2xl border border-slate-800/80 bg-slate-900/30 p-6 transition-all hover:border-blue-500/30 hover:bg-slate-900/50"
+                  key={idx}
+                  className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/40 p-6 text-center transition-colors hover:border-slate-700"
                 >
-                  <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-600/10 text-blue-400">
-                    <Icon size={20} />
+                  <div
+                    className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full border ${step.iconClass}`}
+                  >
+                    <StepIcon size={22} />
                   </div>
-                  <h3 className="mb-2 text-lg font-semibold text-white">
-                    {feat.title}
+                  <h3 className="text-base font-semibold text-white">
+                    {idx + 1}. {step.title}
                   </h3>
-                  <p className="text-sm leading-relaxed text-slate-400">
-                    {feat.desc}
+                  <p className="text-xs leading-relaxed text-slate-400">
+                    {step.desc}
                   </p>
                 </div>
               );
@@ -332,46 +361,204 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Bottom CTA */}
-      <section className="border-t border-slate-900 bg-gradient-to-b from-slate-950 to-blue-950/20 py-24 text-center">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <h2 className="text-3xl font-extrabold text-white sm:text-5xl">
-            Never write a boring README by hand again.
-          </h2>
-          <p className="mt-4 text-lg text-slate-400">
-            Turn on PushDoc for your repositories today and keep documentation
-            effortless and always accurate.
-          </p>
-          <div className="mt-8">
-            <Link
-              to={user ? "/home" : "/login"}
-              className="inline-flex h-12 items-center justify-center gap-2.5 rounded-xl bg-blue-600 px-8 text-base font-semibold text-white shadow-xl shadow-blue-600/25 transition-all hover:scale-[1.02] hover:bg-blue-500"
-            >
-              <Github size={18} />
-              {user ? "Open Dashboard" : "Get Started with GitHub"}
-            </Link>
+      {/* ── Platform Bento Grid (Matching daemondoc Platform Grid) ───────────── */}
+      <section
+        id="platform"
+        className="border-t border-slate-800/80 bg-slate-900/30 py-20"
+      >
+        <div className="mx-auto max-w-5xl space-y-12 px-6">
+          <div className="mx-auto max-w-2xl space-y-2 text-center">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-800 bg-slate-900 px-3 py-1 font-mono text-xs text-indigo-400">
+              <Zap className="h-3.5 w-3.5" /> Platform Capabilities
+            </div>
+            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              One webhook. Docs that write themselves.
+            </h2>
+            <p className="text-sm leading-relaxed text-slate-400">
+              Every feature below runs off the same GitHub push webhook:
+              provider fallback, smart generation modes, and live job logs all
+              stay in sync automatically.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {/* Model Card */}
+            <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-5">
+              <div className="flex items-center gap-2 text-indigo-400">
+                <Cpu size={18} />
+                <h3 className="text-sm font-semibold text-white">
+                  Dual Provider Resilience
+                </h3>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-400">
+                Primary synthesis runs via Gemini 3.1 Flash Lite. If rate limits
+                (HTTP 429) or timeouts occur, the pipeline automatically fails
+                over to Sarvam AI.
+              </p>
+              <div className="space-y-1 rounded-lg border border-slate-800 bg-slate-950 p-3 font-mono text-[11px]">
+                <div className="text-emerald-400">
+                  ● Gemini 3.1 Flash Lite (Primary)
+                </div>
+                <div className="text-slate-400">
+                  ○ Sarvam AI (Failover Standby)
+                </div>
+              </div>
+            </div>
+
+            {/* Mode Card */}
+            <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-5">
+              <div className="flex items-center gap-2 text-sky-400">
+                <RefreshCw size={18} />
+                <h3 className="text-sm font-semibold text-white">
+                  Smart Generation Modes
+                </h3>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-400">
+                Deterministic AST analyzer inspects incoming commits and selects
+                between Full Rewrite (new repos), Section Patch (small code
+                diffs), and Cleanup.
+              </p>
+              <div className="space-y-1 rounded-lg border border-slate-800 bg-slate-950 p-3 font-mono text-[11px]">
+                <div className="text-slate-300">Mode: Section Patch</div>
+                <div className="text-slate-400">AST Nodes Touched: 2/14</div>
+              </div>
+            </div>
+
+            {/* Ingest Card */}
+            <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-5">
+              <div className="flex items-center gap-2 text-emerald-400">
+                <Terminal size={18} />
+                <h3 className="text-sm font-semibold text-white">
+                  Convex Live Logs
+                </h3>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-400">
+                Watch documentation generation live step-by-step. Real-time log
+                streaming over Convex WebSockets directly on your dashboard.
+              </p>
+              <div className="space-y-1 rounded-lg border border-slate-800 bg-slate-950 p-3 font-mono text-[11px]">
+                <div className="text-indigo-400">
+                  Live SSE &amp; Convex WebSocket
+                </div>
+                <div className="text-slate-400">
+                  HMAC-SHA256 signature verified
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 py-8 text-center text-xs text-slate-500">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row">
-          <span>
-            © PushDoc. Automated documentation generated from your commits.
-          </span>
-          <div className="flex items-center gap-4">
-            <Link to="/login" className="hover:text-slate-300">
-              Sign In
-            </Link>
-            <a
-              href="https://github.com/SudeepKagi/PushDoc"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-slate-300"
-            >
-              GitHub
-            </a>
+      {/* ── FAQ Section (Matching daemondoc) ─────────────────────────────────── */}
+      <section
+        id="faq"
+        className="border-t border-slate-800/80 bg-slate-950 py-20"
+      >
+        <div className="mx-auto max-w-3xl space-y-8 px-6">
+          <div className="space-y-2 text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-sm text-slate-400">
+              Everything you need to know about PushDoc.
+            </p>
+          </div>
+
+          <div className="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/60">
+            {FAQS.map((faq, idx) => {
+              const isOpen = activeFaq === idx;
+              return (
+                <div key={idx}>
+                  <button
+                    onClick={() => setActiveFaq(isOpen ? null : idx)}
+                    className="flex w-full cursor-pointer items-center justify-between p-4 text-left text-sm font-medium text-slate-200 transition-colors hover:text-white"
+                  >
+                    <span>{faq.q}</span>
+                    <ChevronDown
+                      className={`h-4 w-4 text-slate-400 transition-transform ${
+                        isOpen ? "rotate-180 text-indigo-400" : ""
+                      }`}
+                    />
+                  </button>
+                  {isOpen && (
+                    <div className="px-4 pb-4 text-xs leading-relaxed text-slate-400">
+                      {faq.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer (Matching daemondoc) ───────────────────────────────────────── */}
+      <footer className="border-t border-slate-800 bg-slate-950 text-slate-400">
+        <div className="mx-auto max-w-3xl space-y-5 px-6 py-16 text-center">
+          <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            Everything you need to stop writing docs.
+          </h2>
+          <p className="mx-auto max-w-lg text-sm leading-relaxed text-slate-400">
+            Connect your GitHub repository in 30 seconds. PushDoc handles README
+            updates automatically on every commit.
+          </p>
+
+          <button
+            onClick={() => navigate("/login")}
+            className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 text-sm font-medium text-white shadow-md transition-all hover:bg-indigo-500"
+          >
+            <Github className="h-4 w-4" />
+            <span>Connect with GitHub</span>
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="border-t border-slate-800/80">
+          <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 px-6 py-8 text-xs sm:flex-row">
+            <div className="flex items-center gap-2">
+              <img
+                src="/mascot-bust.png"
+                alt="PushDoc"
+                width={24}
+                height={24}
+                className="h-6 w-auto"
+              />
+              <span className="font-display font-semibold text-white">
+                PushDoc
+              </span>
+              <span className="text-slate-400">
+                © {new Date().getFullYear()}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-6">
+              <button
+                onClick={() => scrollToSection("how-it-works")}
+                className="cursor-pointer transition-colors hover:text-white"
+              >
+                How it works
+              </button>
+              <button
+                onClick={() => scrollToSection("platform")}
+                className="cursor-pointer transition-colors hover:text-white"
+              >
+                Platform
+              </button>
+              <button
+                onClick={() => scrollToSection("faq")}
+                className="cursor-pointer transition-colors hover:text-white"
+              >
+                FAQ
+              </button>
+              <a
+                href="https://github.com/SudeepKagi/PushDoc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-white"
+              >
+                GitHub
+              </a>
+            </div>
           </div>
         </div>
       </footer>
