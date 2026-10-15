@@ -1,0 +1,54 @@
+name: pushdoc-api-server
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: pushdoc-redis
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    networks:
+      - pushdoc-api-network
+    volumes:
+      - pushdoc-redis-data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      REDIS_HOST: redis
+    depends_on:
+      - redis
+    networks:
+      - pushdoc-api-network
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - pushdoc-api-network
+
+networks:
+  pushdoc-api-network:
+    name: pushdoc-api-network
+    driver: bridge
+
+volumes:
+  pushdoc-redis-data:
+    name: pushdoc-redis-data
+  caddy_data:
+    name: caddy_data
+  caddy_config:
+    name: caddy_config

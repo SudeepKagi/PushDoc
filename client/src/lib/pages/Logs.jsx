@@ -1,0 +1,509 @@
+import React, { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  CheckCircle2,
+  XCircle,
+  GitBranch,
+  RefreshCw,
+  History,
+  SkipForward,
+  ChevronDown,
+  Layers,
+} from "lucide-react";
+import { useQuery } from "convex/react";
+import SEO from "@/components/common/SEO";
+import { useRequireAuth } from "../../hooks/useRequireAuth";
+import { api, ENDPOINTS } from "../api";
+import { usePostHog } from "@posthog/react";
+import { convexApi } from "../convexApi";
+import { ThinkingOrb } from "@/components/ui/thinking-orb";
+import LogRowSkeleton from "@/components/common/LogRowSkeleton";
+import DokuState from "@/components/doku/DokuState";
+import { logsEmptyState, logsErrorState } from "@/components/doku/dokuStates";
+import { APP_ORIGIN } from "../urls";
+
+const STATUS_CONFIG = {
+  success: {
+    label: "Success",
+    color: "text-blue-700",
+    bg: "bg-blue-50",
+    border: "border-blue-100",
+    glow: "shadow-[0_0_12px_-2px_rgba(29,78,216,0.16)]",
+    icon: <CheckCircle2 size={14} />,
+    panelTone: "bg-blue-50 border-blue-100 text-blue-600 group-hover:bg-white",
+  },
+  failed: {
+    label: "Failed",
+    color: "text-rose-600",
+    bg: "bg-rose-500/10",
+    border: "border-rose-500/20",
+    glow: "shadow-[0_0_12px_-2px_rgba(244,63,94,0.3)]",
+    icon: <XCircle size={14} />,
+    panelTone: "bg-rose-50 border-rose-100 text-rose-500",
+  },
+  ongoing: {
+    label: "In progress",
+    color: "text-sky-700",
+    bg: "bg-sky-50",
+    border: "border-sky-100",
+    glow: "shadow-[0_0_12px_-2px_rgba(14,165,233,0.2)]",
+    icon: (
+      <ThinkingOrb
+        preset="working"
+        showLabel={false}
+        tone="ghost"
+        size="sm"
+        className="h-auto p-0 text-current [--orb-size:0.875rem]"
+      />
+    ),
+    panelTone: "bg-sky-50 border-sky-100 text-sky-600 group-hover:bg-white",
+  },
+  skipped: {
+    label: "Skipped",
+    color: "text-amber-700",
+    bg: "bg-amber-50",
+    border: "border-amber-100",
+    glow: "shadow-[0_0_12px_-2px_rgba(217,119,6,0.18)]",
+    icon: <SkipForward size={14} />,
+    panelTone:
+      "bg-amber-50 border-amber-100 text-amber-600 group-hover:bg-white",
+  },
+};
+
+/* Enough rows to keep the feed taller than the viewport while loading, so the
+   page scrolls from the first paint instead of gaining a scrollbar mid-load. */
+const LOG_SKELETON_COUNT = 6;
+
+const logRowVariants = {
+  initial: { opacity: 0, y: 10 },
+  animate: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.02 },
+  }),
+  exit: {
+    opacity: 0,
+    y: -10,
+    transition: { duration: 0.18 },
+  },
+};
+
+const StatusBadge = ({ status }) => {
+  const s = STATUS_CONFIG[status] || STATUS_CONFIG.ongoing;
+
+  return (
+    <div
+      className={`flex w-[130px] items-center justify-center gap-2 rounded-full border py-1.5 transition-all ${s.bg} ${s.border} ${s.color} ${s.glow}`}
+    >
+      {s.icon}
+      <span className="text-[11px] font-bold tracking-wider uppercase">
+        {s.label}
+      </span>
+    </div>
+  );
+};
+
+const Logs = () => {
+  useRequireAuth();
+  const posthog = usePostHog();
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [expandedLogId, setExpandedLogId] = useState(null);
+
+  const fetchLogs = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    try {
+      const { data } = await api.get(ENDPOINTS.FETCH_LOGS);
+      setLogs(data.logs || []);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  const pollLogs = useCallback(async () => {
+    try {
+      const { data } = await api.get(ENDPOINTS.FETCH_LOGS);
+      setLogs(data.logs || []);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const { data } = await api.get(ENDPOINTS.FETCH_LOGS);
+        if (cancelled) return;
+        setLogs(data.logs || []);
+        setError(null);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    const interval = setInterval(() => void pollLogs(), 10000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [pollLogs]);
+
+  const handleToggleLog = (logId) => {
+    if (!logId) return;
+
+    setExpandedLogId((currentLogId) => (currentLogId === logId ? null : logId));
+  };
+
+  return (
+    <>
+      <SEO
+        title="Activity Logs - PushDoc"
+        ogUrl={`${APP_ORIGIN}/logs`}
+        canonical={`${APP_ORIGIN}/logs`}
+      />
+      <div className="relative min-h-screen overflow-x-hidden bg-linear-to-b from-white via-slate-50/70 to-white font-sans text-slate-900 selection:bg-sky-100">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute top-24 left-[-7rem] h-72 w-72 rounded-full bg-blue-100/55 blur-3xl" />
+          <div className="absolute top-72 right-[-8rem] h-96 w-96 rounded-full bg-sky-100/45 blur-3xl" />
+        </div>
+
+        <div className="relative mx-auto max-w-5xl px-4 pt-24 pb-16 sm:px-6 sm:pt-32 sm:pb-20">
+          {/* Header */}
+          <div className="mb-10 flex flex-col gap-5 md:mb-12 md:flex-row md:items-center md:justify-between md:gap-8">
+            <div>
+              <div className="mb-3 flex items-center gap-2">
+                <div className="h-1 w-8 rounded-full bg-blue-600" />
+                <span className="font-mono text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">
+                  Activity System
+                </span>
+              </div>
+              <h1 className="mb-3 text-3xl leading-none font-black tracking-tighter text-slate-900 uppercase sm:text-5xl">
+                Event Logs
+              </h1>
+              <p className="max-w-2xl text-sm font-medium tracking-tight text-slate-500 sm:text-base">
+                Track every automated documentation run with the same clean
+                system language as the landing experience.
+              </p>
+            </div>
+
+            <div className="rounded-panel shadow-raised sm:rounded-panel-lg w-full border border-slate-200 bg-white/80 p-2 backdrop-blur-sm sm:w-auto">
+              <button
+                onClick={() => {
+                  posthog?.capture("logs_refreshed");
+                  fetchLogs(true);
+                }}
+                className="rounded-action bg-primary flex w-full cursor-pointer items-center justify-center gap-2.5 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-colors hover:bg-blue-800 active:scale-[0.97] sm:w-auto sm:px-6"
+              >
+                {refreshing ? (
+                  <ThinkingOrb
+                    preset="working"
+                    showLabel={false}
+                    tone="ghost"
+                    size="sm"
+                    className="h-auto p-0 text-current [--orb-size:1rem]"
+                  />
+                ) : (
+                  <RefreshCw size={16} strokeWidth={2.5} />
+                )}
+                Refresh Feed
+              </button>
+            </div>
+          </div>
+
+          {/* Stats Bar */}
+          <div className="mb-8 grid grid-cols-2 gap-3 sm:mb-10 sm:gap-4 md:grid-cols-5">
+            {[
+              {
+                label: "Total",
+                val: logs.length,
+                color: "text-slate-900",
+                bg: "bg-white",
+              },
+              {
+                label: "Success",
+                val: logs.filter((l) => l.status === "success").length,
+                color: "text-blue-700",
+                bg: "bg-blue-50/80",
+              },
+              {
+                label: "Failed",
+                val: logs.filter((l) => l.status === "failed").length,
+                color: "text-rose-600",
+                bg: "bg-rose-50/50",
+              },
+              {
+                label: "Skipped",
+                val: logs.filter((l) => l.status === "skipped").length,
+                color: "text-amber-700",
+                bg: "bg-amber-50/70",
+              },
+              {
+                label: "Active",
+                val: logs.filter((l) => l.status === "ongoing").length,
+                color: "text-sky-700",
+                bg: "bg-sky-50/80",
+              },
+            ].map((stat, i) => (
+              <div
+                key={i}
+                className={`rounded-panel shadow-panel sm:rounded-panel-lg border border-slate-200/60 p-4 sm:p-5 ${stat.bg}`}
+              >
+                <p className="mb-1 font-mono text-[10px] font-black tracking-[0.28em] text-slate-400 uppercase">
+                  {stat.label}
+                </p>
+                <p className={`text-xl font-black sm:text-2xl ${stat.color}`}>
+                  {stat.val}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Glass Log Container */}
+          <div className="rounded-panel shadow-raised sm:rounded-panel-lg overflow-hidden border border-slate-200 bg-white/85 backdrop-blur-xl">
+            <div className="flex items-start gap-3 border-b border-dashed border-slate-200 bg-linear-to-r from-blue-50/70 via-white to-transparent px-4 py-4 sm:items-center sm:px-6">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-500/20 sm:size-10">
+                <History size={18} />
+              </div>
+              <div className="min-w-0">
+                <p className="font-mono text-xs font-black tracking-[0.24em] text-slate-400 uppercase">
+                  Live Timeline
+                </p>
+                <p className="text-sm font-semibold text-slate-700">
+                  Recent automation activity across your repositories
+                </p>
+              </div>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {loading && logs.length === 0 ? (
+                <div
+                  className="divide-y divide-slate-100"
+                  aria-busy="true"
+                  aria-label="Loading logs"
+                >
+                  {Array.from({ length: LOG_SKELETON_COUNT }).map(
+                    (_, index) => (
+                      <LogRowSkeleton key={index} />
+                    ),
+                  )}
+                </div>
+              ) : error ? (
+                <div className="px-4 py-14 sm:px-6 sm:py-16">
+                  <DokuState
+                    {...logsErrorState({
+                      error,
+                      onRetry: () => fetchLogs(true),
+                    })}
+                  />
+                </div>
+              ) : logs.length === 0 ? (
+                <div className="px-4 py-16 sm:px-6 sm:py-20">
+                  <DokuState {...logsEmptyState()} />
+                </div>
+              ) : (
+                <AnimatePresence>
+                  {logs.map((log, index) => (
+                    <motion.div
+                      key={log._id}
+                      className="relative"
+                      custom={index}
+                      variants={logRowVariants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                    >
+                      <LogItem
+                        log={log}
+                        expandedLogId={expandedLogId}
+                        onToggle={handleToggleLog}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+const LogItem = ({ log, expandedLogId, onToggle }) => {
+  const commitUrl =
+    log.commitId && log.repoOwner
+      ? `https://github.com/${log.repoOwner}/${log.repoName}/commit/${log.commitId}`
+      : null;
+  const statusConfig = STATUS_CONFIG[log.status] || STATUS_CONFIG.ongoing;
+  const isExpanded = Boolean(log.logId) && log.logId === expandedLogId;
+
+  return (
+    <div className="group">
+      <div
+        className="flex cursor-pointer flex-col justify-between gap-4 p-4 transition-colors hover:bg-blue-50/40 sm:flex-row sm:items-center sm:p-6"
+        onClick={() => onToggle(log.logId)}
+      >
+        <div className="flex min-w-0 items-start gap-3 sm:gap-5">
+          <div
+            className={`mt-1 rounded-2xl border p-2.5 transition-all sm:p-3 ${statusConfig.panelTone}`}
+          >
+            <GitBranch size={20} />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <h3 className="mb-1 text-[14px] font-black tracking-tight text-slate-800 uppercase sm:text-[15px]">
+              {log.action.replace(/_/g, " ")}
+            </h3>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 sm:gap-3">
+              <span className="truncate font-mono text-xs font-bold tracking-tight text-slate-400">
+                {log.repoOwner
+                  ? `${log.repoOwner}/${log.repoName}`
+                  : log.repoName}
+              </span>
+              <span className="hidden h-1 w-1 rounded-full bg-slate-200 sm:block" />
+              <span className="text-xs font-medium text-slate-400">
+                {formatTimestamp(log.createdAt)}
+              </span>
+              {commitUrl && (
+                <>
+                  <span className="hidden h-1 w-1 rounded-full bg-slate-200 sm:block" />
+                  <a
+                    href={commitUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(event) => event.stopPropagation()}
+                    className="text-xs font-bold text-blue-600 transition-colors hover:text-blue-700 hover:underline"
+                  >
+                    View commit
+                  </a>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 self-start sm:self-center">
+          <StatusBadge status={log.status} />
+          <ChevronDown
+            size={18}
+            className={`text-slate-400 transition-transform duration-200 ${
+              isExpanded ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+      </div>
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="overflow-hidden border-t border-dashed border-slate-100 bg-slate-50/60"
+          >
+            <div className="px-4 py-3 sm:px-6 sm:py-4">
+              <LogMessages logId={log.logId} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const LogMessages = ({ logId }) => {
+  const messages = useQuery(convexApi.logs.getLogMessages, { logId });
+
+  if (messages === undefined) {
+    return (
+      <ThinkingOrb
+        preset="thinking"
+        label="Loading detail messages"
+        tone="ghost"
+        size="sm"
+        className="px-0 font-semibold text-slate-400"
+      />
+    );
+  }
+
+  if (messages.length === 0) {
+    return (
+      <p className="text-xs font-medium text-slate-400">
+        No detail messages recorded.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3 border-l-2 border-slate-100 pl-4">
+      {messages.map((message) => (
+        <LogMessageRow key={message._id} message={message} />
+      ))}
+    </div>
+  );
+};
+
+/* Server tags context-trim notices with this prefix (see LOW_CONTEXT_MARKER in
+   the API). Render them with a badge instead of as raw log text. */
+const LOW_CONTEXT_MARKER = "[low-context] ";
+
+const LowContextBadge = () => (
+  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-black tracking-wider text-amber-700 uppercase">
+    <Layers size={10} strokeWidth={2.75} />
+    Low context
+  </span>
+);
+
+const LogMessageRow = ({ message }) => {
+  const isLowContext = message.message.startsWith(LOW_CONTEXT_MARKER);
+  const text = isLowContext
+    ? message.message.slice(LOW_CONTEXT_MARKER.length)
+    : message.message;
+
+  return (
+    <div className="relative">
+      <span className="absolute top-1.5 -left-[1.35rem] h-2 w-2 rounded-full border-2 border-white bg-blue-500" />
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <p className="flex min-w-0 flex-wrap items-center gap-2 font-mono text-xs leading-relaxed text-slate-600">
+          {isLowContext && <LowContextBadge />}
+          <span className="min-w-0">{text}</span>
+        </p>
+        <span className="shrink-0 text-[10px] font-semibold text-slate-400">
+          {formatMessageTimestamp(message.createdAt)}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const formatMessageTimestamp = (timestamp) => {
+  return new Date(timestamp).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+};
+
+const formatTimestamp = (timestamp) => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMins = Math.floor((now - date) / 60000);
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
+
+export default Logs;

@@ -1,91 +1,51 @@
-name: Continuous Integration
+name: CI
 
 on:
-  pull_request:
   push:
-    branches:
-      - main
-      - master
-      - audit/**
+    branches: [main]
+  workflow_dispatch:
 
-permissions:
-  contents: read
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  verify:
-    name: Test, build, and audit
+  deploy:
+    name: Deploy API server to EC2
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
     steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.5
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            server/package-lock.json
-            client/package-lock.json
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_PORT || 22 }}
+          command_timeout: 20m
+          script: |
+            set -euo pipefail
 
-      - name: Install root dependencies
-        run: npm ci
+            APP_DIR="${{ vars.EC2_APP_DIR || '$HOME/pushdoc' }}"
+            COMPOSE_FILE="docker-compose.api-server.yml"
 
-      - name: Install server dependencies
-        run: npm ci
-        working-directory: server
+            if [ ! -d "$APP_DIR/.git" ]; then
+              echo "ERROR: no git repo at $APP_DIR"
+              echo "Set repo variable EC2_APP_DIR to the real path, or clone the repo there."
+              exit 1
+            fi
 
-      - name: Install client dependencies
-        run: npm ci
-        working-directory: client
+            cd "$APP_DIR/server"
 
-      - name: Run server tests
-        run: npm test
+            echo "==> Stopping current stack"
+            docker compose -f "$COMPOSE_FILE" down
 
-      - name: Build client production bundle
-        run: npm run build
+            echo "==> Pulling latest code"
+            cd "$APP_DIR"
+            git pull --ff-only origin main
 
-      - name: Audit production dependencies
-        run: |
-          npm audit --omit=dev
-          npm audit --omit=dev --prefix server
-          npm audit --omit=dev --prefix client
+            echo "==> Rebuilding and starting stack"
+            cd server
+            docker compose -f "$COMPOSE_FILE" up -d --build
 
-  pushdoc-ai:
-    name: Python AI service
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: pushdoc-ai
-    steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
-      - name: Install locked dependencies
-        run: uv sync --frozen --group dev
-
-      - name: Lint Python
-        run: uv run ruff check src tests
-
-      - name: Test Python service
-        run: uv run pytest -q
-
-      - name: Audit Python dependencies
-        run: uvx pip-audit
-
-      - name: Build service container
-        run: docker build -t pushdoc-ai:test .
+            echo "==> Status"
+            docker compose -f "$COMPOSE_FILE" ps

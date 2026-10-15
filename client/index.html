@@ -1,16 +1,153 @@
-<!DOCTYPE html>
-<html class="dark scroll-smooth" lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>PushDoc — Automated Developer Documentation</title>
-    <link rel="icon" type="image/png" href="/logo.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-</head>
-<body class="bg-bg text-text-primary font-sans antialiased min-h-screen">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary Meta Tags -->
+    <title>
+      PushDoc - AI-Powered README Generator for GitHub | Automate Your
+      Documentation
+    </title>
+    <meta
+      name="title"
+      content="PushDoc - AI-Powered README Generator for GitHub | Automate Your Documentation"
+    />
+    <meta
+      name="description"
+      content="Stop wasting hours on documentation. PushDoc automatically generates and updates your GitHub README files using AI. Connect your repos and keep documentation fresh as your code evolves."
+    />
+    <meta
+      name="keywords"
+      content="README generator, AI documentation, GitHub automation, automatic README, documentation tool, code documentation, GitHub README, AI README generator, developer tools, documentation automation, README automation, continuous documentation sync, automated GitHub README, documentation-as-code, AST-based patching, deterministic patching, stateless sync, webhook-driven documentation"
+    />
+    <meta name="author" content="PushDoc" />
+    <!-- Dashboard app — the indexable landing lives on pushdoc.online -->
+    <meta name="robots" content="noindex, follow" />
+    <meta name="language" content="English" />
+    <meta name="revisit-after" content="7 days" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://app.pushdoc.online/" />
+    <meta
+      property="og:title"
+      content="PushDoc - AI-Powered README Generator for GitHub"
+    />
+    <meta
+      property="og:description"
+      content="Set and Forget GitHub documentation. PushDoc uses AST-based patching and webhook-driven sync to keep your README accurate on every push — no manual effort required."
+    />
+    <meta property="og:image" content="https://pushdoc.online/main_og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="PushDoc - Automate Your GitHub Documentation"
+    />
+    <meta property="og:site_name" content="PushDoc" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://app.pushdoc.online/" />
+    <meta
+      name="twitter:title"
+      content="PushDoc - AI-Powered README Generator for GitHub"
+    />
+    <meta
+      name="twitter:description"
+      content="Set and Forget GitHub documentation. PushDoc uses AST-based patching and webhook-driven sync to keep your README accurate on every push — no manual effort required."
+    />
+    <meta name="twitter:image" content="https://pushdoc.online/x_og.png" />
+    <meta
+      name="twitter:image:alt"
+      content="PushDoc - Automate Your GitHub Documentation"
+    />
+    <meta name="twitter:creator" content="@pushdoc" />
+    <meta name="twitter:site" content="@pushdoc" />
+
+    <!-- Additional SEO Meta Tags -->
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="PushDoc" />
+    <meta name="application-name" content="PushDoc" />
+    <meta name="msapplication-TileColor" content="#0f172a" />
+    <meta name="msapplication-TileImage" content="/ms-icon-144x144.png" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://app.pushdoc.online/" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/siteLogo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Body/UI font is self-hosted from /public; preload so first paint
+         doesn't wait on the CSS to discover the @font-face. -->
+    <link
+      rel="preload"
+      href="/inter-display.p.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <!-- Space Grotesk is still used for display headings (font-display) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "PushDoc",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Web",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "AI-powered README generator that automatically creates and updates documentation for your GitHub repositories.",
+        "url": "https://pushdoc.online",
+        "image": "https://pushdoc.online/og-image.png",
+        "author": {
+          "@type": "Organization",
+          "name": "PushDoc"
+        },
+        "featureList": [
+          "AI-powered code analysis",
+          "Automatic README generation",
+          "GitHub OAuth integration",
+          "Real-time documentation updates",
+          "Monorepo support",
+          "Secure and private",
+          "AST-based section patching",
+          "SHA-256 section hashing for deterministic patch detection",
+          "Webhook-driven README sync on every push",
+          "BullMQ async queue for non-blocking generation",
+          "Gemini primary with Groq fallback AI provider chain",
+          "Convex live log streaming"
+        ],
+        "keywords": "README automation, continuous documentation sync, automated GitHub README, documentation-as-code, AST-based patching, deterministic patching, stateless sync, webhook-driven documentation, MERN stack, BullMQ, Convex"
+      }
+    </script>
+  </head>
+  <body>
     <div id="root"></div>
-    <script type="module" src="/src/index.jsx"></script>
-</body>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>

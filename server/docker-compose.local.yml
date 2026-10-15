@@ -1,0 +1,50 @@
+name: pushdoc-local
+services:
+  mongo:
+    image: mongo:8
+    container_name: pushdoc-mongo
+    restart: unless-stopped
+    networks:
+      - pushdoc-local-network
+    ports:
+      - "27017:27017"
+    volumes:
+      - pushdoc-mongo-data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    container_name: pushdoc-redis
+    restart: unless-stopped
+    networks:
+      - pushdoc-local-network
+    ports:
+      - "6379:6379"
+    volumes:
+      - pushdoc-redis-data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pushdoc-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - pushdoc-local-network
+    ports:
+      - "3000:3000"
+
+networks:
+  pushdoc-local-network:
+    name: pushdoc-local-network
+    driver: bridge
+
+volumes:
+  pushdoc-mongo-data:
+    name: pushdoc-mongo-data
+  pushdoc-redis-data:
+    name: pushdoc-redis-data

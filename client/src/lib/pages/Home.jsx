@@ -1,0 +1,449 @@
+import React, { useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import RepoCard from "@/components/repos/RepoCard";
+import RepoCardSkeleton from "@/components/repos/RepoCardSkeleton";
+import { RefreshCw, Search, X } from "lucide-react";
+import SEO from "@/components/common/SEO";
+import { useRequireAuth } from "../../hooks/useRequireAuth";
+import { useRepos } from "../../hooks/useRepos";
+import { usePostHog } from "@posthog/react";
+import { useOnboarding } from "../../context/onboarding-context";
+import CleanupFeatureSpotlight from "@/components/repos/CleanupFeatureSpotlight";
+import DokuState from "@/components/doku/DokuState";
+import { repoEmptyState, repoErrorState } from "@/components/doku/dokuStates";
+import ProviderPriorityControl from "@/components/repos/ProviderPriorityControl";
+import CommitTypeToggle from "@/components/repos/CommitTypeToggle";
+import { APP_ORIGIN } from "../urls";
+import { ThinkingOrb } from "@/components/ui/thinking-orb";
+
+const FILTER_TABS = [
+  { key: "all", label: "All Repositories" },
+  { key: "active", label: "Active" },
+  { key: "inactive", label: "Inactive" },
+];
+
+const REPOS_PER_PAGE = 12;
+const REPO_SKELETON_COUNT = 6;
+
+const PAGINATION_NAV_BTN =
+  "inline-flex h-8 shrink-0 items-center cursor-pointer justify-center whitespace-nowrap rounded-control border border-slate-200 bg-slate-50 px-2.5 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40 sm:px-3";
+
+const paginationPageBtnClass = (active) =>
+  `inline-flex h-8 min-w-8 shrink-0 items-center cursor-pointer justify-center whitespace-nowrap rounded-control px-2 text-xs font-bold transition-colors sm:px-2.5 ${
+    active
+      ? "bg-primary text-white shadow-sm shadow-blue-500/20"
+      : "border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+  }`;
+
+const CLEANUP_INTRO_KEY = (username) => `dd_cleanup_intro_v1_${username}`;
+
+const Home = () => {
+  const { user } = useRequireAuth();
+  const { repos, setRepos, loading, error, fetchRepos } = useRepos(user);
+  const posthog = usePostHog();
+  const [filter, setFilter] = useState("all"); // all, active, inactive
+  const [searchQuery, setSearchQuery] = useState("");
+  const [reposPage, setReposPage] = useState(1);
+
+  const [, forceUpdate] = useState(0);
+  const { enrolled: inOnboarding, refresh: refreshOnboarding } =
+    useOnboarding();
+
+  const cleanupIntroDismissed = user?.githubUsername
+    ? localStorage.getItem(CLEANUP_INTRO_KEY(user.githubUsername)) === "done"
+    : true;
+
+  // New accounts meet Cleanup in the onboarding checklist instead, so the
+  // announcement is only for people who used PushDoc before it existed.
+  const showCleanupIntro =
+    Boolean(user?.githubUsername) &&
+    !loading &&
+    repos.length > 0 &&
+    !cleanupIntroDismissed &&
+    !inOnboarding;
+
+  const dismissCleanupIntro = useCallback(() => {
+    if (!user?.githubUsername) return;
+    localStorage.setItem(CLEANUP_INTRO_KEY(user.githubUsername), "done");
+    posthog?.capture("cleanup_intro_dismissed");
+    forceUpdate((n) => n + 1);
+  }, [user, posthog]);
+
+  const cleanupIntroShownRef = React.useRef(false);
+  React.useEffect(() => {
+    if (showCleanupIntro && !cleanupIntroShownRef.current) {
+      cleanupIntroShownRef.current = true;
+      posthog?.capture("cleanup_intro_shown");
+    }
+  }, [showCleanupIntro, posthog]);
+
+  const handleSilentToggle = (repoId) => {
+    setRepos((prevRepos) =>
+      prevRepos.map((repo) =>
+        repo.id === repoId ? { ...repo, activated: !repo.activated } : repo,
+      ),
+    );
+  };
+
+  const filteredRepos = repos.filter((repo) => {
+    let matchesFilter = true;
+    if (filter === "active") matchesFilter = repo.activated;
+    if (filter === "inactive") matchesFilter = !repo.activated;
+
+    const matchesSearch =
+      searchQuery === "" ||
+      repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      repo.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (repo.owner &&
+        repo.owner.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    return matchesFilter && matchesSearch;
+  });
+
+  const activeCount = repos.filter((r) => r.activated).length;
+
+  const totalReposPages = Math.max(
+    1,
+    Math.ceil(filteredRepos.length / REPOS_PER_PAGE),
+  );
+  const paginatedRepos = filteredRepos.slice(
+    (reposPage - 1) * REPOS_PER_PAGE,
+    reposPage * REPOS_PER_PAGE,
+  );
+  const repoPaginationItems = Array.from(
+    { length: totalReposPages },
+    (_, index) => index + 1,
+  )
+    .filter(
+      (page) =>
+        page === 1 ||
+        page === totalReposPages ||
+        Math.abs(page - reposPage) <= 1,
+    )
+    .reduce((acc, page, index, pages) => {
+      if (index > 0 && page - pages[index - 1] > 1) {
+        acc.push("…");
+      }
+      acc.push(page);
+      return acc;
+    }, []);
+
+  return (
+    <>
+      <SEO
+        title="Dashboard - PushDoc | Manage Your Repositories"
+        description="Manage AI-powered README updates for your GitHub repositories. View, enable, and configure automatic documentation generation."
+        ogUrl={`${APP_ORIGIN}/home`}
+        canonical={`${APP_ORIGIN}/home`}
+      />
+      <CleanupFeatureSpotlight
+        open={showCleanupIntro}
+        onDismiss={dismissCleanupIntro}
+      />
+      <div className="relative min-h-screen overflow-x-hidden bg-linear-to-b from-white via-slate-50/70 to-white font-sans text-slate-900 selection:bg-indigo-100">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute top-24 left-[-8rem] h-72 w-72 rounded-full bg-blue-100/60 blur-3xl" />
+          <div className="absolute top-52 right-[-6rem] h-80 w-80 rounded-full bg-sky-100/40 blur-3xl" />
+        </div>
+
+        <div className="relative px-4 pt-24 pb-16 sm:px-6 sm:pt-32 sm:pb-20">
+          <div className="mx-auto max-w-7xl">
+            {/* Header Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="mb-10"
+            >
+              <div className="mb-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <div className="mb-3 flex items-center gap-2">
+                    <div className="h-1 w-8 rounded-full bg-blue-600" />
+                    <span className="font-mono text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">
+                      Repository System
+                    </span>
+                  </div>
+                  <h1 className="mb-3 text-3xl leading-none font-black tracking-tighter text-slate-900 uppercase sm:text-5xl">
+                    Repositories
+                  </h1>
+                  <p className="max-w-2xl text-sm font-medium tracking-tight text-slate-500 sm:text-base">
+                    Manage AI-powered README updates for your GitHub
+                    repositories
+                  </p>
+                </div>
+                <div className="rounded-panel shadow-raised sm:rounded-panel-lg w-full border border-slate-200 bg-white/80 p-2 backdrop-blur-sm sm:w-auto">
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => {
+                      posthog?.capture("repos_refreshed");
+                      fetchRepos();
+                    }}
+                    disabled={loading}
+                    className="rounded-action bg-primary sm:rounded-action flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-800 disabled:opacity-50 sm:w-auto sm:px-5"
+                  >
+                    {loading ? (
+                      <ThinkingOrb
+                        preset="working"
+                        showLabel={false}
+                        tone="ghost"
+                        size="sm"
+                        className="h-auto p-0 text-current [--orb-size:1rem]"
+                      />
+                    ) : (
+                      <RefreshCw size={16} />
+                    )}
+                    Refresh list
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Stats Bar */}
+              <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+                <div className="rounded-panel shadow-panel sm:rounded-panel-lg border border-slate-200/60 bg-white/90 p-4 sm:p-5">
+                  <p className="mb-1 font-mono text-[10px] font-black tracking-[0.28em] text-slate-400 uppercase">
+                    Total
+                  </p>
+                  <p className="text-xl font-black text-slate-900 sm:text-2xl">
+                    {repos.length}
+                  </p>
+                </div>
+                <div className="rounded-panel sm:rounded-panel-lg border border-blue-100 bg-blue-50/80 p-4 shadow-[0_16px_40px_-28px_rgba(29,78,216,0.22)] sm:p-5">
+                  <p className="mb-1 font-mono text-[10px] font-black tracking-[0.28em] text-slate-400 uppercase">
+                    Active
+                  </p>
+                  <p className="text-xl font-black text-blue-700 sm:text-2xl">
+                    {activeCount}
+                  </p>
+                </div>
+                <div className="rounded-panel shadow-panel sm:rounded-panel-lg border border-slate-200/60 bg-slate-50/80 p-4 sm:p-5">
+                  <p className="mb-1 font-mono text-[10px] font-black tracking-[0.28em] text-slate-400 uppercase">
+                    Inactive
+                  </p>
+                  <p className="text-xl font-black text-slate-600 sm:text-2xl">
+                    {repos.length - activeCount}
+                  </p>
+                </div>
+                <div className="rounded-panel sm:rounded-panel-lg border border-sky-100 bg-sky-50/80 p-4 shadow-[0_16px_40px_-28px_rgba(14,165,233,0.2)] sm:p-5">
+                  <p className="mb-1 font-mono text-[10px] font-black tracking-[0.28em] text-slate-400 uppercase">
+                    Private
+                  </p>
+                  <p className="text-xl font-black text-sky-600 sm:text-2xl">
+                    {repos.filter((r) => r.private).length}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Filter Tabs and Search Bar */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
+              className="rounded-panel shadow-raised sm:rounded-panel-lg relative z-20 mb-8 flex flex-col gap-4 border border-slate-200 bg-white/75 p-3 backdrop-blur-sm sm:flex-row sm:items-center sm:p-4"
+            >
+              {/* Filter Tabs */}
+              <div className="rounded-tile flex items-center gap-2 overflow-x-auto border border-slate-200 bg-slate-50/80 p-1.5">
+                {FILTER_TABS.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => {
+                      setFilter(tab.key);
+                      setReposPage(1);
+                    }}
+                    className={`rounded-control shrink-0 cursor-pointer px-3 py-2.5 text-sm font-bold transition-colors sm:px-4 ${
+                      filter === tab.key
+                        ? "bg-primary text-white shadow-lg shadow-blue-500/20"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative w-full flex-1 sm:max-w-md">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <Search size={18} className="text-slate-400" />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setReposPage(1);
+                  }}
+                  placeholder="Search repositories..."
+                  className="rounded-tile w-full border border-slate-200 bg-white py-3 pr-10 pl-10 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 focus:outline-none"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      setReposPage(1);
+                    }}
+                    aria-label="Clear search"
+                    className="rounded-r-tile absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 transition-colors hover:bg-slate-50"
+                  >
+                    <X
+                      size={18}
+                      className="text-slate-400 hover:text-slate-600"
+                    />
+                  </button>
+                )}
+              </div>
+
+              {/* README commit type */}
+              <CommitTypeToggle />
+
+              {/* AI provider priority */}
+              <ProviderPriorityControl />
+            </motion.div>
+
+            {/* Content */}
+            {loading ? (
+              <div
+                className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-6"
+                aria-busy="true"
+                aria-label="Loading repositories"
+              >
+                {Array.from({ length: REPO_SKELETON_COUNT }).map((_, index) => (
+                  <RepoCardSkeleton key={index} />
+                ))}
+              </div>
+            ) : error ? (
+              <div className="rounded-panel-lg border border-rose-100 bg-white px-6 py-12 shadow-[0_16px_40px_-30px_rgba(244,63,94,0.35)]">
+                <DokuState
+                  {...repoErrorState({ error, onRetry: fetchRepos })}
+                />
+              </div>
+            ) : filteredRepos.length > 0 ? (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-6"
+                >
+                  {paginatedRepos.map((repo, index) => (
+                    <motion.div
+                      key={repo.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.3,
+                        delay: Math.min(index * 0.03, 0.3),
+                        ease: "easeOut",
+                      }}
+                      style={{ willChange: "transform, opacity" }}
+                    >
+                      <RepoCard
+                        repo={repo}
+                        showToggle={true}
+                        onToggle={() => handleSilentToggle(repo.id)}
+                        onActivate={
+                          inOnboarding ? refreshOnboarding : undefined
+                        }
+                      />
+                    </motion.div>
+                  ))}
+                </motion.div>
+
+                {/* Pagination Bar */}
+                <div className="mt-8 min-h-[3.5rem] border-t border-dashed border-slate-200 pt-4">
+                  {totalReposPages > 1 ? (
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="shrink-0 text-center text-xs whitespace-nowrap text-slate-400 sm:text-left">
+                        {filteredRepos.length} repo
+                        {filteredRepos.length !== 1 ? "s" : ""} · page{" "}
+                        {reposPage} of {totalReposPages}
+                      </p>
+                      <nav
+                        aria-label="Repository pages"
+                        className="flex w-full shrink-0 items-center justify-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2"
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setReposPage((p) => Math.max(1, p - 1))
+                          }
+                          disabled={reposPage <= 1}
+                          className={PAGINATION_NAV_BTN}
+                        >
+                          ← Prev
+                        </button>
+                        {repoPaginationItems.map((item, index) =>
+                          item === "…" ? (
+                            <span
+                              key={`ellipsis-${index}`}
+                              className="inline-flex h-8 shrink-0 items-center px-0.5 text-xs text-slate-400"
+                            >
+                              …
+                            </span>
+                          ) : (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => setReposPage(item)}
+                              aria-current={
+                                item === reposPage ? "page" : undefined
+                              }
+                              className={paginationPageBtnClass(
+                                item === reposPage,
+                              )}
+                            >
+                              {item}
+                            </button>
+                          ),
+                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setReposPage((p) =>
+                              Math.min(totalReposPages, p + 1),
+                            )
+                          }
+                          disabled={reposPage >= totalReposPages}
+                          className={PAGINATION_NAV_BTN}
+                        >
+                          Next →
+                        </button>
+                      </nav>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400">
+                      {filteredRepos.length} repo
+                      {filteredRepos.length !== 1 ? "s" : ""}
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="rounded-panel-lg shadow-panel border border-dashed border-slate-300 bg-white/90 px-6 py-12">
+                <DokuState
+                  {...repoEmptyState({
+                    repoCount: repos.length,
+                    filter,
+                    searchQuery,
+                    onClearSearch: () => {
+                      setSearchQuery("");
+                      setReposPage(1);
+                    },
+                    onShowAll: () => {
+                      setFilter("all");
+                      setReposPage(1);
+                    },
+                    onRefresh: fetchRepos,
+                  })}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default Home;
