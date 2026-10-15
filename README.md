@@ -263,16 +263,6 @@ pnpm test
 
 PushDoc is named after its core promise: every time you push code, your documentation updates seamlessly in the background. It waits for a push, does its work, and gets out of the way. The mascot is a friendly blue imp, keeping watch over your repository.
 
-## Star history
-
-<a href="https://star-history.com/#SudeepKagi/PushDoc&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=SudeepKagi/PushDoc&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=SudeepKagi/PushDoc&type=Date" />
-    <img alt="Star history for SudeepKagi/PushDoc" src="https://api.star-history.com/svg?repos=SudeepKagi/PushDoc&type=Date" />
-  </picture>
-</a>
-
 ## License
 
 PushDoc is licensed under the [GNU Affero General Public License v3.0](LICENSE).
