@@ -14,14 +14,26 @@ import { serverLog, requestLogger } from "./utils/logger.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const allowedOrigins = [
+  "https://pushdoc.online",
+  "https://app.pushdoc.online",
+  "https://www.pushdoc.online",
+  "http://localhost:5173",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: [
-      "https://pushdoc.online",
-      "https://app.pushdoc.online",
-      "https://www.pushdoc.online",
-      "http://localhost:5173",
-    ],
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   }),
 );
