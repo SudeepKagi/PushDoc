@@ -2,8 +2,7 @@ import React from "react";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import { EASE_OUT, useBlur } from "@/lib/motion";
 
-// Square WebP exports of the masters in logo-candidates/doku, cropped to the
-// character and sized for 2x screens at up to 160px.
+// Aura mascot pose names
 const POSE_NAMES = [
   "wave",
   "working",
@@ -13,9 +12,6 @@ const POSE_NAMES = [
   "reading",
   "resting",
 ];
-const POSES = Object.fromEntries(
-  POSE_NAMES.map((name) => [name, `/doku/doku-${name}.webp`]),
-);
 
 // Poses drawn mid-hop, so their shadow sits further below them.
 const AIRBORNE_POSES = new Set(["celebrate"]);
