@@ -13,9 +13,19 @@ jobs:
   deploy:
     name: Deploy API server to EC2
     runs-on: ubuntu-latest
-    if: ${{ secrets.EC2_HOST != '' }}
     steps:
+      - name: Check EC2 configuration
+        id: check_config
+        run: |
+          if [ -z "${{ secrets.EC2_HOST }}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "Notice: EC2_HOST secret is not configured in repository secrets. Skipping SSH deployment."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy over SSH
+        if: steps.check_config.outputs.configured == 'true'
         uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.EC2_HOST }}
