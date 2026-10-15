@@ -553,7 +553,7 @@ export default function Landing() {
               From git push{" "}
               <span
                 aria-hidden="true"
-                className="inline-block -translate-y-[0.06em] align-middle [clip-path:inset(-50%_0_0_-50%)]"
+                className="inline-block -translate-y-[0.06em] align-middle [clip-path:inset(-100%_-100%_0_-100%)]"
               >
                 <img
                   src="/mascot-bust.png"
