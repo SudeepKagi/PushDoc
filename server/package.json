@@ -9,7 +9,10 @@
     "build": " echo \"No build step required\"",
     "start": "node src/index.js",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "admin:grant": "node src/scripts/set-admin.js --grant",
+    "admin:revoke": "node src/scripts/set-admin.js --revoke",
+    "admin:list": "node src/scripts/set-admin.js --list"
   },
   "keywords": [],
   "author": "",

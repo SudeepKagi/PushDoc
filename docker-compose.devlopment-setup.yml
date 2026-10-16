@@ -33,15 +33,19 @@ services:
       mongosh mongodb://mongo:27017/pushdoc --eval '
       db = db.getSiblingDB("pushdoc");
 
-      const githubId = "319204766";
+      const githubId = "216111331";
 
-      if (!db.users.findOne({ githubId: githubId })) {
+      const existingUser = db.users.findOne({
+        $or: [{ githubId: githubId }, { githubUsername: "SudeepKagi" }]
+      });
+
+      if (!existingUser) {
         db.users.insertOne({
-          githubId: "319204766",
+          githubId: "216111331",
           githubUsername: "SudeepKagi",
-          email: "admin@pushdoc.online",
+          email: "sudeepskagi@gmail.com",
           autoReadmeEnabled: true,
-          avatarUrl: "https://avatars.githubusercontent.com/u/319204766?v=4",
+          avatarUrl: "https://avatars.githubusercontent.com/u/216111331?v=4",
           emailNotificationsEnabled: true,
           admin: true,
           githubAccessToken: {
@@ -53,10 +57,13 @@ services:
           updatedAt: ISODate("2026-08-20T20:50:53.009Z")
         });
 
-        print("Seeded PushDoc user");
+        print("Seeded PushDoc admin user");
       } else {
-        db.users.updateOne({ githubId: githubId }, { $set: { admin: true, updatedAt: new Date() } });
-        print("PushDoc user already exists — admin flag ensured");
+        db.users.updateOne(
+          { _id: existingUser._id },
+          { $set: { admin: true, githubId: githubId, updatedAt: new Date() } }
+        );
+        print("PushDoc user found — admin flag ensured");
       }
       '
 

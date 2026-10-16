@@ -135,6 +135,29 @@ export const createOAuthUser = async (
     user.email = profile.email || primaryEmail;
   }
 
+  const configuredAdmins = (process.env.ADMIN_GITHUB_USERNAMES || "")
+    .split(",")
+    .map((u) => u.trim().toLowerCase())
+    .filter(Boolean);
+  const configuredAdminEmails = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+
+  const effectiveEmail = (
+    profile.email ||
+    primaryEmail ||
+    user.email ||
+    ""
+  ).toLowerCase();
+  const isAdminMatch =
+    (profile.login && configuredAdmins.includes(profile.login.toLowerCase())) ||
+    (effectiveEmail && configuredAdminEmails.includes(effectiveEmail));
+
+  if (isAdminMatch) {
+    user.admin = true;
+  }
+
   await user.save();
 
   return { user };
