@@ -83,7 +83,7 @@ From the **Repositories** page:
 ## How it works
 
 <p align="center">
-  <img src="docs/images/live-logs.jpg" alt="A live PushDoc run: streaming logs and steps in real-time" width="100%" />
+  <img src="docs/images/architecture.png" alt="PushDoc Architecture: from GitHub push webhook to BullMQ worker, LLM decision engine, and live Convex logs" width="100%" />
 </p>
 
 1. **Push.** You push to the default branch. Pushes to other branches, PushDoc's own commits and commits it has already handled are ignored.
@@ -94,6 +94,10 @@ From the **Repositories** page:
 6. **Deliver.** The README is committed as `chore: auto-update README [skip ci]`, or opened as a pull request with the same title.
 
 Every step is pushed to Convex as it happens, so the dashboard updates without polling.
+
+<p align="center">
+  <img src="docs/images/live-logs.jpg" alt="A live PushDoc run: streaming logs and steps in real-time" width="100%" />
+</p>
 
 | Part           | Folder           | What it does                                                 |
 | -------------- | ---------------- | ------------------------------------------------------------ |
