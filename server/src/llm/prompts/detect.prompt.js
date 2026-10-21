@@ -1,17 +1,21 @@
 export function buildDetectPrompt(existingReadme) {
   return `
 You are triaging an existing project README to decide how it should be updated.
-The README below is non-empty. Choose exactly one mode.
 
-- "full": the README should be regenerated from scratch. Pick this when it is a
-  stub or template, is mostly placeholder text, describes a different project,
-  is broken structurally, or is too thin to be worth patching.
-- "patch": the README is basically sound and only specific sections need to
-  change. Pick this when the structure and most content are usable and a
-  reasonable update would touch a few sections rather than the whole document.
+Choose exactly one mode:
 
-When the two options are close, choose "patch": it preserves existing content
-and is cheaper to apply.
+- **"full"**: Regenerate the README from scratch. Choose this when the existing
+  README is a stub, contains mostly placeholder or template text, describes a
+  clearly different project, has broken structure, or is so thin that patching
+  it would produce worse results than starting fresh.
+
+- **"patch"**: Update only the sections affected by recent changes. Choose this
+  when the existing README is coherent and mostly accurate — it has real content,
+  a reasonable structure, and a targeted update would touch a few sections rather
+  than replacing the whole document.
+
+When the two options are close, choose **"patch"**: it preserves existing
+content, avoids unnecessary rewrites, and is cheaper to apply.
 
 Return ONLY a JSON object in exactly this shape. No code fences, no extra keys,
 no commentary:

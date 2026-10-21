@@ -1,7 +1,7 @@
 const geminiConfig = {
   detectionModel: "gemini-3.5-flash-lite",
-  generationModel: "gemini-3.6-flash",
-  cleanupModel: "gemini-3.6-flash",
+  generationModel: "gemini-3.8-flash",
+  cleanupModel: "gemini-3.8-flash",
 };
 
 export const createProvidersInstances = (

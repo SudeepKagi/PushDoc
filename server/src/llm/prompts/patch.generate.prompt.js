@@ -23,11 +23,12 @@ export function buildPatchReadmePrompt(context) {
 
   return `
 You are a technical writer maintaining an existing README.md. A commit just
-landed in the repository. Decide which README sections that commit made
-inaccurate, incomplete, or outdated, and rewrite ONLY those sections.
+landed in the repository. Your job is to rewrite ONLY the sections that the
+commit made inaccurate, incomplete, or outdated — and to improve their prose
+quality and visual formatting while doing so.
 
 You are NOT regenerating the README. Any section you do not return is kept
-exactly as it is. Returning fewer sections is better than returning more.
+exactly as-is. Returning fewer sections is always better than returning more.
 
 ## Repository
 
@@ -53,23 +54,43 @@ ${changedFiles}
 
 ${sectionList}
 
-## Rules
+## Content rules
 
-- Return a section ONLY if the commit above genuinely made it wrong, incomplete,
-  or outdated. If nothing is affected, return an empty "updates" array.
+- Return a section ONLY if the commit above genuinely made it wrong,
+  incomplete, or outdated. If nothing is affected, return an empty "updates"
+  array.
 - Use ONLY the exact section names listed above. Never invent, rename, split,
   merge, or delete a section.
 - Never return these protected sections: ${forbidden}.
 - Return at most ${context.maxSections} sections. Prefer the most affected ones.
-- Each "content" value is the COMPLETE replacement Markdown for that section. It
-  MUST begin with that section's "Heading line to reproduce verbatim" exactly as
-  given above — same text and same heading level (number of leading \`#\`).
-- Change only what the commit invalidated. Preserve the wording, tone, structure,
-  and detail of the rest of the section.
-- Base every change on the provided commit, changed files, and repository
-  structure. Do not add features, commands, dependencies, or configuration that
-  are not visible in that context.
+- Each "content" value is the COMPLETE replacement Markdown for that section.
+  It MUST begin with that section's "Heading line to reproduce verbatim" exactly
+  as given — same text and same heading level.
+- Change only what the commit invalidated. Preserve the structure, tone, and
+  any unaffected detail of the surrounding section.
+- Base every change on the provided commit diff, changed files, and repository
+  structure. Do not add features, commands, or configuration not visible there.
 - Do not mention the commit, these instructions, or that you are an AI.
+
+## Formatting and visual quality standards
+
+Apply these improvements when rewriting a section, in addition to the factual
+updates required by the commit:
+
+- Put every shell command in a fenced \`\`\`bash block, one command per line,
+  no leading "$".
+- Present configuration variables, CLI flags, or any list with 2+ attributes
+  per item as a Markdown table: | Variable | Default | Description |.
+- Use \`inline code\` for all command names, file paths, env var names,
+  function names, and literal values.
+- Use **bold** sparingly — only for the single most important term or outcome
+  in a sentence.
+- Use active voice, present tense, second person for instructions ("Run …",
+  not "You should run …"). Cut filler and passive constructions.
+- One consistent bullet style (\`-\`). Parallel phrasing within each list.
+- Use a \`> **Note:** …\` blockquote only for genuinely important warnings or
+  caveats, not for general information.
+- No marketing language ("powerful", "seamlessly", "simply", "robust").
 
 ## Output
 
