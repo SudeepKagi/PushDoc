@@ -8,6 +8,11 @@ Choose exactly one mode:
   README is a stub, contains mostly placeholder or template text, describes a
   clearly different project, has broken structure, or is so thin that patching
   it would produce worse results than starting fresh.
+  Also choose "full" when the README is bare-bones: for example, only a title
+  and a few lines, or missing basic sections such as what the project does,
+  installation, or usage. Patch mode can only edit sections that already exist;
+  it can never add a missing section, so a README that lacks core sections
+  cannot be repaired by patching.
 
 - **"patch"**: Update only the sections affected by recent changes. Choose this
   when the existing README is coherent and mostly accurate — it has real content,
