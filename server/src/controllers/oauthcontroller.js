@@ -18,13 +18,26 @@ const generateAccessToken = (userId) =>
   jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
 export const githubAuthRedirect = (req, res) => {
-  const githubClientId = process.env.GITHUB_CLIENT_ID;
-  const redirectUri = process.env.GITHUB_CALLBACK_URL;
+  const githubClientId = process.env.GITHUB_CLIENT_ID?.trim();
+  const redirectUri = process.env.GITHUB_CALLBACK_URL?.trim();
+
+  if (!githubClientId || !redirectUri) {
+    log.error("GitHub OAuth configuration missing", {
+      hasClientId: !!githubClientId,
+      hasCallbackUrl: !!redirectUri,
+    });
+    return res.status(500).json({
+      message: "GitHub OAuth is not properly configured on this server.",
+    });
+  }
+
+  const scope = "repo read:user user:email";
   const authUrl =
     `https://github.com/login/oauth/authorize` +
-    `?client_id=${githubClientId}` +
-    `&redirect_uri=${redirectUri}` +
-    `&scope=repo read:user user:email`;
+    `?client_id=${encodeURIComponent(githubClientId)}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&scope=${encodeURIComponent(scope)}`;
+
   res.redirect(authUrl);
 };
 
